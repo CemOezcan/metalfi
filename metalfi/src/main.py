@@ -1,8 +1,11 @@
+from metalfi.src.data.memory import Memory
+
+
 class Main(object):
 
     @staticmethod
     def main():
-        pass
+        Memory.loadTitanic()
 
 
 if __name__ == '__main__':
