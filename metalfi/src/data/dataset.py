@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 
 from sklearn import preprocessing
 
+from metalfi.src.data.meta.importance.permutation import PermutationImportance
+
 
 class Dataset:
 
@@ -34,4 +36,5 @@ class Dataset:
         self.__data_frame = pd.DataFrame(values_scaled, columns=self.__data_frame.columns)
 
     def calculateMetaFeatureVectors(self):
-        return
+        perm = PermutationImportance(self)
+        perm.calculateScores()
