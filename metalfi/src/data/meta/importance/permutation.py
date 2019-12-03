@@ -35,7 +35,6 @@ class PermutationImportance(FeatureImportance):
         plot_importances(imp).view()
 
     def permutationImportance(self, model, target, features):
-        # TODO: Calc. importances on testset?
         X = self._data_frame.drop(target, axis=1)
         y = self._data_frame[target]
 
@@ -45,7 +44,6 @@ class PermutationImportance(FeatureImportance):
 
     #TODO: Use
     def permutationImportance(self, model, target):
-        # TODO: Calc. importances on testset?
         X = self._data_frame.drop(target, axis=1)
         y = self._data_frame[target]
 
