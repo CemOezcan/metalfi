@@ -12,12 +12,8 @@ class Main(object):
         data_frame_2, target_2 = Memory.loadCancer()
         data_2 = Dataset(data_frame_2, target_2)
 
-        data_frame_3, target_3 = Memory.loadWine()
-        data_3 = Dataset(data_frame_3, target_3)
-
         data.calculateMetaFeatureVectors()
         data_2.calculateMetaFeatureVectors()
-        data_3.calculateMetaFeatureVectors()
 
 
 if __name__ == '__main__':

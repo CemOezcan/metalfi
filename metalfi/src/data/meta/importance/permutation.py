@@ -34,15 +34,6 @@ class PermutationImportance(FeatureImportance):
         imp = cv_importances(model, X, y)
         plot_importances(imp).view()
 
-    def permutationImportance(self, model, target, features):
-        X = self._data_frame.drop(target, axis=1)
-        y = self._data_frame[target]
-
-        model.fit(X, y)
-        imp = importances(model, X, y, features=features)
-        plot_importances(imp).view()
-
-    #TODO: Use
     def permutationImportance(self, model, target):
         X = self._data_frame.drop(target, axis=1)
         y = self._data_frame[target]
@@ -50,4 +41,3 @@ class PermutationImportance(FeatureImportance):
         model.fit(X, y)
         imp = importances(model, X, y)
         plot_importances(imp).view()
-
