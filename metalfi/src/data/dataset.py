@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 
 from sklearn import preprocessing
 
+from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
 from metalfi.src.data.meta.importance.permutation import PermutationImportance
 
 
@@ -38,3 +39,6 @@ class Dataset:
     def calculateMetaFeatureVectors(self):
         perm = PermutationImportance(self)
         perm.calculateScores()
+
+        dropCol = DropColumnImportance(self)
+        dropCol.calculateScores()
