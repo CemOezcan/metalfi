@@ -26,6 +26,8 @@ class Memory:
         data_frame, preprocessed = Memory.load("titanic.csv")
 
         if not preprocessed:
+            data_frame = data_frame.drop("Ticket", axis=1)
+
             data_frame["Sex"].replace({"male": 1, "female": 0}, inplace=True)
 
             data_frame["Name"] = [x.split(", ")[1] for x in data_frame["Name"]]
@@ -39,13 +41,10 @@ class Memory:
             data_frame["Embarked"] = [0 if (str(x) == "nan") else x for x in data_frame["Embarked"]]
             data_frame["Embarked"].replace({'C': 1, 'Q': 2, 'S': 3}, inplace=True)
 
-            avg_age = int(data_frame['Age'].mean())
-            data_frame["Embarked"] = [avg_age if (str(x) == "nan") else x for x in data_frame["Embarked"]]
+            avg_age = int(data_frame["Age"].mean())
+            data_frame["Age"] = [avg_age if (str(x) == "nan") else x for x in data_frame["Age"]]
 
-            data_frame = data_frame.drop("Ticket", axis=1)
-
-            data_frame.to_csv(Memory.getPath() / "preprocessed/pptitanic.csv")
-
+            data_frame.to_csv(Memory.getPath() / "preprocessed/pptitanic.csv", index=None, header=True)
         return data_frame, "Survived"
 
     @staticmethod

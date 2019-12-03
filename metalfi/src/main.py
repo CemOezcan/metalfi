@@ -7,7 +7,9 @@ class Main(object):
     @staticmethod
     def main():
         data_frame, target = Memory.loadTitanic()
-        Dataset(data_frame, target)
+        data = Dataset(data_frame, target)
+
+        data.calculateMetaFeatureVectors()
 
 
 if __name__ == '__main__':
