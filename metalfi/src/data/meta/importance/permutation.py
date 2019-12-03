@@ -16,7 +16,7 @@ class PermutationImportance(FeatureImportance):
 
         target = self._dataset.getTarget()
 
-        #TODO: Calc. importances for feature subsets that are multicolinear
+        #TODO: Calc. importances for feature subsets that are multicollinear
         self.cvPermutationImportance(reg, target)
         self.permutationImportance(reg, target)
 
