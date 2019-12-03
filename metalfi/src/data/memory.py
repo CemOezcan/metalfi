@@ -46,14 +46,11 @@ class Memory:
 
             data_frame.to_csv(Memory.getPath() / "preprocessed/pptitanic.csv")
 
-        data_frame = Memory.scale(data_frame)
-
         return data_frame, "Survived"
 
     @staticmethod
     def loadCancer():
         data_frame, preprocessed = Memory.load("cancer.csv")
-        data_frame = Memory.scale(data_frame)
 
         return data_frame, "MEDV"
 
@@ -80,13 +77,3 @@ class Memory:
     def getPath():
         path = Path(__file__).parents[2] / "data"
         return path
-
-    @staticmethod
-    def scale(data_frame):
-        x = data_frame.values
-        min_max_scaler = preprocessing.MinMaxScaler()
-        x_scaled = min_max_scaler.fit_transform(x)
-        data_frame = pd.DataFrame(x_scaled, columns=data_frame.columns)
-
-        return data_frame
-
