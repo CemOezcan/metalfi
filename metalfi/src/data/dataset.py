@@ -5,6 +5,7 @@ from sklearn import preprocessing
 
 from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
 from metalfi.src.data.meta.importance.permutation import PermutationImportance
+from metalfi.src.data.meta.importance.shap import ShapImportance
 
 
 class Dataset:
@@ -37,8 +38,11 @@ class Dataset:
         self.__data_frame = pd.DataFrame(values_scaled, columns=self.__data_frame.columns)
 
     def calculateMetaFeatureVectors(self):
-        perm = PermutationImportance(self)
-        perm.calculateScores()
+        #perm = PermutationImportance(self)
+        #perm.calculateScores()
 
-        dropCol = DropColumnImportance(self)
-        dropCol.calculateScores()
+        #dropCol = DropColumnImportance(self)
+        #dropCol.calculateScores()
+
+        shap = ShapImportance(self)
+        shap.calculateScores()
