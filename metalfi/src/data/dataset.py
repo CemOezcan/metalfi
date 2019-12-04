@@ -5,6 +5,7 @@ from sklearn import preprocessing
 
 from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
 from metalfi.src.data.meta.importance.permutation import PermutationImportance
+from metalfi.src.data.meta.importance.shap import ShapImportance
 
 
 class Dataset:
@@ -42,3 +43,6 @@ class Dataset:
 
         dropCol = DropColumnImportance(self)
         dropCol.calculateScores()
+
+        shap = ShapImportance(self)
+        shap.calculateScores()

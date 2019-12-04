@@ -1,7 +1,5 @@
 from metalfi.src.data.meta.importance.featureimportance import FeatureImportance
 from rfpimp import *
-from sklearn import linear_model
-from sklearn.svm import SVC
 
 
 class DropColumnImportance(FeatureImportance):
@@ -10,17 +8,13 @@ class DropColumnImportance(FeatureImportance):
         super(DropColumnImportance, self).__init__(dataset)
 
     def calculateScores(self):
-        reg = linear_model.LinearRegression()
-        rf = RandomForestClassifier(random_state=101)
-        svc = SVC(gamma='auto')
+        models = self._linear_models + self._kernel_models
 
-        target = self._dataset.getTarget()
+        for model in models:
+            self.dropcolImportance(model, self._target)
 
-        self.dropcolImportance(reg, target)
-
-        self.oobDropcolImportance(rf, target)
-
-        self.dropcolImportance(svc, target)
+        for model in self._tree_models:
+            self.oobDropcolImportance(model, self._target)
 
     def dropcolImportance(self, model, target):
         X = self._data_frame.drop(target, axis=1)
