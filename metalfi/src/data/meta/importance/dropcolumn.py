@@ -1,6 +1,7 @@
 from metalfi.src.data.meta.importance.featureimportance import FeatureImportance
 from rfpimp import *
 
+
 class DropColumnImportance(FeatureImportance):
 
     def __init__(self, dataset):

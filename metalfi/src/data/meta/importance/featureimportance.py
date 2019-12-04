@@ -7,7 +7,7 @@ from sklearn.svm import SVC
 
 class FeatureImportance(ABC):
 
-    #TODO: Score metric
+    #TODO: Score metric & more models
     def __init__(self, dataset):
         self._dataset = dataset
         self._data_frame = dataset.getDataFrame()
@@ -29,5 +29,6 @@ class FeatureImportance(ABC):
 
     @abstractmethod
     def calculateScores(self):
+        #TODO: Parallelize
         pass
 
