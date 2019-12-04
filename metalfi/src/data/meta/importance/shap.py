@@ -1,7 +1,4 @@
 import shap
-from sklearn import linear_model
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
 
 from metalfi.src.data.meta.importance.featureimportance import FeatureImportance
 
@@ -12,18 +9,14 @@ class ShapImportance(FeatureImportance):
         super(ShapImportance, self).__init__(dataset)
 
     def calculateScores(self):
-        reg = linear_model.LinearRegression()
-        rf = RandomForestClassifier(random_state=101)
-        svc = SVC(gamma='auto')
+        for model in self._linear_models:
+            self.linearShap(model, self._target)
 
-        target = self._dataset.getTarget()
+        for model in self._tree_models:
+            self.treeShap(model, self._target)
 
-        self.linearShap(reg, target)
-
-        self.treeShap(rf, target)
-
-        self.kernelShap(svc, target)
-
+        for model in self._kernel_models:
+            self.kernelShap(model, self._target)
 
     def treeShap(self, model, target):
         X = self._data_frame.drop(target, axis=1)

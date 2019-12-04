@@ -1,7 +1,5 @@
 from metalfi.src.data.meta.importance.featureimportance import FeatureImportance
 from rfpimp import *
-from sklearn import linear_model
-from sklearn.svm import SVC
 from eli5.sklearn import PermutationImportance as eli5PI
 
 import eli5
@@ -13,24 +11,13 @@ class PermutationImportance(FeatureImportance):
         super(PermutationImportance, self).__init__(dataset)
 
     def calculateScores(self):
-        reg = linear_model.LinearRegression()
-        rf = RandomForestClassifier(random_state=101)
-        svc = SVC(gamma='auto')
-
-        target = self._dataset.getTarget()
-
         # TODO: Calc. importances for feature subsets that are multicollinear
-        self.cvPermutationImportance(reg, target)
-        self.permutationImportance(reg, target)
-        self.eli5PermutationImportance(reg, target)
+        models = self._tree_models + self._linear_models + self._kernel_models
 
-        self.cvPermutationImportance(rf, target)
-        self.permutationImportance(rf, target)
-        self.eli5PermutationImportance(rf, target)
-
-        self.cvPermutationImportance(svc, target)
-        self.permutationImportance(svc, target)
-        self.eli5PermutationImportance(svc, target)
+        for model in models:
+            self.cvPermutationImportance(model, self._target)
+            self.permutationImportance(model, self._target)
+            self.eli5PermutationImportance(model, self._target)
 
     def cvPermutationImportance(self, model, target):
         # TODO: Calc. importances on testset?
