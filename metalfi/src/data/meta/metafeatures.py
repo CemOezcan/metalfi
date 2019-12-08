@@ -8,44 +8,66 @@ class MetaFeatures:
         self.__meta_feature_vector = list()
         self.__feature_meta_features = list()
         self.__data_meta_features = list()
+        self.__data_meta_feature_names = list()
+        self.__feature_meta_feature_names = list()
 
     def calculateMetaFeatures(self):
-        data = self.__dataset.getDataFrame()
-        target = self.__dataset.getTarget()
-
-        fmf = self.featureMetaFeatures(data, target)
-        #dmf = self.dataMetaFeatures(data, target)
+        self.featureMetaFeatures()
+        self.dataMetaFeatures()
 
     def run(self, X, y, summary, features):
         mfe = MFE(summary=summary,
                   groups=["general", "statistical", "info-theory"],
                   features=features)
-
-        mfe.fit(X.values, y.values)
+        mfe.fit(X, y)
         vector = mfe.extract()
 
         return vector
 
-    def dataMetaFeatures(self, data_frame, target):
-        # TODO: apply on raw data?
-        pass
+    def dataMetaFeatures(self):
+        data_frame = self.__dataset.getDataFrame()
+        target = self.__dataset.getTarget()
 
-    def featureMetaFeatures(self, data_frame, target):
+        X = data_frame.drop(target, axis=1)
         y = data_frame[target]
+
+        names_1, dmf_1 = self.run(X.values, y.values,
+                                  ["min", "median", "max", "sd", "kurtosis", "skewness"],
+                                  ["attr_to_inst", "freq_class", "inst_to_attr", "nr_attr", "nr_class", "nr_inst",
+                                   "gravity", "cor", "cov", "nr_disc", "eigenvalues", "nr_cor_attr", "w_lambda",
+                                   "class_ent", "eq_num_attr", "ns_ratio", "h_mean", "iq_range", "kurtosis", "mad",
+                                   "max", "mean", "median", "min", "range", "sd", "skewness", "sparsity", "t_mean",
+                                   "var", "attr_ent", "class_conc", "joint_ent", "mut_inf", "nr_norm", "nr_outliers"])
+
+        self.__data_meta_feature_names = names_1
+        self.__data_meta_features = dmf_1
+
+    def featureMetaFeatures(self):
+        data_frame = self.__dataset.getDataFrame()
+        target = self.__dataset.getTarget()
+
+        y = data_frame[target]
+        data_frame.drop(target, axis=1)
+
+        columns = list()
 
         for feature in data_frame.columns:
             X = data_frame[feature]
 
-            vector = self.run(X, y, None,
-                              ["h_mean", "iq_range", "kurtosis", "mad", "max", "mean", "median", "min", "nr_norm",
-                               "nr_outliers", "range", "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent",
-                               "class_conc", "joint_ent", "mut_inf"])
+            columns, values = self.run(X.values, y.values, None,
+                                       ["h_mean", "iq_range", "kurtosis", "mad", "max", "mean", "median", "min",
+                                        "range", "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent",
+                                        "class_conc", "joint_ent", "mut_inf"])
             # TODO: implement is_norm (or use nr_norm as is_norm), nr_outliers and accumulate for dmf
-            # TODO: calc. landmarking and append
-            print(target)
-            print(vector)
-            self.__feature_meta_features.append(vector)
-            # TODO: return dataframe
+            # TODO: calc. landmarking and other mfs, that depend on other features
+            self.__feature_meta_features.append(self.toFeatureVector(values))
 
-    def toDataFrame(self, vector):
-        return 5
+        self.__feature_meta_feature_names = columns
+
+    def toFeatureVector(self, double_list):
+        vector = list()
+
+        for x in double_list:
+            vector.append(x[0])
+
+        return vector
