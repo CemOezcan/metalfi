@@ -16,7 +16,7 @@ class PermutationImportance(FeatureImportance):
 
         for model in models:
             self.cvPermutationImportance(model, self._target)
-            self.permutationImportance(model, self._target)
+            self._feature_importances.append(self.permutationImportance(model, self._target))
             self.eli5PermutationImportance(model, self._target)
 
     def cvPermutationImportance(self, model, target):
@@ -34,6 +34,7 @@ class PermutationImportance(FeatureImportance):
         model.fit(X, y)
         imp = importances(model, X, y)
         plot_importances(imp).view()
+        return imp
 
     def eli5PermutationImportance(self, model, target):
         X = self._data_frame.drop(target, axis=1)

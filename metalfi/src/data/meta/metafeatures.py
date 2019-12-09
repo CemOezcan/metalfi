@@ -1,11 +1,18 @@
+import sys
+
+from pandas import DataFrame, Series
 from pymfe.mfe import MFE
+
+from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
+from metalfi.src.data.meta.importance.permutation import PermutationImportance
+from metalfi.src.data.meta.importance.shap import ShapImportance
 
 
 class MetaFeatures:
 
     def __init__(self, dataset):
         self.__dataset = dataset
-        self.__meta_feature_vector = list()
+        self.__meta_data = DataFrame()
         self.__feature_meta_features = list()
         self.__data_meta_features = list()
         self.__data_meta_feature_names = list()
@@ -14,6 +21,7 @@ class MetaFeatures:
     def calculateMetaFeatures(self):
         self.featureMetaFeatures()
         self.dataMetaFeatures()
+        self.createMetaData()
 
     def run(self, X, y, summary, features):
         mfe = MFE(summary=summary,
@@ -71,3 +79,29 @@ class MetaFeatures:
             vector.append(x[0])
 
         return vector
+
+    def createMetaData(self):
+        # TODO: Implement other target variables
+        # dropCol = DropColumnImportance(self.__dataset)
+        # dropCol.calculateScores()
+
+        # shap = ShapImportance(self.__dataset)
+        # shap.calculateScores()
+
+        perm = PermutationImportance(self.__dataset)
+        perm.calculateScores()
+        imp = perm.getFeatureImportances()
+
+        self.__meta_data = DataFrame(columns=self.__feature_meta_feature_names,
+                                     data=self.__feature_meta_features,
+                                     index=self.__dataset.getDataFrame().columns)
+
+        for i in range(0, len(self.__data_meta_feature_names)):
+            self.__meta_data[self.__data_meta_feature_names[i]] = self.__data_meta_features[i]
+
+        self.__meta_data = self.__meta_data.drop(self.__dataset.getTarget())
+
+        for i in range(0, len(imp)):
+            self.__meta_data.insert(len(self.__meta_data.columns), perm.getModelNames()[i] + "_perm", 0.0, True)
+            for x in imp[i].index:
+                self.__meta_data[perm.getModelNames()[i] + "_perm"][x] = imp[i].loc[x].iat[0]
