@@ -86,9 +86,7 @@ class MetaFeatures:
     def createMetaData(self):
         # TODO: Implement other target variables
         dropCol = DropColumnImportance(self.__dataset)
-
         shap = ShapImportance(self.__dataset)
-
         perm = PermutationImportance(self.__dataset)
 
         self.__meta_data = DataFrame(columns=self.__feature_meta_feature_names,
@@ -101,9 +99,11 @@ class MetaFeatures:
         self.__meta_data = self.__meta_data.drop(self.__dataset.getTarget())
 
         self.addTarget(dropCol)
-        #self.addTarget(shap)
+        self.addTarget(shap)
         self.addTarget(perm)
-        pd.set_option('display.max_columns', 170)
+        #pd.set_option('display.max_columns', 170)
+        #print(self.__meta_data.head())
+
 
     def addTarget(self, target):
         target.calculateScores()
