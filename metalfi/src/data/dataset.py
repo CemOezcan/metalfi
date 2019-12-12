@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from pandas import DataFrame
 
 from sklearn import preprocessing
 
@@ -15,7 +16,7 @@ class Dataset:
         self.__data_frame = data_frame
         self.__target = target
         self.scale()
-        self.__meta_feature_vectors = list()
+        self.__meta_data = DataFrame()
         self.__correlation_matrix = self.__data_frame.corr()
         plt.matshow(self.__correlation_matrix)
         plt.show()
@@ -50,3 +51,5 @@ class Dataset:
 
         mf = MetaFeatures(self)
         mf.calculateMetaFeatures()
+        self.__meta_data = mf.getMetaData()
+

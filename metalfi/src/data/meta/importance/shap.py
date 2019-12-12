@@ -7,6 +7,7 @@ class ShapImportance(FeatureImportance):
 
     def __init__(self, dataset):
         super(ShapImportance, self).__init__(dataset)
+        self.name = "_shap"
 
     def calculateScores(self):
         for model in self._linear_models:
@@ -47,6 +48,6 @@ class ShapImportance(FeatureImportance):
         y = self._data_frame[target]
 
         model.fit(X, y)
-        X_summary = shap.kmeans(X, 10)
+        X_summary = shap.kmeans(X, 5)
         imp = shap.KernelExplainer(model.predict, X_summary).shap_values(X)
         shap.summary_plot(imp, X, plot_type="violin")

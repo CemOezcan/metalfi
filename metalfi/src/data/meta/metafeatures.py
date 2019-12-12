@@ -1,5 +1,5 @@
 import sys
-
+import pandas as pd
 from pandas import DataFrame, Series
 from pymfe.mfe import MFE
 
@@ -17,6 +17,9 @@ class MetaFeatures:
         self.__data_meta_features = list()
         self.__data_meta_feature_names = list()
         self.__feature_meta_feature_names = list()
+
+    def getMetaData(self):
+        return self.__meta_data
 
     def calculateMetaFeatures(self):
         self.featureMetaFeatures()
@@ -82,15 +85,11 @@ class MetaFeatures:
 
     def createMetaData(self):
         # TODO: Implement other target variables
-        # dropCol = DropColumnImportance(self.__dataset)
-        # dropCol.calculateScores()
+        dropCol = DropColumnImportance(self.__dataset)
 
-        # shap = ShapImportance(self.__dataset)
-        # shap.calculateScores()
+        shap = ShapImportance(self.__dataset)
 
         perm = PermutationImportance(self.__dataset)
-        perm.calculateScores()
-        imp = perm.getFeatureImportances()
 
         self.__meta_data = DataFrame(columns=self.__feature_meta_feature_names,
                                      data=self.__feature_meta_features,
@@ -101,7 +100,17 @@ class MetaFeatures:
 
         self.__meta_data = self.__meta_data.drop(self.__dataset.getTarget())
 
+        self.addTarget(dropCol)
+        #self.addTarget(shap)
+        self.addTarget(perm)
+        pd.set_option('display.max_columns', 170)
+
+    def addTarget(self, target):
+        target.calculateScores()
+        imp = target.getFeatureImportances()
+        name = target.getName()
+
         for i in range(0, len(imp)):
-            self.__meta_data.insert(len(self.__meta_data.columns), perm.getModelNames()[i] + "_perm", 0.0, True)
+            self.__meta_data.insert(len(self.__meta_data.columns), target.getModelNames()[i] + name, 0.0, True)
             for x in imp[i].index:
-                self.__meta_data[perm.getModelNames()[i] + "_perm"][x] = imp[i].loc[x].iat[0]
+                self.__meta_data.at[x, target.getModelNames()[i] + name] = imp[i].loc[x].iat[0]

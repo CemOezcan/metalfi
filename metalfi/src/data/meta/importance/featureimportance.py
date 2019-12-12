@@ -25,12 +25,16 @@ class FeatureImportance(ABC):
         self._feature_importances = list()
 
         self.__model_names = ["reg", "rf", "svc"]
+        self._name = ""
 
     def getModelNames(self):
         return self.__model_names
 
     def getFeatureImportances(self):
         return self._feature_importances
+
+    def getName(self):
+        return self._name
 
     @abstractmethod
     def calculateScores(self):

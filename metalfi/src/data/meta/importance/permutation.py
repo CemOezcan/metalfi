@@ -9,15 +9,16 @@ class PermutationImportance(FeatureImportance):
 
     def __init__(self, dataset):
         super(PermutationImportance, self).__init__(dataset)
+        self.name = "_perm"
 
     def calculateScores(self):
         # TODO: Calc. importances for feature subsets that are multicollinear
         models = self._tree_models + self._linear_models + self._kernel_models
 
         for model in models:
-            self.cvPermutationImportance(model, self._target)
+            # self.cvPermutationImportance(model, self._target)
             self._feature_importances.append(self.permutationImportance(model, self._target))
-            self.eli5PermutationImportance(model, self._target)
+            # self.eli5PermutationImportance(model, self._target)
 
     def cvPermutationImportance(self, model, target):
         # TODO: Calc. importances on testset?
