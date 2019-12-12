@@ -101,9 +101,8 @@ class MetaFeatures:
         self.addTarget(dropCol)
         self.addTarget(shap)
         self.addTarget(perm)
-        #pd.set_option('display.max_columns', 170)
-        #print(self.__meta_data.head())
-
+        # pd.set_option('display.max_columns', 170)
+        # print(self.__meta_data.head())
 
     def addTarget(self, target):
         target.calculateScores()
