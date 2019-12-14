@@ -18,8 +18,6 @@ class Dataset:
         self.scale()
         self.__meta_data = DataFrame()
         self.__correlation_matrix = self.__data_frame.corr()
-        plt.matshow(self.__correlation_matrix)
-        plt.show()
 
     def getCorrelationMatrix(self):
         return self.__correlation_matrix

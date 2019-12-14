@@ -1,3 +1,4 @@
+import statistics
 import sys
 import pandas as pd
 from pandas import DataFrame, Series
@@ -36,6 +37,7 @@ class MetaFeatures:
         return vector
 
     def dataMetaFeatures(self):
+        # TODO: Drop target
         data_frame = self.__dataset.getDataFrame()
         target = self.__dataset.getTarget()
 
@@ -43,7 +45,7 @@ class MetaFeatures:
         y = data_frame[target]
 
         names_1, dmf_1 = self.run(X.values, y.values,
-                                  ["min", "median", "max", "sd", "kurtosis", "skewness"],
+                                  ["min", "median", "max", "sd", "kurtosis", "skewness", "mean"],
                                   ["attr_to_inst", "freq_class", "inst_to_attr", "nr_attr", "nr_class", "nr_inst",
                                    "gravity", "cor", "cov", "nr_disc", "eigenvalues", "nr_cor_attr", "w_lambda",
                                    "class_ent", "eq_num_attr", "ns_ratio", "h_mean", "iq_range", "kurtosis", "mad",
@@ -75,6 +77,28 @@ class MetaFeatures:
 
         self.__feature_meta_feature_names = columns
 
+        cov = data_frame.cov()
+        p_cor = data_frame.corr("pearson")
+        s_cor = data_frame.corr("spearman")
+
+        self.correlationFeatureMetaFeatures(cov, "_cov")
+        self.correlationFeatureMetaFeatures(p_cor, "_p_cor")
+        self.correlationFeatureMetaFeatures(s_cor, "_s_cor")
+
+    def correlationFeatureMetaFeatures(self, data, name):
+        for i in range(0, len(data.columns)):
+            values = list()
+            for j in range(0, len(data.columns)):
+                if not (i == j):
+                    values.append(abs(data.iloc[i].iloc[j]))
+
+            self.__feature_meta_features[i] += [statistics.mean(values), statistics.median(values),
+                                                statistics.stdev(values), statistics.variance(values),
+                                                max(values), min(values)]
+
+        self.__feature_meta_feature_names += ["mean" + name, "median" + name, "sd" + name, "var" + name,
+                                              "max" + name, "min" + name]
+
     def toFeatureVector(self, double_list):
         vector = list()
 
@@ -101,8 +125,8 @@ class MetaFeatures:
         self.addTarget(dropCol)
         self.addTarget(shap)
         self.addTarget(perm)
-        # pd.set_option('display.max_columns', 170)
-        # print(self.__meta_data.head())
+        # Kpd.set_option('display.max_columns', 210)
+        # print(self.__meta_data)
 
     def addTarget(self, target):
         target.calculateScores()
