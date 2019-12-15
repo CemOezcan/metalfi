@@ -15,7 +15,7 @@ class Dataset:
     def __init__(self, data_frame, target):
         self.__data_frame = data_frame
         self.__target = target
-        self.scale()
+        #self.scale()
         self.__meta_data = DataFrame()
         self.__correlation_matrix = self.__data_frame.corr()
 

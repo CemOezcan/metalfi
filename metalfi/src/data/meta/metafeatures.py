@@ -70,7 +70,7 @@ class MetaFeatures:
             columns, values = self.run(X.values, y.values, None,
                                        ["h_mean", "iq_range", "kurtosis", "mad", "max", "mean", "median", "min",
                                         "range", "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent",
-                                        "class_conc", "joint_ent", "mut_inf"])
+                                        "joint_ent", "mut_inf"])
             # TODO: implement is_norm (or use nr_norm as is_norm), nr_outliers and accumulate for dmf
             # TODO: calc. landmarking and other mfs, that depend on other features
             self.__feature_meta_features.append(self.toFeatureVector(values))
@@ -85,12 +85,12 @@ class MetaFeatures:
         self.correlationFeatureMetaFeatures(p_cor, "_p_cor")
         self.correlationFeatureMetaFeatures(s_cor, "_s_cor")
 
-    def correlationFeatureMetaFeatures(self, data, name):
-        for i in range(0, len(data.columns)):
+    def correlationFeatureMetaFeatures(self, matrix, name):
+        for i in range(0, len(matrix.columns)):
             values = list()
-            for j in range(0, len(data.columns)):
+            for j in range(0, len(matrix.columns)):
                 if not (i == j):
-                    values.append(abs(data.iloc[i].iloc[j]))
+                    values.append(abs(matrix.iloc[i].iloc[j]))
 
             self.__feature_meta_features[i] += [statistics.mean(values), statistics.median(values),
                                                 statistics.stdev(values), statistics.variance(values),
@@ -125,7 +125,7 @@ class MetaFeatures:
         self.addTarget(dropCol)
         self.addTarget(shap)
         self.addTarget(perm)
-        # Kpd.set_option('display.max_columns', 210)
+        # pd.set_option('display.max_columns', 210)
         # print(self.__meta_data)
 
     def addTarget(self, target):
