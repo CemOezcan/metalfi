@@ -15,5 +15,6 @@ class Main(object):
         data.calculateMetaFeatureVectors()
         data_2.calculateMetaFeatureVectors()
 
+
 if __name__ == '__main__':
     Main().main()
