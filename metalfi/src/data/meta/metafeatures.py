@@ -37,7 +37,6 @@ class MetaFeatures:
         return vector
 
     def dataMetaFeatures(self):
-        # TODO: Drop target
         data_frame = self.__dataset.getDataFrame()
         target = self.__dataset.getTarget()
 
@@ -77,6 +76,8 @@ class MetaFeatures:
 
         self.__feature_meta_feature_names = columns
 
+        self.filterScores(data_frame, target)
+        # TODO: Drop target
         cov = data_frame.cov()
         p_cor = data_frame.corr("pearson")
         s_cor = data_frame.corr("spearman")
@@ -98,6 +99,13 @@ class MetaFeatures:
 
         self.__feature_meta_feature_names += ["mean" + name, "median" + name, "sd" + name, "var" + name,
                                               "max" + name, "min" + name]
+
+    def filterScores(self, data, target):
+        # TODO: Implement more Filter scores
+        for feature in data.drop(target, axis=1).columns:
+            self.__feature_meta_features[data.columns.get_loc(feature)].append(data[feature].corr(data[target]))
+
+        self.__feature_meta_feature_names.append("target_corr")
 
     def toFeatureVector(self, double_list):
         vector = list()
@@ -125,8 +133,8 @@ class MetaFeatures:
         self.addTarget(dropCol)
         self.addTarget(shap)
         self.addTarget(perm)
-        # pd.set_option('display.max_columns', 210)
-        # print(self.__meta_data)
+        pd.set_option('display.max_columns', 220)
+        print(self.__meta_data)
 
     def addTarget(self, target):
         target.calculateScores()
