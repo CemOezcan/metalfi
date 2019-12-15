@@ -71,7 +71,7 @@ class MetaFeatures:
                                         "range", "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent",
                                         "joint_ent", "mut_inf"])
             # TODO: implement is_norm (or use nr_norm as is_norm), nr_outliers and accumulate for dmf
-            # TODO: calc. landmarking and other mfs, that depend on other features
+            # TODO: implement "is_categorical" and "is_continuous"
             self.__feature_meta_features.append(self.toFeatureVector(values))
 
         self.__feature_meta_feature_names = columns
@@ -133,8 +133,8 @@ class MetaFeatures:
         self.addTarget(dropCol)
         self.addTarget(shap)
         self.addTarget(perm)
-        pd.set_option('display.max_columns', 220)
-        print(self.__meta_data)
+        # pd.set_option('display.max_columns', 220)
+        # print(self.__meta_data)
 
     def addTarget(self, target):
         target.calculateScores()
