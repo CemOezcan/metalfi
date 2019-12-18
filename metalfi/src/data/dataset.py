@@ -37,16 +37,13 @@ class Dataset:
 
         self.__data_frame = pd.DataFrame(values_scaled, columns=self.__data_frame.columns)
 
-    def calculateMetaFeatureVectors(self):
-        #perm = PermutationImportance(self)
-        #perm.calculateScores()
+    def trainingMetaFeatureVectors(self):
+        mf = MetaFeatures(self)
+        mf.calculateMetaFeatures()
+        mf.createTarget()
+        self.__meta_data = mf.getMetaData()
 
-        #dropCol = DropColumnImportance(self)
-        #dropCol.calculateScores()
-
-        #shap = ShapImportance(self)
-        #shap.calculateScores()
-
+    def testMetaFeatureVectors(self):
         mf = MetaFeatures(self)
         mf.calculateMetaFeatures()
         self.__meta_data = mf.getMetaData()

@@ -12,8 +12,8 @@ class Main(object):
         data_frame_2, target_2 = Memory.loadCancer()
         data_2 = Dataset(data_frame_2, target_2)
 
-        data.calculateMetaFeatureVectors()
-        data_2.calculateMetaFeatureVectors()
+        data.trainingMetaFeatureVectors()
+        data_2.trainingMetaFeatureVectors()
 
 
 if __name__ == '__main__':
