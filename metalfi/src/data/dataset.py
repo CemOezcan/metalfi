@@ -22,6 +22,9 @@ class Dataset:
     def getCorrelationMatrix(self):
         return self.__correlation_matrix
 
+    def getMetaData(self):
+        return self.__meta_data
+
     def getDataFrame(self):
         return self.__data_frame
 
@@ -37,6 +40,7 @@ class Dataset:
 
         self.__data_frame = pd.DataFrame(values_scaled, columns=self.__data_frame.columns)
 
+    # TODO: Rename
     def trainingMetaFeatureVectors(self):
         mf = MetaFeatures(self)
         mf.calculateMetaFeatures()
