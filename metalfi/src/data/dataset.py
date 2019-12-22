@@ -15,15 +15,6 @@ class Dataset:
     def __init__(self, data_frame, target):
         self.__data_frame = data_frame
         self.__target = target
-        #self.scale()
-        self.__meta_data = DataFrame()
-        self.__correlation_matrix = self.__data_frame.corr()
-
-    def getCorrelationMatrix(self):
-        return self.__correlation_matrix
-
-    def getMetaData(self):
-        return self.__meta_data
 
     def getDataFrame(self):
         return self.__data_frame
@@ -44,11 +35,13 @@ class Dataset:
     def trainingMetaFeatureVectors(self):
         mf = MetaFeatures(self)
         mf.calculateMetaFeatures()
-        mf.createTarget()
-        self.__meta_data = mf.getMetaData()
+        targets = mf.createTarget()
+        data = mf.getMetaData()
+
+        return data, targets
 
     def testMetaFeatureVectors(self):
         mf = MetaFeatures(self)
         mf.calculateMetaFeatures()
-        self.__meta_data = mf.getMetaData()
 
+        return mf.getMetaData()

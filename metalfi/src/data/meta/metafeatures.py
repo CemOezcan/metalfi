@@ -133,16 +133,18 @@ class MetaFeatures:
         shap = ShapImportance(self.__dataset)
         perm = PermutationImportance(self.__dataset)
 
-        self.addTarget(dropCol)
-        self.addTarget(shap)
-        self.addTarget(perm)
+        return self.addTarget(dropCol) + self.addTarget(shap) + self.addTarget(perm)
 
     def addTarget(self, target):
         target.calculateScores()
         imp = target.getFeatureImportances()
         name = target.getName()
+        target_names = list()
 
         for i in range(0, len(imp)):
             self.__meta_data.insert(len(self.__meta_data.columns), target.getModelNames()[i] + name, 0.0, True)
+            target_names.append(target.getModelNames()[i] + name)
             for x in imp[i].index:
                 self.__meta_data.at[x, target.getModelNames()[i] + name] = imp[i].loc[x].iat[0]
+
+        return target_names
