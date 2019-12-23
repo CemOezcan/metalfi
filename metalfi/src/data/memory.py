@@ -1,7 +1,9 @@
 from pathlib import Path
 
+import numpy as np
+from pandas import DataFrame
 from sklearn import preprocessing
-from sklearn.datasets import load_wine, load_breast_cancer
+from sklearn.datasets import load_wine, load_breast_cancer, load_iris
 
 import pandas as pd
 
@@ -32,7 +34,8 @@ class Memory:
 
             data_frame["Name"] = [x.split(", ")[1] for x in data_frame["Name"]]
             data_frame["Name"] = [x.split(' ')[0] for x in data_frame["Name"]]
-            data_frame["Name"] = data_frame["Name"].apply(lambda x: 0 if (x == "Mrs." or x == "Ms.") else (1 if x == "Mr." else 2))
+            data_frame["Name"] = data_frame["Name"].apply(
+                lambda x: 0 if (x == "Mrs." or x == "Ms.") else (1 if x == "Mr." else 2))
             data_frame = data_frame.rename(columns={"Name": "Title"})
 
             data_frame["Cabin"] = [0 if (str(x) == "nan") else x[0] for x in data_frame["Cabin"]]
@@ -45,17 +48,29 @@ class Memory:
             data_frame["Age"] = [avg_age if (str(x) == "nan") else x for x in data_frame["Age"]]
 
             data_frame.to_csv(Memory.getPath() / "preprocessed/pptitanic.csv", index=None, header=True)
-        return data_frame, "Survived"
+        return data_frame, "Survived", ""
 
     @staticmethod
     def loadCancer():
         data_frame, preprocessed = Memory.load("cancer.csv")
 
-        return data_frame, "MEDV"
+        return data_frame, "MEDV", ""
 
     @staticmethod
     def loadWine():
-        return
+        wine = load_wine()
+        data_frame = DataFrame(data=np.c_[wine['data'], wine['target']], columns=wine['feature_names'] + ['target'])
+        print(data_frame.head)
+
+        return data_frame, "target", ""
+
+    @staticmethod
+    def loadIris():
+        iris = load_iris()
+        data_frame = DataFrame(data=np.c_[iris['data'], iris['target']], columns=iris['feature_names'] + ['target'])
+        print(data_frame.head)
+
+        return data_frame, "target", "iris"
 
     def storePreprocessed(self, data):
         return
