@@ -48,13 +48,14 @@ class Memory:
             data_frame["Age"] = [avg_age if (str(x) == "nan") else x for x in data_frame["Age"]]
 
             data_frame.to_csv(Memory.getPath() / "preprocessed/pptitanic.csv", index=None, header=True)
-        return data_frame, "Survived", ""
+
+        return data_frame, "Survived"
 
     @staticmethod
     def loadCancer():
         data_frame, preprocessed = Memory.load("cancer.csv")
 
-        return data_frame, "MEDV", ""
+        return data_frame, "MEDV"
 
     @staticmethod
     def loadWine():
@@ -62,7 +63,7 @@ class Memory:
         data_frame = DataFrame(data=np.c_[wine['data'], wine['target']], columns=wine['feature_names'] + ['target'])
         print(data_frame.head)
 
-        return data_frame, "target", ""
+        return data_frame, "target"
 
     @staticmethod
     def loadIris():
@@ -70,7 +71,7 @@ class Memory:
         data_frame = DataFrame(data=np.c_[iris['data'], iris['target']], columns=iris['feature_names'] + ['target'])
         print(data_frame.head)
 
-        return data_frame, "target", "iris"
+        return data_frame, "target"
 
     def storePreprocessed(self, data):
         return
