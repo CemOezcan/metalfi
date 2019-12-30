@@ -3,9 +3,10 @@ from pathlib import Path
 import numpy as np
 from pandas import DataFrame
 from sklearn import preprocessing
-from sklearn.datasets import load_wine, load_breast_cancer, load_iris
+from sklearn.datasets import load_wine, load_breast_cancer, load_iris, load_boston
 
 import pandas as pd
+from sklearn.preprocessing import KBinsDiscretizer
 
 
 class Memory:
@@ -22,6 +23,16 @@ class Memory:
             data = pd.read_csv(path / ("raw/" + name)), False
 
         return data
+
+    @staticmethod
+    def loadBoston():
+        boston = load_boston()
+        data_frame = DataFrame(data=boston.data, columns=boston['feature_names'])
+
+        est = KBinsDiscretizer(n_bins=4, encode='ordinal')
+        data_frame["target"] = est.fit_transform(list(map(lambda x: [x], boston.target)))
+
+        return data_frame, "target"
 
     @staticmethod
     def loadTitanic():
@@ -49,19 +60,18 @@ class Memory:
 
             data_frame.to_csv(Memory.getPath() / "preprocessed/pptitanic.csv", index=None, header=True)
 
-        return data_frame, "Survived"
+        return data_frame.drop("PassengerId", axis=1), "Survived"
 
     @staticmethod
     def loadCancer():
         data_frame, preprocessed = Memory.load("cancer.csv")
 
-        return data_frame, "MEDV"
+        return data_frame.drop("Unnamed: 0", axis=1), "MEDV"
 
     @staticmethod
     def loadWine():
         wine = load_wine()
         data_frame = DataFrame(data=np.c_[wine['data'], wine['target']], columns=wine['feature_names'] + ['target'])
-        print(data_frame.head)
 
         return data_frame, "target"
 
@@ -69,7 +79,6 @@ class Memory:
     def loadIris():
         iris = load_iris()
         data_frame = DataFrame(data=np.c_[iris['data'], iris['target']], columns=iris['feature_names'] + ['target'])
-        print(data_frame.head)
 
         return data_frame, "target"
 

@@ -23,8 +23,7 @@ class ShapImportance(FeatureImportance):
             self._feature_importances.append(self.treeShap(model, X, y))
 
         for model in self._kernel_models:
-            return
-            #self.kernelShap(model, X, y)
+            self._feature_importances.append(self.kernelShap(model, X, y))
 
     def treeShap(self, model, X, y):
         model.fit(X, y)
@@ -43,7 +42,7 @@ class ShapImportance(FeatureImportance):
     def sampleShap(self, model, X, y):
         model.fit(X, y)
         imp = shap.SamplingExplainer(model.predict, X)
-        shap.summary_plot(imp, X, plot_type="bar")
+        #shap.summary_plot(imp, X, plot_type="bar")
 
         return self.createDataframe(imp, X)
 
