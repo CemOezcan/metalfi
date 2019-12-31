@@ -3,6 +3,8 @@ import sys
 import pandas as pd
 from pandas import DataFrame, Series
 from pymfe.mfe import MFE
+from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_selection import f_classif
 
 from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
 from metalfi.src.data.meta.importance.permutation import PermutationImportance
@@ -77,7 +79,7 @@ class MetaFeatures:
         self.__feature_meta_feature_names = columns
 
         self.filterScores(data_frame, target)
-        # TODO: Drop target
+        # TODO: Drop target?
         cov = data_frame.cov()
         p_cor = data_frame.corr("pearson")
         s_cor = data_frame.corr("spearman")
@@ -102,10 +104,13 @@ class MetaFeatures:
 
     def filterScores(self, data, target):
         # TODO: Implement more Filter scores
+        f_values, p_values = f_classif(data.drop(target, axis=1), data[target])
         for feature in data.drop(target, axis=1).columns:
             self.__feature_meta_features[data.columns.get_loc(feature)].append(data[feature].corr(data[target]))
+            self.__feature_meta_features[data.columns.get_loc(feature)].append(f_values[data.columns.get_loc(feature)])
 
         self.__feature_meta_feature_names.append("target_corr")
+        self.__feature_meta_feature_names.append("f_value")
 
     def toFeatureVector(self, double_list):
         vector = list()
@@ -130,10 +135,11 @@ class MetaFeatures:
 
     def createTarget(self):
         dropCol = DropColumnImportance(self.__dataset)
-        shap = ShapImportance(self.__dataset)
+        # shap = ShapImportance(self.__dataset)
         perm = PermutationImportance(self.__dataset)
 
-        return self.addTarget(dropCol) + self.addTarget(shap) + self.addTarget(perm)
+        # return self.addTarget(dropCol) + self.addTarget(shap) + self.addTarget(perm)
+        return self.addTarget(dropCol) + self.addTarget(perm)
 
     def addTarget(self, target):
         target.calculateScores()

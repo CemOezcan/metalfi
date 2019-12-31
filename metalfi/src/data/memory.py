@@ -58,9 +58,15 @@ class Memory:
             avg_age = int(data_frame["Age"].mean())
             data_frame["Age"] = [avg_age if (str(x) == "nan") else x for x in data_frame["Age"]]
 
+            data = {"Survived": data_frame["Survived"].values}
+            data_frame_2 = DataFrame(data, columns=["Survived"])
+            data_frame = data_frame.drop("Survived", axis=1)
+            data_frame = data_frame.assign(Survived=data_frame_2["Survived"])
+            data_frame = data_frame.drop("PassengerId", axis=1)
+
             data_frame.to_csv(Memory.getPath() / "preprocessed/pptitanic.csv", index=None, header=True)
 
-        return data_frame.drop("PassengerId", axis=1), "Survived"
+        return data_frame, "Survived"
 
     @staticmethod
     def loadCancer():
