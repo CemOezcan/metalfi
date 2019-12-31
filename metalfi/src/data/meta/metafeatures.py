@@ -4,7 +4,7 @@ import pandas as pd
 from pandas import DataFrame, Series
 from pymfe.mfe import MFE
 from sklearn.feature_extraction import DictVectorizer
-from sklearn.feature_selection import f_classif
+from sklearn.feature_selection import f_classif, mutual_info_classif
 
 from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
 from metalfi.src.data.meta.importance.permutation import PermutationImportance
@@ -105,12 +105,15 @@ class MetaFeatures:
     def filterScores(self, data, target):
         # TODO: Implement more Filter scores
         f_values, p_values = f_classif(data.drop(target, axis=1), data[target])
+        mut_info = mutual_info_classif(data.drop(target, axis=1), data[target])
         for feature in data.drop(target, axis=1).columns:
             self.__feature_meta_features[data.columns.get_loc(feature)].append(data[feature].corr(data[target]))
             self.__feature_meta_features[data.columns.get_loc(feature)].append(f_values[data.columns.get_loc(feature)])
+            self.__feature_meta_features[data.columns.get_loc(feature)].append(mut_info[data.columns.get_loc(feature)])
 
         self.__feature_meta_feature_names.append("target_corr")
         self.__feature_meta_feature_names.append("f_value")
+        self.__feature_meta_feature_names.append("mut_info")
 
     def toFeatureVector(self, double_list):
         vector = list()
