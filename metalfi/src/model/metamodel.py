@@ -10,7 +10,7 @@ from sklearn.feature_selection import RFECV, SelectFromModel, SelectKBest, chi2,
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC
+from sklearn.svm import SVC, LinearSVC
 
 from metalfi.src.data.metadataset import MetaDataset
 
@@ -84,10 +84,12 @@ class MetaModel:
                 model = SVC()
             elif target.startswith("log"):
                 model = LogisticRegression()
+            elif target.startswith("lin"):
+                model = LinearSVC()
             else:
-                model = LogisticRegression()
+                model = LinearRegression()
 
-            self.calculatePerformance(model, X_og, y_og, pred, act, 4)
+            self.calculatePerformance(model, X_og, y_og, pred, act, 3)
 
     def compareRankings(self, columns, prediction, actual):
         pred_data = {"target": prediction, "names": columns}
