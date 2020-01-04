@@ -1,8 +1,10 @@
 import statistics
-import sys
+import numpy as np
 import pandas as pd
 from pandas import DataFrame, Series
 from pymfe.mfe import MFE
+from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_selection import f_classif, mutual_info_classif, chi2
 
 from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
 from metalfi.src.data.meta.importance.permutation import PermutationImportance
@@ -77,14 +79,16 @@ class MetaFeatures:
         self.__feature_meta_feature_names = columns
 
         self.filterScores(data_frame, target)
-        # TODO: Drop target
+        # TODO: Drop target?
         cov = data_frame.cov()
         p_cor = data_frame.corr("pearson")
         s_cor = data_frame.corr("spearman")
+        k_cor = data_frame.corr("kendall")
 
         self.correlationFeatureMetaFeatures(cov, "_cov")
-        self.correlationFeatureMetaFeatures(p_cor, "_p_cor")
-        self.correlationFeatureMetaFeatures(s_cor, "_s_cor")
+        self.correlationFeatureMetaFeatures(p_cor, "_p_corr")
+        self.correlationFeatureMetaFeatures(s_cor, "_s_corr")
+        self.correlationFeatureMetaFeatures(k_cor, "_k_corr")
 
     def correlationFeatureMetaFeatures(self, matrix, name):
         for i in range(0, len(matrix.columns)):
@@ -95,17 +99,40 @@ class MetaFeatures:
 
             self.__feature_meta_features[i] += [statistics.mean(values), statistics.median(values),
                                                 statistics.stdev(values), statistics.variance(values),
-                                                max(values), min(values)]
+                                                max(values), min(values), np.percentile(values, 75),
+                                                sum(map(lambda x: x > 0.8, values)),
+                                                sum(map(lambda x: x > 0.8, values)) / len(values)]
 
-        self.__feature_meta_feature_names += ["mean" + name, "median" + name, "sd" + name, "var" + name,
-                                              "max" + name, "min" + name]
+        self.__feature_meta_feature_names += ["mean" + name, "median" + name, "sd" + name, "var" + name, "max" + name,
+                                              "min" + name, "quantile_0,75" + name, "high_corr" + name,
+                                              "high_corr_norm" + name]
 
     def filterScores(self, data, target):
         # TODO: Implement more Filter scores
-        for feature in data.drop(target, axis=1).columns:
-            self.__feature_meta_features[data.columns.get_loc(feature)].append(data[feature].corr(data[target]))
+        f_values, anova_p_values = f_classif(data.drop(target, axis=1), data[target])
+        mut_info = mutual_info_classif(data.drop(target, axis=1), data[target])
+        chi_2, chi_2_p_values = chi2(data.drop(target, axis=1), data[target])
 
-        self.__feature_meta_feature_names.append("target_corr")
+        for feature in data.drop(target, axis=1).columns:
+            loc = data.columns.get_loc(feature)
+
+            self.__feature_meta_features[loc].append(data[feature].corr(data[target], method="pearson"))
+            self.__feature_meta_features[loc].append(data[feature].corr(data[target], method="kendall"))
+            self.__feature_meta_features[loc].append(data[feature].corr(data[target], method="spearman"))
+            self.__feature_meta_features[loc].append(f_values[loc])
+            self.__feature_meta_features[loc].append(anova_p_values[loc])
+            self.__feature_meta_features[loc].append(mut_info[loc])
+            self.__feature_meta_features[loc].append(chi_2[loc])
+            self.__feature_meta_features[loc].append(chi_2_p_values[loc])
+
+        self.__feature_meta_feature_names.append("target_p_corr")
+        self.__feature_meta_feature_names.append("target_k_corr")
+        self.__feature_meta_feature_names.append("target_s_corr")
+        self.__feature_meta_feature_names.append("F_value")
+        self.__feature_meta_feature_names.append("anova_p_value")
+        self.__feature_meta_feature_names.append("mut_info")
+        self.__feature_meta_feature_names.append("chi_2")
+        self.__feature_meta_feature_names.append("chi_2_p_value")
 
     def toFeatureVector(self, double_list):
         vector = list()
@@ -117,10 +144,6 @@ class MetaFeatures:
 
     def createMetaData(self):
         # TODO: Implement other target variables
-        dropCol = DropColumnImportance(self.__dataset)
-        shap = ShapImportance(self.__dataset)
-        perm = PermutationImportance(self.__dataset)
-
         self.__meta_data = DataFrame(columns=self.__feature_meta_feature_names,
                                      data=self.__feature_meta_features,
                                      index=self.__dataset.getDataFrame().columns)
@@ -129,19 +152,26 @@ class MetaFeatures:
             self.__meta_data[self.__data_meta_feature_names[i]] = self.__data_meta_features[i]
 
         self.__meta_data = self.__meta_data.drop(self.__dataset.getTarget())
-
-        self.addTarget(dropCol)
-        self.addTarget(shap)
-        self.addTarget(perm)
         # pd.set_option('display.max_columns', 220)
         # print(self.__meta_data)
+
+    def createTarget(self):
+        dropCol = DropColumnImportance(self.__dataset)
+        shap = ShapImportance(self.__dataset)
+        perm = PermutationImportance(self.__dataset)
+
+        return self.addTarget(perm) + self.addTarget(dropCol) + self.addTarget(shap)
 
     def addTarget(self, target):
         target.calculateScores()
         imp = target.getFeatureImportances()
         name = target.getName()
+        target_names = list()
 
         for i in range(0, len(imp)):
             self.__meta_data.insert(len(self.__meta_data.columns), target.getModelNames()[i] + name, 0.0, True)
+            target_names.append(target.getModelNames()[i] + name)
             for x in imp[i].index:
                 self.__meta_data.at[x, target.getModelNames()[i] + name] = imp[i].loc[x].iat[0]
+
+        return target_names

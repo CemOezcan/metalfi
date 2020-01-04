@@ -1,19 +1,12 @@
-from metalfi.src.data.dataset import Dataset
-from metalfi.src.data.memory import Memory
+from metalfi.src.controller import Controller
 
 
 class Main(object):
 
     @staticmethod
     def main():
-        data_frame, target = Memory.loadTitanic()
-        data = Dataset(data_frame, target)
-
-        data_frame_2, target_2 = Memory.loadCancer()
-        data_2 = Dataset(data_frame_2, target_2)
-
-        data.calculateMetaFeatureVectors()
-        data_2.calculateMetaFeatureVectors()
+        c = Controller()
+        c.train_and_test()
 
 
 if __name__ == '__main__':

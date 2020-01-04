@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 
 from sklearn import linear_model
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC, LinearSVC
 
 
 class FeatureImportance(ABC):
@@ -15,16 +16,18 @@ class FeatureImportance(ABC):
 
         reg = linear_model.LinearRegression()
         rf = RandomForestClassifier(random_state=101)
-        svc = SVC(gamma='auto')
+        linSVC = LinearSVC()
+        svc = SVC(kernel="rbf")
+        log = LogisticRegression()
 
         self._linear_models = [reg]
         self._tree_models = [rf]
-        self._kernel_models = [svc]
+        self._kernel_models = [linSVC, svc, log]
 
         self._vif = list()
         self._feature_importances = list()
 
-        self.__model_names = ["reg", "rf", "svc"]
+        self.__model_names = ["reg", "rf", "linSVC", "svc", "log"]
         self._name = ""
 
     def getModelNames(self):

@@ -15,12 +15,6 @@ class Dataset:
     def __init__(self, data_frame, target):
         self.__data_frame = data_frame
         self.__target = target
-        #self.scale()
-        self.__meta_data = DataFrame()
-        self.__correlation_matrix = self.__data_frame.corr()
-
-    def getCorrelationMatrix(self):
-        return self.__correlation_matrix
 
     def getDataFrame(self):
         return self.__data_frame
@@ -37,17 +31,17 @@ class Dataset:
 
         self.__data_frame = pd.DataFrame(values_scaled, columns=self.__data_frame.columns)
 
-    def calculateMetaFeatureVectors(self):
-        #perm = PermutationImportance(self)
-        #perm.calculateScores()
-
-        #dropCol = DropColumnImportance(self)
-        #dropCol.calculateScores()
-
-        #shap = ShapImportance(self)
-        #shap.calculateScores()
-
+    # TODO: Rename
+    def trainingMetaFeatureVectors(self):
         mf = MetaFeatures(self)
         mf.calculateMetaFeatures()
-        self.__meta_data = mf.getMetaData()
+        targets = mf.createTarget()
+        data = mf.getMetaData()
 
+        return data, targets
+
+    def testMetaFeatureVectors(self):
+        mf = MetaFeatures(self)
+        mf.calculateMetaFeatures()
+
+        return mf.getMetaData()
