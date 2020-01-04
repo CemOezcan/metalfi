@@ -22,8 +22,8 @@ class ShapImportance(FeatureImportance):
         for model in self._tree_models:
             self._feature_importances.append(self.treeShap(model, X, y))
 
-        for model in self._kernel_models:
-            self._feature_importances.append(self.kernelShap(model, X, y))
+        #for model in self._kernel_models:
+         #   self._feature_importances.append(self.kernelShap(model, X, y))
 
     def treeShap(self, model, X, y):
         model.fit(X, y)

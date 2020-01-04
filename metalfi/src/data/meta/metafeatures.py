@@ -156,11 +156,11 @@ class MetaFeatures:
         # print(self.__meta_data)
 
     def createTarget(self):
-        #dropCol = DropColumnImportance(self.__dataset)
-        #Sshap = ShapImportance(self.__dataset)
+        dropCol = DropColumnImportance(self.__dataset)
+        shap = ShapImportance(self.__dataset)
         perm = PermutationImportance(self.__dataset)
 
-        return self.addTarget(perm) #+ self.addTarget(shap) #self.addTarget(dropCol) +
+        return self.addTarget(perm) + self.addTarget(dropCol) + self.addTarget(shap)
 
     def addTarget(self, target):
         target.calculateScores()

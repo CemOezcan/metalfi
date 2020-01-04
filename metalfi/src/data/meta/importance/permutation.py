@@ -34,10 +34,10 @@ class PermutationImportance(FeatureImportance):
         X = self._data_frame.drop(target, axis=1)
         y = self._data_frame[target]
 
+        #print(cross_val_score(model, X, y, cv=5))
         model.fit(X, y)
         imp = importances(model, X, y)
         plot_importances(imp).view()
-
         return imp
 
     def eli5PermutationImportance(self, model, target):
