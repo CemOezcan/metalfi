@@ -51,7 +51,8 @@ class MetaFeatures:
                                    "gravity", "cor", "cov", "nr_disc", "eigenvalues", "nr_cor_attr", "w_lambda",
                                    "class_ent", "eq_num_attr", "ns_ratio", "h_mean", "iq_range", "kurtosis", "mad",
                                    "max", "mean", "median", "min", "range", "sd", "skewness", "sparsity", "t_mean",
-                                   "var", "attr_ent", "class_conc", "joint_ent", "mut_inf", "nr_norm", "nr_outliers"])
+                                   "var", "attr_ent", "class_conc", "joint_ent", "mut_inf", "nr_norm", "nr_outliers",
+                                   "nr_cat", "nr_bin", "nr_num"])
 
         self.__data_meta_feature_names = names_1
         self.__data_meta_features = dmf_1
@@ -71,13 +72,11 @@ class MetaFeatures:
             columns, values = self.run(X.values, y.values, None,
                                        ["h_mean", "iq_range", "kurtosis", "mad", "max", "mean", "median", "min",
                                         "range", "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent",
-                                        "joint_ent", "mut_inf"])
-            # TODO: implement is_norm (or use nr_norm as is_norm), nr_outliers and accumulate for dmf
-            # TODO: implement "is_categorical" and "is_continuous"
+                                        "joint_ent", "mut_inf", "nr_norm", "nr_outliers", "nr_cat", "nr_bin", "nr_num"])
+
             self.__feature_meta_features.append(self.toFeatureVector(values))
 
         self.__feature_meta_feature_names = columns
-
         self.filterScores(data_frame, target)
         # TODO: Drop target?
         cov = data_frame.cov()
@@ -136,9 +135,13 @@ class MetaFeatures:
 
     def toFeatureVector(self, double_list):
         vector = list()
-
         for x in double_list:
-            vector.append(x[0])
+            try:
+                vector.append(x[0])
+            except TypeError:
+                vector.append(x)
+            except IndexError:
+                vector.append(x)
 
         return vector
 

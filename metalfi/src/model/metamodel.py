@@ -4,6 +4,8 @@ from statistics import mean
 import matplotlib.pyplot as plt
 
 from pathlib import Path
+
+import numpy as np
 from pandas import DataFrame
 from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor, RandomForestClassifier
 from sklearn.feature_selection import RFECV, SelectFromModel, SelectKBest, chi2, f_classif, mutual_info_classif
@@ -46,10 +48,10 @@ class MetaModel:
             s_2 = cross_val_score(self.__model, X, y, cv=6, scoring='neg_mean_absolute_error')
             s_3 = cross_val_score(self.__model, X, y, cv=6, scoring='neg_mean_squared_error')
 
-            # print(target)
-            # print(s_1)
-            # print(set(map(lambda x: x / mean, s_2)))
-            # print(set(map(lambda x: x / mean, s_3)))
+            print(target)
+            print(s_1)
+            print(set(map(lambda x: x / mean, s_2)))
+            print(set(map(lambda x: x / mean, s_3)))
 
     def test(self, test, scale):
         test_data = MetaDataset(test, True).getMetaData()
@@ -92,7 +94,7 @@ class MetaModel:
             else:
                 model = LinearRegression()
 
-            self.calculatePerformance(model, X_og, y_og, pred, act, 3, svc)
+            self.calculatePerformance(model, X_og, y_og, pred, act, 2, svc)
 
     def compareRankings(self, columns, prediction, actual, depth=None):
         pred_data = {"target": prediction, "names": columns}
@@ -111,7 +113,6 @@ class MetaModel:
         return act, pred
 
     def calculatePerformance(self, model, X, y, predicted, actual, k, svc):
-        # TODO: Parameter optimization
         #X_chi_2 = SelectKBest(chi2, k=k).fit_transform(X, y)
         X_anova_f = SelectKBest(f_classif, k=k).fit_transform(X, y)
         X_mutual_info = SelectKBest(mutual_info_classif, k=k).fit_transform(X, y)
