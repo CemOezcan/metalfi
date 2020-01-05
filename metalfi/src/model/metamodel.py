@@ -76,20 +76,23 @@ class MetaModel:
             print(target)
             print(self.__model.score(X_test_new, y_test))
             act, pred = self.compareRankings(test_data.index, self.__model.predict(X_test_new), y_test)
-            print("%s%s%s%s" % ("optimal \n", act, "\n predicted \n", pred))
-
+            #print("%s%s%s%s" % ("optimal \n", act, "\n predicted \n", pred))
+            svc = False
             if target.startswith("rf"):
-                model = RandomForestClassifier()
+                model = RandomForestClassifier(n_estimators=100)
             elif target.startswith("svc"):
-                model = SVC()
+                model = SVC(kernel="rbf", gamma="scale")
+                svc = True
             elif target.startswith("log"):
-                model = LogisticRegression()
+                model = LogisticRegression(dual=False, solver="lbfgs", multi_class="auto", max_iter=1000)
+                svc = True
             elif target.startswith("lin"):
-                model = LinearSVC()
+                model = LinearSVC(max_iter=10000, dual=False)
+                svc = True
             else:
                 model = LinearRegression()
 
-            self.calculatePerformance(model, X_og, y_og, pred, act, 3)
+            self.calculatePerformance(model, X_og, y_og, pred, act, 3, svc)
 
     def compareRankings(self, columns, prediction, actual, depth=None):
         pred_data = {"target": prediction, "names": columns}
@@ -107,15 +110,22 @@ class MetaModel:
         print(sum / depth)
         return act, pred
 
-    def calculatePerformance(self, model, X, y, predicted, actual, k):
+    def calculatePerformance(self, model, X, y, predicted, actual, k, svc):
         # TODO: Parameter optimization
-        X_chi_2 = SelectKBest(chi2, k=k).fit_transform(X, y)
+        #X_chi_2 = SelectKBest(chi2, k=k).fit_transform(X, y)
         X_anova_f = SelectKBest(f_classif, k=k).fit_transform(X, y)
         X_mutual_info = SelectKBest(mutual_info_classif, k=k).fit_transform(X, y)
         X_fi = X[actual[:k]]
         X_meta_lfi = X[predicted[:k]]
 
-        print("%s%s" % ("Chi² Stats \n", mean(cross_val_score(model, X_chi_2, y, cv=5))))
+        if svc:
+            sc_X = StandardScaler()
+            X_anova_f = sc_X.fit_transform(X_anova_f)
+            X_mutual_info = sc_X.fit_transform(X_mutual_info)
+            X_fi = sc_X.fit_transform(X_fi)
+            X_meta_lfi = sc_X.fit_transform(X_meta_lfi)
+
+        #print("%s%s" % ("Chi² Stats \n", mean(cross_val_score(model, X_chi_2, y, cv=5))))
         print("%s%s" % ("ANOVA F-Value \n", mean(cross_val_score(model, X_anova_f, y, cv=5))))
         print("%s%s" % ("Mutual Information \n", mean(cross_val_score(model, X_mutual_info, y, cv=5))))
         print("%s%s" % ("Feature Importance \n", mean(cross_val_score(model, X_fi, y, cv=5))))
