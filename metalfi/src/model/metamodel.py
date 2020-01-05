@@ -46,10 +46,10 @@ class MetaModel:
             s_2 = cross_val_score(self.__model, X, y, cv=6, scoring='neg_mean_absolute_error')
             s_3 = cross_val_score(self.__model, X, y, cv=6, scoring='neg_mean_squared_error')
 
-            #print(target)
-            #print(s_1)
-            #print(set(map(lambda x: x / mean, s_2)))
-            #print(set(map(lambda x: x / mean, s_3)))
+            # print(target)
+            # print(s_1)
+            # print(set(map(lambda x: x / mean, s_2)))
+            # print(set(map(lambda x: x / mean, s_3)))
 
     def test(self, test, scale):
         test_data = MetaDataset(test, True).getMetaData()
@@ -76,7 +76,7 @@ class MetaModel:
             print(target)
             print(self.__model.score(X_test_new, y_test))
             act, pred = self.compareRankings(test_data.index, self.__model.predict(X_test_new), y_test)
-            #print("%s%s%s%s" % ("optimal \n", act, "\n predicted", pred))
+            print("%s%s%s%s" % ("optimal \n", act, "\n predicted \n", pred))
 
             if target.startswith("rf"):
                 model = RandomForestClassifier()
@@ -91,14 +91,21 @@ class MetaModel:
 
             self.calculatePerformance(model, X_og, y_og, pred, act, 3)
 
-    def compareRankings(self, columns, prediction, actual):
+    def compareRankings(self, columns, prediction, actual, depth=None):
         pred_data = {"target": prediction, "names": columns}
         act_data = {"target": actual, "names": columns}
-        pred = DataFrame(pred_data, columns=["target", "names"])
-        act = DataFrame(act_data, columns=["target", "names"])
+        pred = DataFrame(pred_data).sort_values(by=["target"], ascending=False)["names"].values
+        act = DataFrame(act_data).sort_values(by=["target"], ascending=False)["names"].values
 
-        return act.sort_values(by=["target"], ascending=False)["names"].values, \
-               pred.sort_values(by=["target"], ascending=False)["names"].values
+        depth = len(act) if depth is None else depth
+        sum = 0
+
+        for i in range(1, depth + 1):
+            set_1, set_2 = set(pred[:i]), set(act[:i])
+            sum += len(set_1.intersection(set_2)) / i
+
+        print(sum / depth)
+        return act, pred
 
     def calculatePerformance(self, model, X, y, predicted, actual, k):
         # TODO: Parameter optimization
@@ -113,5 +120,3 @@ class MetaModel:
         print("%s%s" % ("Mutual Information \n", mean(cross_val_score(model, X_mutual_info, y, cv=5))))
         print("%s%s" % ("Feature Importance \n", mean(cross_val_score(model, X_fi, y, cv=5))))
         print("%s%s" % ("Meta-Learning Feature Importance \n", mean(cross_val_score(model, X_meta_lfi, y, cv=5))))
-
-
