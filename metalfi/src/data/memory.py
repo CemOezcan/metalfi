@@ -29,7 +29,7 @@ class Memory:
         boston = load_boston()
         data_frame = DataFrame(data=boston.data, columns=boston['feature_names'])
 
-        est = KBinsDiscretizer(n_bins=4, encode='ordinal')
+        est = KBinsDiscretizer(n_bins=10, encode='ordinal')
         data_frame["target"] = est.fit_transform(list(map(lambda x: [x], boston.target)))
 
         return data_frame, "target"
@@ -91,8 +91,12 @@ class Memory:
     def storePreprocessed(self, data):
         return
 
-    def storeInput(self, data):
-        return
+    @staticmethod
+    def storeInput(data, name):
+        path = Path(__file__).parents[2] / ("data/input/" + name + "meta.csv")
+        print(path)
+        if not Path(path).is_file():
+            data.to_csv(path, index=None, header=True)
 
     def storeOutput(self, data):
         return

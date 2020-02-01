@@ -2,6 +2,7 @@ from sklearn.ensemble import RandomForestRegressor
 
 from metalfi.src.data.dataset import Dataset
 from metalfi.src.data.memory import Memory
+from metalfi.src.data.metadataset import MetaDataset
 from metalfi.src.model.metamodel import MetaModel
 
 
@@ -23,11 +24,16 @@ class Controller:
         data_frame_5, target_5 = Memory.loadBoston()
         data_5 = Dataset(data_frame_5, target_5)
 
-        self.__train_data = [data_5, data_4, data_2, data_3]
-        self.__test_data = [data_1]
+        self.__train_data = [(data_1, "Titanic"), (data_2, "Cancer"), (data_3, "Iris"), (data_4, "Wine")]
+        self.__test_data = [(data_5, "Boston")]
 
     def train_and_test(self):
         model = MetaModel(self.__train_data, "name")
         #model.train(True)
 
         model.test(self.__test_data, True)
+
+    def storeMetaData(self):
+        for dataset, name in self.__train_data + self.__test_data:
+            data = MetaDataset([dataset], True).getMetaData()
+            Memory.storeInput(data, name)

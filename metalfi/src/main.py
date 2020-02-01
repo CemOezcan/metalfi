@@ -6,7 +6,7 @@ class Main(object):
     @staticmethod
     def main():
         c = Controller()
-        c.train_and_test()
+        c.storeMetaData()
 
 
 if __name__ == '__main__':
