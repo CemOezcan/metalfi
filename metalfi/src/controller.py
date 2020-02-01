@@ -23,11 +23,11 @@ class Controller:
         data_frame_5, target_5 = Memory.loadBoston()
         data_5 = Dataset(data_frame_5, target_5)
 
-        self.__train_data = [data_2, data_3, data_4, data_5]
+        self.__train_data = [data_5, data_4, data_2, data_3]
         self.__test_data = [data_1]
 
     def train_and_test(self):
         model = MetaModel(self.__train_data, "name")
-        model.train(True)
+        #model.train(True)
 
-        model.test(self.__test_data, False)
+        model.test(self.__test_data, True)

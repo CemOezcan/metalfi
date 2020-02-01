@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 from pandas import DataFrame
+from scipy.stats import spearmanr
 from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor, RandomForestClassifier
 from sklearn.feature_selection import RFECV, SelectFromModel, SelectKBest, chi2, f_classif, mutual_info_classif
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -49,9 +50,10 @@ class MetaModel:
             s_3 = cross_val_score(self.__model, X, y, cv=6, scoring='neg_mean_squared_error')
 
             print(target)
-            print(s_1)
-            print(set(map(lambda x: x / mean, s_2)))
-            print(set(map(lambda x: x / mean, s_3)))
+            print(np.mean(s_1))
+            print(np.mean(list(map(lambda x: x / mean, s_2))))
+            print(np.mean(list(map(lambda x: x / mean, s_3))))
+            print(np.mean(list(map(lambda x: (abs(x) / mean) ** 0.5, s_3))))
 
     def test(self, test, scale):
         test_data = MetaDataset(test, True).getMetaData()
@@ -77,11 +79,18 @@ class MetaModel:
             self.__model.fit(X_train_new, y_train)
             print(target)
             print(self.__model.score(X_test_new, y_test))
-            act, pred = self.compareRankings(test_data.index, self.__model.predict(X_test_new), y_test)
+            p = self.__model.predict(X_test_new)
+            act, pred = self.compareRankings(test_data.index, p, y_test)
+            print(np.sqrt(np.mean(([(p[i] - y_test[i]) ** 2 for i in range(len(p))]))))
+            print(np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(p))]))))
+            print(np.corrcoef(p, y_test))
+            print(spearmanr(p, y_test))
+            #print(p)
+            #print(y_test)
             #print("%s%s%s%s" % ("optimal \n", act, "\n predicted \n", pred))
             svc = False
             if target.startswith("rf"):
-                model = RandomForestClassifier(n_estimators=100)
+                model = RandomForestClassifier(n_estimators=10)
             elif target.startswith("svc"):
                 model = SVC(kernel="rbf", gamma="scale")
                 svc = True
@@ -109,7 +118,7 @@ class MetaModel:
             set_1, set_2 = set(pred[:i]), set(act[:i])
             sum += len(set_1.intersection(set_2)) / i
 
-        print(sum / depth)
+        #print(sum / depth)
         return act, pred
 
     def calculatePerformance(self, model, X, y, predicted, actual, k, svc):

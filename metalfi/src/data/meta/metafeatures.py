@@ -78,7 +78,7 @@ class MetaFeatures:
 
         self.__feature_meta_feature_names = columns
         self.filterScores(data_frame, target)
-        # TODO: Drop target?
+
         cov = data_frame.cov()
         p_cor = data_frame.corr("pearson")
         s_cor = data_frame.corr("spearman")
