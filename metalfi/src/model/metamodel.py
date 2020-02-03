@@ -15,19 +15,73 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, LinearSVC
 
+from metalfi.src.data.memory import Memory
 from metalfi.src.data.metadataset import MetaDataset
 
 
 class MetaModel:
 
-    def __init__(self, train, name):
+    def __init__(self, train, name, test):
         # TODO: Parameter optimization,
         #  more models (change implementation of feature selection for non-linear and non-tree-based models)
-        data = MetaDataset(train, True)
-        self.__train_data = data.getMetaData()
-        self.__targets = data.getTargetNames()
-        self.__model = RandomForestRegressor(n_estimators=100)
+        #data = MetaDataset(train, True)
+        #self.__train_data = data.getMetaData()
+        #self.__targets = data.getTargetNames()
+        #self.__model = RandomForestRegressor(n_estimators=100)
+
+        self.__base_models = [(RandomForestRegressor(n_estimators=10), "Rf"),
+                              (LinearRegression(), "LinReg")]
+        self.__meta_models = list()
+        self.__train_data = train
+        self.__test_data = test
+        self.__target_names = ["rf_perm", "linSVC_perm", "svc_perm", "log_perm", "rf_dropCol", "linSVC_dropCol",
+                               "svc_dropCol", "log_dropCol", "rf_shap"]
+        # Name of the test dataset + information about whether features are independent or not
         self.file_name = name
+
+    def fit(self, scale, select):
+        X_train = self.__train_data.drop(self.__target_names, axis=1)
+        X_test = self.__test_data.drop(self.__target_names, axis=1)
+
+        if scale:
+            sc = StandardScaler()
+            X_train = sc.fit_transform(X_train)
+            X_test = sc.fit_transform(X_test)
+
+        for target in ["rf_perm", "linSVC_perm", "svc_perm", "log_perm", "rf_shap"]:
+            y_train = self.__train_data[target]
+            y_test = self.__test_data[target]
+
+            for base_model, base_model_name in self.__base_models:
+                X_train_new = X_train
+                X_test_new = X_test
+                if select:
+                    base_model.fit(X_train, y_train)
+
+                    selector = SelectFromModel(base_model, prefit=True)
+                    X_train_new = selector.transform(X_train)
+                    X_test_new = selector.transform(X_test)
+                    #rfecv = RFECV(estimator=base_model, step=1, cv=5)
+                    #rfecv.fit(X_train, y_train)
+
+                    #X_train_new = rfecv.transform(X_train)
+                    #X_test_new = rfecv.transform(X_test)
+
+                base_model.fit(X_train_new, y_train)
+                self.__meta_models.append((base_model, base_model_name + str(select) + target))
+
+                print(base_model_name + str(select) + target + self.file_name)
+                print("R²")
+                print(base_model.score(X_test_new, y_test))
+                p = base_model.predict(X_test_new)
+                print("RMSE")
+                print(np.sqrt(np.mean(([(p[i] - y_test[i]) ** 2 for i in range(len(p))]))))
+                print("Baseline")
+                print(np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(p))]))))
+                print("Pearson")
+                print(np.corrcoef(p, y_test))
+                print("Spearman")
+                print(spearmanr(p, y_test))
 
     def save(self):
         # TODO: Implement in Memory class

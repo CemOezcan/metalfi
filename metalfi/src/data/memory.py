@@ -15,8 +15,11 @@ class Memory:
         return
 
     @staticmethod
-    def load(name):
+    def load(name, dir=None):
         path = Memory.getPath()
+        if not (dir is None):
+            return pd.read_csv(path / (dir + "/" + name))
+
         try:
             data = pd.read_csv(path / ("preprocessed/pp" + name)), True
         except FileNotFoundError:
@@ -93,15 +96,15 @@ class Memory:
 
     @staticmethod
     def storeInput(data, name):
-        path = Path(__file__).parents[2] / ("data/input/" + name + "meta.csv")
-        print(path)
-        if not Path(path).is_file():
+        path = Memory.getPath() / ("input/" + name + "meta.csv")
+        if not path.is_file():
             data.to_csv(path, index=None, header=True)
 
     def storeOutput(self, data):
         return
 
-    def storeModel(self, data):
+    @staticmethod
+    def storeModel(model, name):
         return
 
     def storeVisual(self, data):
