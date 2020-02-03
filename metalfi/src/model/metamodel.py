@@ -78,7 +78,7 @@ class MetaModel:
 
                 base_model.fit(X_train_new, y_train)
                 select_name = str(select)
-                score_name = "RMSE" if score is None else "Pearson"
+                score_name = "RMSE" if score is None else score
 
                 self.__meta_models.append((base_model, base_model_name + "-" + self.file_name + "-" + select_name + "-"
                                            + score_name + "-" + target))
