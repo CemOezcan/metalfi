@@ -55,8 +55,8 @@ class Controller:
                 if not (i == j):
                     train_data.append(self.__meta_data[j][0])
 
-            model = MetaModel(pd.concat(train_data), test_name, test_data)
-            model.fit(True, True)
+            model = MetaModel(pd.concat(train_data), test_name + "Meta", test_data)
+            model.fit()
 
 
         # model = MetaModel(self.__train_data, "name")

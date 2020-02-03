@@ -1,9 +1,9 @@
+import pickle
 from pathlib import Path
 
 import numpy as np
 from pandas import DataFrame
-from sklearn import preprocessing
-from sklearn.datasets import load_wine, load_breast_cancer, load_iris, load_boston
+from sklearn.datasets import load_wine, load_iris, load_boston
 
 import pandas as pd
 from sklearn.preprocessing import KBinsDiscretizer
@@ -104,8 +104,14 @@ class Memory:
         return
 
     @staticmethod
-    def storeModel(model, name):
-        return
+    def storeModel(model, name, support):
+        path = Memory.getPath() / ("model/" + name)
+        if not path.is_file():
+            pickle.dump(model, open(path, 'wb'))
+            if support is not None:
+                file = open(Memory.getPath() / ("model/" + name + ".txt"), "w+")
+                file.write(str(support).strip("[]"))
+                file.close()
 
     def storeVisual(self, data):
         return

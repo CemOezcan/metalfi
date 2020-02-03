@@ -29,8 +29,7 @@ class MetaModel:
         #self.__targets = data.getTargetNames()
         #self.__model = RandomForestRegressor(n_estimators=100)
 
-        self.__base_models = [(RandomForestRegressor(n_estimators=10), "Rf"),
-                              (LinearRegression(), "LinReg")]
+        self.__base_models = [(RandomForestRegressor(n_estimators=10), "Rf")]
         self.__meta_models = list()
         self.__train_data = train
         self.__test_data = test
@@ -39,7 +38,12 @@ class MetaModel:
         # Name of the test dataset + information about whether features are independent or not
         self.file_name = name
 
-    def fit(self, scale, select):
+    def setAttributes(self, meta_models, name, support=None):
+        self.__meta_models = meta_models
+        self.__test_data = None
+        self.file_name = name
+
+    def fit(self, scale=True, select=True, score=None):
         X_train = self.__train_data.drop(self.__target_names, axis=1)
         X_test = self.__test_data.drop(self.__target_names, axis=1)
 
@@ -53,24 +57,36 @@ class MetaModel:
             y_test = self.__test_data[target]
 
             for base_model, base_model_name in self.__base_models:
+                # TODO: Hyperparameter optimization
                 X_train_new = X_train
                 X_test_new = X_test
+                support = None
+
                 if select:
                     base_model.fit(X_train, y_train)
 
                     selector = SelectFromModel(base_model, prefit=True)
                     X_train_new = selector.transform(X_train)
                     X_test_new = selector.transform(X_test)
-                    #rfecv = RFECV(estimator=base_model, step=1, cv=5)
-                    #rfecv.fit(X_train, y_train)
+                    #selector = RFECV(estimator=base_model, step=1, cv=5)
+                    #selector.fit(X_train, y_train)
 
-                    #X_train_new = rfecv.transform(X_train)
-                    #X_test_new = rfecv.transform(X_test)
+                    #X_train_new = selector.transform(X_train)
+                    #X_test_new = selector.transform(X_test)
+
+                    support = selector.get_support(indices=True)
 
                 base_model.fit(X_train_new, y_train)
-                self.__meta_models.append((base_model, base_model_name + str(select) + target))
+                select_name = str(select)
+                score_name = "RMSE" if score is None else "Pearson"
 
-                print(base_model_name + str(select) + target + self.file_name)
+                self.__meta_models.append((base_model, base_model_name + "-" + self.file_name + "-" + select_name + "-"
+                                           + score_name + "-" + target))
+
+                Memory.storeModel(base_model, base_model_name + "-" + self.file_name + "-" + select_name + "-"
+                                  + score_name + "-" + target, support)
+
+                print(base_model_name + str(scale) + str(select) + target + self.file_name)
                 print("R²")
                 print(base_model.score(X_test_new, y_test))
                 p = base_model.predict(X_test_new)
