@@ -113,6 +113,19 @@ class Memory:
                 file.write(str(support).strip("[]"))
                 file.close()
 
+    @staticmethod
+    def loadModel(names):
+        models = list()
+
+        for name in names:
+            path = Memory.getPath() / ("model/" + name)
+            file = open(path, 'rb')
+            data = pickle.load(file)
+            file.close()
+            models.append((data, name))
+
+        return models
+
     def storeVisual(self, data):
         return
 

@@ -107,7 +107,7 @@ class MetaFeatures:
                                               "high_corr_norm" + name]
 
     def filterScores(self, data, target):
-        # TODO: Implement more Filter scores
+        # TODO: Implement more filter scores & model based meta-features
         f_values, anova_p_values = f_classif(data.drop(target, axis=1), data[target])
         mut_info = mutual_info_classif(data.drop(target, axis=1), data[target])
         chi_2, chi_2_p_values = chi2(data.drop(target, axis=1), data[target])
@@ -127,11 +127,11 @@ class MetaFeatures:
         self.__feature_meta_feature_names.append("target_p_corr")
         self.__feature_meta_feature_names.append("target_k_corr")
         self.__feature_meta_feature_names.append("target_s_corr")
-        self.__feature_meta_feature_names.append("F_value")
-        self.__feature_meta_feature_names.append("anova_p_value")
-        self.__feature_meta_feature_names.append("mut_info")
-        self.__feature_meta_feature_names.append("chi_2")
-        self.__feature_meta_feature_names.append("chi_2_p_value")
+        self.__feature_meta_feature_names.append("target_F_value")
+        self.__feature_meta_feature_names.append("target_anova_p_value")
+        self.__feature_meta_feature_names.append("target_mut_info")
+        self.__feature_meta_feature_names.append("target_chi_2")
+        self.__feature_meta_feature_names.append("target_chi_2_p_value")
 
     def toFeatureVector(self, double_list):
         vector = list()

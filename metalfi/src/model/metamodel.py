@@ -1,9 +1,5 @@
-import pickle
+from copy import deepcopy
 from statistics import mean
-
-import matplotlib.pyplot as plt
-
-from pathlib import Path
 
 import numpy as np
 from pandas import DataFrame
@@ -23,157 +19,85 @@ class MetaModel:
 
     def __init__(self, train, name, test):
         # TODO: Parameter optimization,
-        #  more models (change implementation of feature selection for non-linear and non-tree-based models)
-        #data = MetaDataset(train, True)
-        #self.__train_data = data.getMetaData()
-        #self.__targets = data.getTargetNames()
-        #self.__model = RandomForestRegressor(n_estimators=100)
+        #  more models (change implementation of feature selection for non-linear and non-tree-based models) and
+        #  do not store datasets (ids should be sufficient)
 
-        self.__base_models = [(RandomForestRegressor(n_estimators=10), "Rf")]
-        self.__meta_models = list()
+        self.__base_models = [(RandomForestRegressor(n_estimators=100), "Rf", "RMSE")]
         self.__train_data = train
         self.__test_data = test
         self.__target_names = ["rf_perm", "linSVC_perm", "svc_perm", "log_perm", "rf_dropCol", "linSVC_dropCol",
                                "svc_dropCol", "log_dropCol", "rf_shap"]
+        train = train.drop(self.__target_names, axis=1)
+        self.__feature_sets = [["Auto"], train.columns,
+                               [x for x in train.columns if "." not in x],
+                               [x for x in train.columns if x.startswith("target")],
+                               [x for x in train.columns if not x.startswith("target")]]
+
         # Name of the test dataset + information about whether features are independent or not
-        self.file_name = name
+        self.__file_name = name
+        self.__meta_models = list()
 
-    def setAttributes(self, meta_models, name, support=None):
-        self.__meta_models = meta_models
-        self.__test_data = None
-        self.file_name = name
+    def fit(self):
+        X = self.__train_data.drop(self.__target_names, axis=1)
 
-    def fit(self, scale=True, select=True, score=None):
-        X_train = self.__train_data.drop(self.__target_names, axis=1)
-        X_test = self.__test_data.drop(self.__target_names, axis=1)
+        for base_model, base_model_name, metric in self.__base_models:
+            for target in self.__target_names:
+                i = 0
+                for feature_set in self.__feature_sets:
+                    y = self.__train_data[target]
+                    # TODO: a little bit of hyperparameter optimization before selecting features
+                    X_train, selected_features = self.featureSelection(base_model, X, y) \
+                        if feature_set[0] == "Auto" else (X[feature_set], feature_set)
 
-        if scale:
+                    model, scale = self.hyperparameterOptimization(base_model, metric, X_train, y)
+                    enum = {0: "Auto", 1: "All", 2: "FMF", 3: "LM", 4: "NoLM"}
+                    feature_set_name = enum.get(i)
+
+                    self.__meta_models.append((deepcopy(model), selected_features,
+                                               [base_model_name, metric, target, feature_set_name], scale))
+
+                    i -= -1
+
+    def featureSelection(self, base_model, X_train, y_train):
+        base_model.fit(X_train, y_train)
+
+        selector = SelectFromModel(base_model, prefit=True)
+        support = selector.get_support(indices=True)
+
+        features = [x for x in list(X_train.columns) if list(X_train.columns).index(x) in support]
+        X_selected = selector.transform(X_train)
+
+        return X_selected, features
+
+    def hyperparameterOptimization(self, model, metric, X, y):
+        # TODO: Implement
+        model.fit(X, y)
+        scale = False
+        return model, scale
+
+    def test(self):
+        X = self.__test_data.drop(self.__target_names, axis=1)
+
+        for (model, features, config, scale) in self.__meta_models:
             sc = StandardScaler()
-            X_train = sc.fit_transform(X_train)
-            X_test = sc.fit_transform(X_test)
+            print(len(features))
+            X_test = sc.fit_transform(X[features]) if scale else X[features]
+            print(len(list(X_test.columns)))
+            y_test = self.__test_data[config[2]]
+            y_train = self.__train_data[config[2]]
 
-        for target in ["rf_perm", "linSVC_perm", "svc_perm", "log_perm", "rf_shap"]:
-            y_train = self.__train_data[target]
-            y_test = self.__test_data[target]
-
-            for base_model, base_model_name in self.__base_models:
-                # TODO: Hyperparameter optimization
-                X_train_new = X_train
-                X_test_new = X_test
-                support = None
-
-                if select:
-                    base_model.fit(X_train, y_train)
-
-                    selector = SelectFromModel(base_model, prefit=True)
-                    X_train_new = selector.transform(X_train)
-                    X_test_new = selector.transform(X_test)
-                    #selector = RFECV(estimator=base_model, step=1, cv=5)
-                    #selector.fit(X_train, y_train)
-
-                    #X_train_new = selector.transform(X_train)
-                    #X_test_new = selector.transform(X_test)
-
-                    support = selector.get_support(indices=True)
-
-                base_model.fit(X_train_new, y_train)
-                select_name = str(select)
-                score_name = "RMSE" if score is None else score
-
-                self.__meta_models.append((base_model, base_model_name + "-" + self.file_name + "-" + select_name + "-"
-                                           + score_name + "-" + target))
-
-                Memory.storeModel(base_model, base_model_name + "-" + self.file_name + "-" + select_name + "-"
-                                  + score_name + "-" + target, support)
-
-                print(base_model_name + str(scale) + str(select) + target + self.file_name)
-                print("R²")
-                print(base_model.score(X_test_new, y_test))
-                p = base_model.predict(X_test_new)
-                print("RMSE")
-                print(np.sqrt(np.mean(([(p[i] - y_test[i]) ** 2 for i in range(len(p))]))))
-                print("Baseline")
-                print(np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(p))]))))
-                print("Pearson")
-                print(np.corrcoef(p, y_test))
-                print("Spearman")
-                print(spearmanr(p, y_test))
-
-    def save(self):
-        # TODO: Implement in Memory class
-        model = LinearRegression()
-        pickle.dump(model, open(Path(__file__).parents[2] / ("data/model/" + self.file_name), 'wb'))
-
-    def train(self, scale):
-        X = self.__train_data.drop(self.__targets, axis=1)
-
-        if scale:
-            sc = StandardScaler()
-            X = sc.fit_transform(X)
-
-        for target in self.__targets:
-            y = self.__train_data[target]
-            mean = sum(y) / len(y)
-
-            s_1 = cross_val_score(self.__model, X, y, cv=6, scoring='r2')
-            s_2 = cross_val_score(self.__model, X, y, cv=6, scoring='neg_mean_absolute_error')
-            s_3 = cross_val_score(self.__model, X, y, cv=6, scoring='neg_mean_squared_error')
-
-            print(target)
-            print(np.mean(s_1))
-            print(np.mean(list(map(lambda x: x / mean, s_2))))
-            print(np.mean(list(map(lambda x: x / mean, s_3))))
-            print(np.mean(list(map(lambda x: (abs(x) / mean) ** 0.5, s_3))))
-
-    def test(self, test, scale):
-        test_data = MetaDataset(test, True).getMetaData()
-        X_og = test[0].getDataFrame().drop(test[0].getTarget(), axis=1)
-        y_og = test[0].getDataFrame()[test[0].getTarget()]
-        X_test = test_data.drop(self.__targets, axis=1)
-        X_train = self.__train_data.drop(self.__targets, axis=1)
-
-        if scale:
-            sc_X = StandardScaler()
-            X_test = sc_X.fit_transform(X_test)
-            X_train = sc_X.fit_transform(X_train)
-
-        for target in self.__targets:
-            y_test = test_data[target]
-            y_train = self.__train_data[target]
-            self.__model.fit(X_train, y_train)
-
-            model = SelectFromModel(self.__model, prefit=True)
-            X_train_new = model.transform(X_train)
-            X_test_new = model.transform(X_test)
-
-            self.__model.fit(X_train_new, y_train)
-            print(target)
-            print(self.__model.score(X_test_new, y_test))
-            p = self.__model.predict(X_test_new)
-            act, pred = self.compareRankings(test_data.index, p, y_test)
+            print('+'.join(config))
+            print("R²")
+            print(model.score(X_test, y_test))
+            p = model.predict(X_test)
+            print("RMSE")
             print(np.sqrt(np.mean(([(p[i] - y_test[i]) ** 2 for i in range(len(p))]))))
+            print("Baseline")
             print(np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(p))]))))
+            print("Pearson")
             print(np.corrcoef(p, y_test))
+            print("Spearman")
             print(spearmanr(p, y_test))
-            #print(p)
-            #print(y_test)
-            #print("%s%s%s%s" % ("optimal \n", act, "\n predicted \n", pred))
-            svc = False
-            if target.startswith("rf"):
-                model = RandomForestClassifier(n_estimators=10)
-            elif target.startswith("svc"):
-                model = SVC(kernel="rbf", gamma="scale")
-                svc = True
-            elif target.startswith("log"):
-                model = LogisticRegression(dual=False, solver="lbfgs", multi_class="auto", max_iter=1000)
-                svc = True
-            elif target.startswith("lin"):
-                model = LinearSVC(max_iter=10000, dual=False)
-                svc = True
-            else:
-                model = LinearRegression()
-
-            self.calculatePerformance(model, X_og, y_og, pred, act, 2, svc)
 
     def compareRankings(self, columns, prediction, actual, depth=None):
         pred_data = {"target": prediction, "names": columns}

@@ -49,17 +49,16 @@ class Controller:
         self.loadMetaData()
         for i in range(0, len(self.__meta_data)):
             test_data, test_name = self.__meta_data[i]
-
             train_data = list()
             for j in range(0, len(self.__meta_data)):
                 if not (i == j):
                     train_data.append(self.__meta_data[j][0])
 
-            model = MetaModel(pd.concat(train_data), test_name + "Meta", test_data)
-            model.fit()
+            path = Memory.getPath() / ("model/" + test_name)
+            if not path.is_file():
+                model = MetaModel(pd.concat(train_data), test_name + "Meta", test_data)
+                model.fit()
+                Memory.storeModel(model, test_name, None)
 
-
-        # model = MetaModel(self.__train_data, "name")
-        # model.train(True)
-
-        # model.test(self.__test_data, True)
+    def loadModel(self, names):
+        return Memory.loadModel(names)
