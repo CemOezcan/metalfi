@@ -1,6 +1,4 @@
 from abc import ABC, abstractmethod
-
-from sklearn import linear_model
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC, LinearSVC

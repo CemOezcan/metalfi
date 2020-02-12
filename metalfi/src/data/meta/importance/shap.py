@@ -1,6 +1,5 @@
-import sys
-
 import shap
+
 from pandas import DataFrame
 
 from metalfi.src.data.meta.importance.featureimportance import FeatureImportance

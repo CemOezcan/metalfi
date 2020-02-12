@@ -1,11 +1,10 @@
 import pickle
-from pathlib import Path
-
 import numpy as np
+import pandas as pd
+
+from pathlib import Path
 from pandas import DataFrame
 from sklearn.datasets import load_wine, load_iris, load_boston
-
-import pandas as pd
 from sklearn.preprocessing import KBinsDiscretizer
 
 

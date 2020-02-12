@@ -1,18 +1,13 @@
+import numpy as np
+
 from copy import deepcopy
 from statistics import mean
-
-import numpy as np
 from pandas import DataFrame
 from scipy.stats import spearmanr
-from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor, RandomForestClassifier
-from sklearn.feature_selection import RFECV, SelectFromModel, SelectKBest, chi2, f_classif, mutual_info_classif
-from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.feature_selection import SelectFromModel, SelectKBest, chi2, f_classif, mutual_info_classif
+from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC, LinearSVC
-
-from metalfi.src.data.memory import Memory
-from metalfi.src.data.metadataset import MetaDataset
 
 
 class MetaModel:

@@ -1,5 +1,6 @@
-from metalfi.src.data.meta.importance.featureimportance import FeatureImportance
 from rfpimp import *
+
+from metalfi.src.data.meta.importance.featureimportance import FeatureImportance
 
 
 class DropColumnImportance(FeatureImportance):
