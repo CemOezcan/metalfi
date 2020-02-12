@@ -6,7 +6,16 @@ class Main(object):
     @staticmethod
     def main():
         c = Controller()
-        c.train_and_test()
+
+        # Calculate meta-datasets and train meta-models (if necessary)
+        c.trainMetaModel()
+
+        # Load trained meta-models from storage
+        models = c.loadModel(["Titanic", "Iris", "Cancer", "Wine", "Boston"])
+
+        # Test performance of the meta-model
+        model, name = models[0]
+        model.test()
 
 
 if __name__ == '__main__':

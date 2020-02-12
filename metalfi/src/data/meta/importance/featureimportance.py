@@ -14,20 +14,20 @@ class FeatureImportance(ABC):
         self._data_frame = dataset.getDataFrame()
         self._target = self._dataset.getTarget()
 
-        reg = linear_model.LinearRegression()
-        rf = RandomForestClassifier(random_state=101)
-        linSVC = LinearSVC()
-        svc = SVC(kernel="rbf")
-        log = LogisticRegression()
+        #reg = linear_model.LinearRegression()
+        rf = RandomForestClassifier(n_estimators=100)
+        linSVC = LinearSVC(max_iter=10000, dual=False)
+        svc = SVC(kernel="rbf", gamma="scale")
+        log = LogisticRegression(dual=False, solver="lbfgs", multi_class="auto", max_iter=1000)
 
-        self._linear_models = [reg]
+        self._linear_models = []
         self._tree_models = [rf]
         self._kernel_models = [linSVC, svc, log]
 
         self._vif = list()
         self._feature_importances = list()
 
-        self.__model_names = ["reg", "rf", "linSVC", "svc", "log"]
+        self.__model_names = ["rf", "linSVC", "svc", "log"]
         self._name = ""
 
     def getModelNames(self):

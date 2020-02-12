@@ -1,9 +1,9 @@
+import pickle
 from pathlib import Path
 
 import numpy as np
 from pandas import DataFrame
-from sklearn import preprocessing
-from sklearn.datasets import load_wine, load_breast_cancer, load_iris, load_boston
+from sklearn.datasets import load_wine, load_iris, load_boston
 
 import pandas as pd
 from sklearn.preprocessing import KBinsDiscretizer
@@ -15,8 +15,11 @@ class Memory:
         return
 
     @staticmethod
-    def load(name):
+    def load(name, dir=None):
         path = Memory.getPath()
+        if not (dir is None):
+            return pd.read_csv(path / (dir + "/" + name))
+
         try:
             data = pd.read_csv(path / ("preprocessed/pp" + name)), True
         except FileNotFoundError:
@@ -29,7 +32,7 @@ class Memory:
         boston = load_boston()
         data_frame = DataFrame(data=boston.data, columns=boston['feature_names'])
 
-        est = KBinsDiscretizer(n_bins=4, encode='ordinal')
+        est = KBinsDiscretizer(n_bins=10, encode='ordinal')
         data_frame["target"] = est.fit_transform(list(map(lambda x: [x], boston.target)))
 
         return data_frame, "target"
@@ -91,14 +94,37 @@ class Memory:
     def storePreprocessed(self, data):
         return
 
-    def storeInput(self, data):
-        return
+    @staticmethod
+    def storeInput(data, name):
+        path = Memory.getPath() / ("input/" + name + "meta.csv")
+        if not path.is_file():
+            data.to_csv(path, index=None, header=True)
 
     def storeOutput(self, data):
         return
 
-    def storeModel(self, data):
-        return
+    @staticmethod
+    def storeModel(model, name, support):
+        path = Memory.getPath() / ("model/" + name)
+        if not path.is_file():
+            pickle.dump(model, open(path, 'wb'))
+            if support is not None:
+                file = open(Memory.getPath() / ("model/" + name + ".txt"), "w+")
+                file.write(str(support).strip("[]"))
+                file.close()
+
+    @staticmethod
+    def loadModel(names):
+        models = list()
+
+        for name in names:
+            path = Memory.getPath() / ("model/" + name)
+            file = open(path, 'rb')
+            data = pickle.load(file)
+            file.close()
+            models.append((data, name))
+
+        return models
 
     def storeVisual(self, data):
         return
