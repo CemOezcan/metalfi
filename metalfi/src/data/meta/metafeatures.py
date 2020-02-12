@@ -1,9 +1,8 @@
 import statistics
 import numpy as np
-import pandas as pd
-from pandas import DataFrame, Series
+
+from pandas import DataFrame
 from pymfe.mfe import MFE
-from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_selection import f_classif, mutual_info_classif, chi2
 
 from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance

@@ -1,12 +1,7 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-from pandas import DataFrame
 
 from sklearn import preprocessing
 
-from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
-from metalfi.src.data.meta.importance.permutation import PermutationImportance
-from metalfi.src.data.meta.importance.shap import ShapImportance
 from metalfi.src.data.meta.metafeatures import MetaFeatures
 
 

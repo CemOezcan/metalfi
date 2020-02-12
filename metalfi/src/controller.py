@@ -1,4 +1,3 @@
-from sklearn.ensemble import RandomForestRegressor
 import pandas as pd
 
 from metalfi.src.data.dataset import Dataset
