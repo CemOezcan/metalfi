@@ -6,3 +6,7 @@ Clone this repository to your local computer and install the required packages o
 `requirements.txt` file as follows: 
 
  `pip install -r \Path\to\requirements.txt`
+ 
+Python version: 
+ 
+ `Python 3.8.1`
