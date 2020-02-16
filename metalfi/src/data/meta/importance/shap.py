@@ -1,4 +1,5 @@
 import shap
+import numpy as np
 
 from pandas import DataFrame
 from sklearn.preprocessing import StandardScaler
@@ -32,21 +33,21 @@ class ShapImportance(FeatureImportance):
         imp = shap.TreeExplainer(model).shap_values(X)
         shap.summary_plot(imp[1], X, plot_type="bar")
 
-        return self.createDataframe(imp[1], X)
+        return self.createDataFrame(imp[1], X)
 
     def linearShap(self, model, X, y):
         model.fit(X, y)
         imp = shap.LinearExplainer(model, X).shap_values(X)
         shap.summary_plot(imp, X, plot_type="bar")
 
-        return self.createDataframe(imp, X)
+        return self.createDataFrame(imp, X)
 
     def sampleShap(self, model, X, y):
         model.fit(X, y)
         imp = shap.SamplingExplainer(model.predict, X)
         #shap.summary_plot(imp, X, plot_type="bar")
 
-        return self.createDataframe(imp, X)
+        return self.createDataFrame(imp, X)
 
     def kernelShap(self, model, X, y):
         model.fit(X, y)
@@ -54,21 +55,18 @@ class ShapImportance(FeatureImportance):
         imp = shap.KernelExplainer(model.predict, X_summary).shap_values(X)
         shap.summary_plot(imp, X, plot_type="bar")
 
-        return self.createDataframe(imp, X)
+        return self.createDataFrame(imp, X)
 
-    def createDataframe(self, array, X):
+    def createDataFrame(self, array, X):
+        importances = list(map(sum, list(zip(*[self.calculateImportances(c) for c in array])))) \
+            if str(type(array)).endswith("'list'>") \
+            else self.calculateImportances(array)
+
+        return DataFrame(data=importances, index=X.columns, columns=["Importances"])
+
+    def calculateImportances(self, array):
         importances = list()
-        average = len(array)
-        rows = X.columns
+        for i in range(len(array[0])):
+            importances.append(sum([abs(x[i]) for x in array]) / len(array))
 
-        for i in range(0, len(array[0])):
-            feature = list()
-            for x in array:
-                feature.append(abs(x[i]))
-
-            importances.append(sum(feature) / average)
-
-        columns = ["Importances"]
-        data = DataFrame(data=importances, index=rows, columns=columns)
-
-        return data
+        return importances

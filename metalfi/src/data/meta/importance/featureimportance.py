@@ -18,14 +18,14 @@ class FeatureImportance(ABC):
         svc = SVC(kernel="rbf", gamma="scale")
         log = LogisticRegression(dual=False, solver="lbfgs", multi_class="auto", max_iter=1000)
 
-        self._linear_models = []
+        self._linear_models = [linSVC, log]
         self._tree_models = [rf]
-        self._kernel_models = [linSVC, svc, log]
+        self._kernel_models = [svc]
 
         self._vif = list()
         self._feature_importances = list()
 
-        self.__model_names = ["rf", "linSVC", "svc", "log"]
+        self.__model_names = ["linSVC", "log", "rf", "svc"]
         self._name = ""
 
     def getModelNames(self):

@@ -22,7 +22,7 @@ class MetaModel:
         self.__test_data = test
         # TODO: get from FeatureImportance class
         self.__target_names = ["rf_perm", "linSVC_perm", "svc_perm", "log_perm", "rf_dropCol", "linSVC_dropCol",
-                               "svc_dropCol", "log_dropCol", "rf_shap"]
+                               "svc_dropCol", "log_dropCol", "rf_shap", "linSVC_shap", "log_shap"]
         train = train.drop(self.__target_names, axis=1)
         self.__feature_sets = [["Auto"], train.columns,
                                [x for x in train.columns if "." not in x],
