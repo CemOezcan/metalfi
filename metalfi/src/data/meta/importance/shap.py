@@ -1,6 +1,7 @@
 import shap
 
 from pandas import DataFrame
+from sklearn.preprocessing import StandardScaler
 
 from metalfi.src.data.meta.importance.featureimportance import FeatureImportance
 
@@ -12,7 +13,9 @@ class ShapImportance(FeatureImportance):
         self._name = "_shap"
 
     def calculateScores(self):
-        X = self._data_frame.drop(self._target, axis=1)
+        sc = StandardScaler()
+        X = DataFrame(data=sc.fit_transform(self._data_frame.drop(self._target, axis=1)),
+                      columns=self._data_frame.drop(self._target, axis=1).columns)
         y = self._data_frame[self._target]
 
         for model in self._linear_models:

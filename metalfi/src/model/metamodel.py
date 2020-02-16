@@ -20,6 +20,7 @@ class MetaModel:
         self.__base_models = [(RandomForestRegressor(n_estimators=100), "Rf", "RMSE")]
         self.__train_data = train
         self.__test_data = test
+        # TODO: get from FeatureImportance class
         self.__target_names = ["rf_perm", "linSVC_perm", "svc_perm", "log_perm", "rf_dropCol", "linSVC_dropCol",
                                "svc_dropCol", "log_dropCol", "rf_shap"]
         train = train.drop(self.__target_names, axis=1)

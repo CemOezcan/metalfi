@@ -1,4 +1,6 @@
+from pandas import DataFrame
 from rfpimp import *
+from sklearn.preprocessing import StandardScaler
 
 from metalfi.src.data.meta.importance.featureimportance import FeatureImportance
 
@@ -29,7 +31,9 @@ class PermutationImportance(FeatureImportance):
         return imp
 
     def permutationImportance(self, model, target):
-        X = self._data_frame.drop(target, axis=1)
+        sc = StandardScaler()
+        X = DataFrame(data=sc.fit_transform(self._data_frame.drop(target, axis=1)),
+                      columns=self._data_frame.drop(target, axis=1).columns)
         y = self._data_frame[target]
 
         #print(cross_val_score(model, X, y, cv=5))
