@@ -58,9 +58,12 @@ class ShapImportance(FeatureImportance):
         return self.createDataFrame(imp, X)
 
     def createDataFrame(self, array, X):
-        importances = list(map(sum, list(zip(*[self.calculateImportances(c) for c in array])))) \
-            if str(type(array)).endswith("'list'>") \
-            else self.calculateImportances(array)
+        if str(type(array)).endswith("'list'>"):
+            importances = list(map(lambda x: x / len(array),
+                                   map(sum,
+                                       zip(*[self.calculateImportances(c) for c in array]))))
+        else:
+            importances = self.calculateImportances(array)
 
         return DataFrame(data=importances, index=X.columns, columns=["Importances"])
 

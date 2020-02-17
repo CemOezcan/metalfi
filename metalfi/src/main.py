@@ -14,8 +14,8 @@ class Main(object):
         models = c.loadModel(["Titanic", "Iris", "Cancer", "Wine", "Boston"])
 
         # Test performance of the meta-model
-        model, name = models[0]
-        model.test()
+        for model, name in models:
+            model.test()
 
 
 if __name__ == '__main__':

@@ -73,27 +73,26 @@ class MetaModel:
 
     def test(self):
         X = self.__test_data.drop(self.__target_names, axis=1)
+        stats = list()
 
         for (model, features, config, scale) in self.__meta_models:
             sc = StandardScaler()
-            print(len(features))
             X_test = sc.fit_transform(X[features]) if scale else X[features]
-            print(len(list(X_test.columns)))
+
             y_test = self.__test_data[config[2]]
             y_train = self.__train_data[config[2]]
+            y_pred = model.predict(X_test)
 
-            print('+'.join(config))
-            print("R²")
-            print(model.score(X_test, y_test))
-            p = model.predict(X_test)
-            print("RMSE")
-            print(np.sqrt(np.mean(([(p[i] - y_test[i]) ** 2 for i in range(len(p))]))))
-            print("Baseline")
-            print(np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(p))]))))
-            print("Pearson")
-            print(np.corrcoef(p, y_test))
-            print("Spearman")
-            print(spearmanr(p, y_test))
+            name = config
+            r_2 = model.score(X_test, y_test)
+            rmse = np.sqrt(np.mean(([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))])))
+            base = np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))])))
+            r = np.corrcoef(y_pred, y_test)[0][1]
+            rho = spearmanr(y_pred, y_test)[0]
+
+            stats.append((name, r_2, rmse, base, r, rho))
+
+        return stats
 
     def compareRankings(self, columns, prediction, actual, depth=None):
         pred_data = {"target": prediction, "names": columns}
@@ -108,11 +107,11 @@ class MetaModel:
             set_1, set_2 = set(pred[:i]), set(act[:i])
             sum += len(set_1.intersection(set_2)) / i
 
-        #print(sum / depth)
+        # print(sum / depth)
         return act, pred
 
     def calculatePerformance(self, model, X, y, predicted, actual, k, svc):
-        #X_chi_2 = SelectKBest(chi2, k=k).fit_transform(X, y)
+        # X_chi_2 = SelectKBest(chi2, k=k).fit_transform(X, y)
         X_anova_f = SelectKBest(f_classif, k=k).fit_transform(X, y)
         X_mutual_info = SelectKBest(mutual_info_classif, k=k).fit_transform(X, y)
         X_fi = X[actual[:k]]
@@ -125,7 +124,7 @@ class MetaModel:
             X_fi = sc_X.fit_transform(X_fi)
             X_meta_lfi = sc_X.fit_transform(X_meta_lfi)
 
-        #print("%s%s" % ("Chi² Stats \n", mean(cross_val_score(model, X_chi_2, y, cv=5))))
+        # print("%s%s" % ("Chi² Stats \n", mean(cross_val_score(model, X_chi_2, y, cv=5))))
         print("%s%s" % ("ANOVA F-Value \n", mean(cross_val_score(model, X_anova_f, y, cv=5))))
         print("%s%s" % ("Mutual Information \n", mean(cross_val_score(model, X_mutual_info, y, cv=5))))
         print("%s%s" % ("Feature Importance \n", mean(cross_val_score(model, X_fi, y, cv=5))))
