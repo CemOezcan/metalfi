@@ -14,6 +14,9 @@ class Controller:
         self.downloadData()
         self.storeMetaData()
 
+    def getTrainData(self):
+        return self.__train_data
+
     def downloadData(self):
         data_frame, target = Memory.loadTitanic()
         data_1 = Dataset(data_frame, target)
@@ -55,7 +58,7 @@ class Controller:
 
             path = Memory.getPath() / ("model/" + test_name)
             if not path.is_file():
-                model = MetaModel(pd.concat(train_data), test_name + "Meta", test_data)
+                model = MetaModel(pd.concat(train_data), test_name + "meta", test_data)
                 model.fit()
                 Memory.storeModel(model, test_name, None)
 

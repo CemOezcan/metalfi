@@ -33,6 +33,12 @@ class MetaModel:
         self.__file_name = name
         self.__meta_models = list()
 
+    def getName(self):
+        return self.getName()
+
+    def getTargets(self):
+        return self.getTargets()
+
     def fit(self):
         X = self.__train_data.drop(self.__target_names, axis=1)
 
@@ -90,7 +96,7 @@ class MetaModel:
             r = np.corrcoef(y_pred, y_test)[0][1]
             rho = spearmanr(y_pred, y_test)[0]
 
-            stats.append((name, r_2, rmse, base, r, rho))
+            stats.append((name, y_test, y_pred, r_2, rmse, base, r, rho))
 
         return stats
 
@@ -109,23 +115,3 @@ class MetaModel:
 
         # print(sum / depth)
         return act, pred
-
-    def calculatePerformance(self, model, X, y, predicted, actual, k, svc):
-        # X_chi_2 = SelectKBest(chi2, k=k).fit_transform(X, y)
-        X_anova_f = SelectKBest(f_classif, k=k).fit_transform(X, y)
-        X_mutual_info = SelectKBest(mutual_info_classif, k=k).fit_transform(X, y)
-        X_fi = X[actual[:k]]
-        X_meta_lfi = X[predicted[:k]]
-
-        if svc:
-            sc_X = StandardScaler()
-            X_anova_f = sc_X.fit_transform(X_anova_f)
-            X_mutual_info = sc_X.fit_transform(X_mutual_info)
-            X_fi = sc_X.fit_transform(X_fi)
-            X_meta_lfi = sc_X.fit_transform(X_meta_lfi)
-
-        # print("%s%s" % ("Chi² Stats \n", mean(cross_val_score(model, X_chi_2, y, cv=5))))
-        print("%s%s" % ("ANOVA F-Value \n", mean(cross_val_score(model, X_anova_f, y, cv=5))))
-        print("%s%s" % ("Mutual Information \n", mean(cross_val_score(model, X_mutual_info, y, cv=5))))
-        print("%s%s" % ("Feature Importance \n", mean(cross_val_score(model, X_fi, y, cv=5))))
-        print("%s%s" % ("Meta-Learning Feature Importance \n", mean(cross_val_score(model, X_meta_lfi, y, cv=5))))
