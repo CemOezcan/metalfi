@@ -25,8 +25,8 @@ class ShapImportance(FeatureImportance):
         for model in self._tree_models:
             self._feature_importances.append(self.treeShap(model, X, y))
 
-        #for model in self._kernel_models:
-         #   self._feature_importances.append(self.kernelShap(model, X, y))
+        for model in self._kernel_models:
+            self._feature_importances.append(self.kernelShap(model, X, y))
 
     def treeShap(self, model, X, y):
         model.fit(X, y)
@@ -51,7 +51,7 @@ class ShapImportance(FeatureImportance):
 
     def kernelShap(self, model, X, y):
         model.fit(X, y)
-        X_summary = shap.kmeans(X, 5)
+        X_summary = shap.kmeans(X, 10)
         imp = shap.KernelExplainer(model.predict, X_summary).shap_values(X)
         shap.summary_plot(imp, X, plot_type="bar")
 

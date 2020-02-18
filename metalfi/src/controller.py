@@ -3,6 +3,7 @@ import pandas as pd
 from metalfi.src.data.dataset import Dataset
 from metalfi.src.data.memory import Memory
 from metalfi.src.data.metadataset import MetaDataset
+from metalfi.src.model.evaluation import Evaluation
 from metalfi.src.model.metamodel import MetaModel
 
 
@@ -10,6 +11,7 @@ class Controller:
 
     def __init__(self):
         self.__train_data = None
+        self.__enum = None
         self.__meta_data = list()
         self.downloadData()
         self.storeMetaData()
@@ -35,6 +37,7 @@ class Controller:
 
         self.__train_data = [(data_1, "Titanic"), (data_2, "Cancer"), (data_3, "Iris"), (data_4, "Wine"),
                              (data_5, "Boston")]
+        self.__enum = {"Titanic": 0, "Cancer": 1, "Iris": 2, "Wine": 3, "Boston": 4}
 
     def storeMetaData(self):
         for dataset, name in self.__train_data:
@@ -58,9 +61,14 @@ class Controller:
 
             path = Memory.getPath() / ("model/" + test_name)
             if not path.is_file():
-                model = MetaModel(pd.concat(train_data), test_name + "meta", test_data)
+                og_data, name = self.__train_data[self.__enum[test_name]]
+                model = MetaModel(pd.concat(train_data), test_name + "meta", test_data, og_data)
                 model.fit()
                 Memory.storeModel(model, test_name, None)
+
+    def evaluate(self, names):
+        evaluation = Evaluation(Memory.loadModel(names))
+        evaluation.run()
 
     def loadModel(self, names):
         return Memory.loadModel(names)
