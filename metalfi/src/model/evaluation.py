@@ -27,6 +27,3 @@ class Evaluation:
         for i in range(len(self.__tests)):
             print(self.__config[i])
             print(self.__tests[i])
-
-
-

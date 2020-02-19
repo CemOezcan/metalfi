@@ -1,5 +1,6 @@
 import numpy as np
 
+import sklearn.preprocessing as preprocessing
 from copy import deepcopy
 from statistics import mean
 from pandas import DataFrame
@@ -25,11 +26,12 @@ class MetaModel:
         self.__base_models = [(RandomForestRegressor(n_estimators=100), "Rf", "RMSE"),
                               (SVR(), "Svr", "RMSE"),
                               (LinearRegression(), "lin", "RMSE")]
+        # TODO: Scale together
         self.__train_data = train
         self.__test_data = test
         # TODO: get from FeatureImportance class
-        self.__target_names = ["rf_perm", "linSVC_perm", "svc_perm", "log_perm",
-                               "rf_shap", "linSVC_shap", "log_shap", "svc_shap"]
+        self.__target_names = ["log_perm", "rf_perm", "svc_perm", "log_shap", "rf_shap",
+                               "svc_shap", "log_lime", "rf_lime", "svc_lime"]
         train = train.drop(self.__target_names, axis=1)
         self.__enum = {0: "Auto", 1: "All", 2: "FMF", 3: "LM", 4: "NoLM"}
         self.__feature_sets = [["Auto"], train.columns,
@@ -96,8 +98,10 @@ class MetaModel:
 
     def hyperparameterOptimization(self, model, metric, X, y):
         # TODO: Implement
-        sc = StandardScaler()
-        X = sc.fit_transform(X)
+        sc_x = StandardScaler()
+        X = sc_x.fit_transform(X)
+
+        y = preprocessing.scale(y)
 
         model.fit(X, y)
         scale = True
@@ -107,11 +111,11 @@ class MetaModel:
         X = self.__test_data.drop(self.__target_names, axis=1)
 
         for (model, features, config, scale) in self.__meta_models:
-            sc = StandardScaler()
-            X_test = sc.fit_transform(X[features]) if scale else X[features]
+            sc_x = StandardScaler()
+            X_test = sc_x.fit_transform(X[features]) if scale else X[features]
 
-            y_test = self.__test_data[config[2]]
-            y_train = self.__train_data[config[2]]
+            y_test = preprocessing.scale(self.__test_data[config[2]]) if scale else self.__test_data[config[2]]
+            y_train = preprocessing.scale(self.__train_data[config[2]]) if scale else self.__train_data[config[2]]
             y_pred = model.predict(X_test)
 
             if config[2].startswith("rf"):

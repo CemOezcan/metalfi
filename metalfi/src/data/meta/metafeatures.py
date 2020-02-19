@@ -6,6 +6,7 @@ from pymfe.mfe import MFE
 from sklearn.feature_selection import f_classif, mutual_info_classif, chi2
 
 from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
+from metalfi.src.data.meta.importance.lime import LimeImportance
 from metalfi.src.data.meta.importance.permutation import PermutationImportance
 from metalfi.src.data.meta.importance.shap import ShapImportance
 
@@ -161,8 +162,9 @@ class MetaFeatures:
         dropCol = DropColumnImportance(self.__dataset)
         shap = ShapImportance(self.__dataset)
         perm = PermutationImportance(self.__dataset)
+        lime = LimeImportance(self.__dataset)
 
-        return self.addTarget(perm) + self.addTarget(dropCol) + self.addTarget(shap)
+        return self.addTarget(perm) + self.addTarget(dropCol) + self.addTarget(shap) + self.addTarget(lime)
 
     def addTarget(self, target):
         target.calculateScores()
