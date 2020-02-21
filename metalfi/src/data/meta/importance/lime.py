@@ -17,7 +17,6 @@ class LimeImportance(FeatureImportance):
         svc = SVC(kernel="rbf", gamma="scale")
 
     def calculateScores(self):
-        # TODO: Calc. importances for feature subsets that are multicollinear
         models = self._linear_models + self._tree_models + self._kernel_models
 
         for model in models:

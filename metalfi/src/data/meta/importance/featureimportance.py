@@ -8,13 +8,11 @@ from sklearn.svm import SVC, LinearSVC
 
 class FeatureImportance(ABC):
 
-    #TODO: Score metric & more models
     def __init__(self, dataset):
         self._dataset = dataset
         self._data_frame = dataset.getDataFrame()
         self._target = self._dataset.getTarget()
 
-        #reg = linear_model.LinearRegression()
         rf = RandomForestClassifier(n_estimators=100)
         linSVC = LinearSVC(max_iter=10000, dual=False)
         svc = SVC(kernel="rbf", gamma="scale")

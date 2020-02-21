@@ -107,7 +107,6 @@ class MetaFeatures:
                                               "high_corr_norm" + name]
 
     def filterScores(self, data, target):
-        # TODO: Implement more filter scores & model based meta-features
         f_values, anova_p_values = f_classif(data.drop(target, axis=1), data[target])
         mut_info = mutual_info_classif(data.drop(target, axis=1), data[target])
         chi_2, chi_2_p_values = chi2(data.drop(target, axis=1), data[target])
@@ -146,7 +145,6 @@ class MetaFeatures:
         return vector
 
     def createMetaData(self):
-        # TODO: Implement other target variables
         self.__meta_data = DataFrame(columns=self.__feature_meta_feature_names,
                                      data=self.__feature_meta_features,
                                      index=self.__dataset.getDataFrame().columns)
@@ -155,8 +153,6 @@ class MetaFeatures:
             self.__meta_data[self.__data_meta_feature_names[i]] = self.__data_meta_features[i]
 
         self.__meta_data = self.__meta_data.drop(self.__dataset.getTarget())
-        # pd.set_option('display.max_columns', 220)
-        # print(self.__meta_data)
 
     def createTarget(self):
         dropCol = DropColumnImportance(self.__dataset)

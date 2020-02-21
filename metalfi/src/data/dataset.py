@@ -17,17 +17,7 @@ class Dataset:
     def getTarget(self):
         return self.__target
 
-    def splitDataRandom(self):
-        return
-
-    def scale(self):
-        values = self.__data_frame.values
-        values_scaled = preprocessing.MinMaxScaler().fit_transform(values)
-
-        self.__data_frame = pd.DataFrame(values_scaled, columns=self.__data_frame.columns)
-
-    # TODO: Rename
-    def trainingMetaFeatureVectors(self):
+    def trainMetaData(self):
         mf = MetaFeatures(self)
         mf.calculateMetaFeatures()
         targets = mf.createTarget()
@@ -35,7 +25,7 @@ class Dataset:
 
         return data, targets
 
-    def testMetaFeatureVectors(self):
+    def testMetaData(self):
         mf = MetaFeatures(self)
         mf.calculateMetaFeatures()
 

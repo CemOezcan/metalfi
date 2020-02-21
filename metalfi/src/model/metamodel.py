@@ -19,9 +19,6 @@ from sklearn.svm import SVC, LinearSVC, SVR, LinearSVR
 class MetaModel:
 
     def __init__(self, train, name, test, og_data):
-        # TODO: Parameter optimization,
-        #  more models (change implementation of feature selection for non-linear and non-tree-based models) and
-        #  do not store datasets (ids should be sufficient)
         self.__og_y = og_data.getDataFrame()[og_data.getTarget()]
         self.__og_X = og_data.getDataFrame().drop(og_data.getTarget(), axis=1)
 
@@ -75,7 +72,6 @@ class MetaModel:
                 i = 0
                 for feature_set in self.__feature_sets:
                     y = self.__train_data[target]
-                    # TODO: a little bit of hyperparameter optimization before selecting features
                     X_train, selected_features = self.featureSelection(base_model, base_model_name, X, y) \
                         if feature_set[0] == "Auto" else (X[feature_set], feature_set)
 
@@ -88,6 +84,7 @@ class MetaModel:
                     i -= -1
 
     def featureSelection(self, base_model, name, X_train, y_train):
+        # TODO: Implement for SVR
         if name == "Svr":
             return X_train, self.__feature_sets[1]
 
@@ -105,6 +102,7 @@ class MetaModel:
         return X_selected, features
 
     def hyperparameterOptimization(self, model, metric, X, y):
+        # TODO: Implement
         model.fit(X, y)
         scale = True
         return model, scale
