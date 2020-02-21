@@ -33,13 +33,17 @@ class MetaModel:
         # TODO: get from FeatureImportance class
         self.__target_names = ["lda_shap", "linSVC_shap", "log_shap", "rf_shap", "nb_shap", "svc_shap",
                                "lda_lime", "linSVC_lime", "log_lime", "rf_lime", "nb_lime", "svc_lime",
-                               "lda_perm", "linSVC_perm", "log_perm", "rf_perm", "nb_perm", "svc_perm"]
+                               "lda_perm", "linSVC_perm", "log_perm", "rf_perm", "nb_perm", "svc_perm",
+                               "lda_dCol", "linSVC_dCol", "log_dCol", "rf_dCol", "nb_dCol", "svc_dCol"]
+
         train = train.drop(self.__target_names, axis=1)
+        fmf = [x for x in train.columns if "." not in x]
+        lm = [x for x in train.columns
+              if (x.startswith("target") or x == "joint_ent" or x == "mut_inf" or x == "var_importance")]
+        no_lm = [x for x in train.columns if (x not in lm)]
+
+        self.__feature_sets = [["Auto"], train.columns, fmf, lm, no_lm]
         self.__enum = {0: "Auto", 1: "All", 2: "FMF", 3: "LM", 4: "NoLM"}
-        self.__feature_sets = [["Auto"], train.columns,
-                               [x for x in train.columns if "." not in x],
-                               [x for x in train.columns if x.startswith("target")],
-                               [x for x in train.columns if not x.startswith("target")]]
 
         # Name of the test dataset + information about whether features are independent or not
         self.__file_name = name

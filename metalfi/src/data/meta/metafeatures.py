@@ -31,7 +31,7 @@ class MetaFeatures:
 
     def run(self, X, y, summary, features):
         mfe = MFE(summary=summary,
-                  groups=["general", "statistical", "info-theory"],
+                  groups=["general", "statistical", "info-theory", "model-based"],
                   features=features)
         mfe.fit(X, y)
         vector = mfe.extract()
@@ -72,7 +72,8 @@ class MetaFeatures:
             columns, values = self.run(X.values, y.values, None,
                                        ["h_mean", "iq_range", "kurtosis", "mad", "max", "mean", "median", "min",
                                         "range", "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent",
-                                        "joint_ent", "mut_inf", "nr_norm", "nr_outliers", "nr_cat", "nr_bin", "nr_num"])
+                                        "joint_ent", "mut_inf", "nr_norm", "nr_outliers", "nr_cat", "nr_bin", "nr_num",
+                                        "var_importance"])
 
             self.__feature_meta_features.append(self.toFeatureVector(values))
 

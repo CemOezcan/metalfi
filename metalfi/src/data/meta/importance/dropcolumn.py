@@ -9,7 +9,7 @@ class DropColumnImportance(FeatureImportance):
 
     def __init__(self, dataset):
         super(DropColumnImportance, self).__init__(dataset)
-        self._name = "_dropCol"
+        self._name = "_dCol"
 
     def calculateScores(self):
         for model in self._linear_models:
