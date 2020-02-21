@@ -1,4 +1,6 @@
 import pandas as pd
+from pandas import DataFrame
+from sklearn.preprocessing import StandardScaler
 
 from metalfi.src.data.dataset import Dataset
 from metalfi.src.data.memory import Memory
@@ -47,14 +49,17 @@ class Controller:
 
     def loadMetaData(self):
         for dataset, name in self.__train_data:
-            self.__meta_data.append((Memory.load(name + "meta.csv", "input"), name))
+            sc = StandardScaler()
+            data = Memory.load(name + "meta.csv", "input")
+
+            self.__meta_data.append((DataFrame(data=sc.fit_transform(data), columns=data.columns), name))
 
     def trainMetaModel(self):
-        # TODO: Combine Meta-Datasets + CV + Different Meta-Feature splits <-- In MetaModel
         self.loadMetaData()
         for i in range(0, len(self.__meta_data)):
             test_data, test_name = self.__meta_data[i]
             train_data = list()
+
             for j in range(0, len(self.__meta_data)):
                 if not (i == j):
                     train_data.append(self.__meta_data[j][0])

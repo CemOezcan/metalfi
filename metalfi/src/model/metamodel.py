@@ -1,4 +1,6 @@
 import numpy as np
+import sklearn.metrics
+import pandas as pd
 
 import sklearn.preprocessing as preprocessing
 from copy import deepcopy
@@ -6,11 +8,12 @@ from statistics import mean
 from pandas import DataFrame
 from scipy.stats import spearmanr
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.feature_selection import SelectFromModel, SelectKBest, chi2, f_classif, mutual_info_classif
+from sklearn.feature_selection import SelectFromModel, SelectKBest, chi2, f_classif, mutual_info_classif, RFE, RFECV
 from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.metrics import make_scorer
 from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC, LinearSVC, SVR
+from sklearn.svm import SVC, LinearSVC, SVR, LinearSVR
 
 
 class MetaModel:
@@ -19,19 +22,21 @@ class MetaModel:
         # TODO: Parameter optimization,
         #  more models (change implementation of feature selection for non-linear and non-tree-based models) and
         #  do not store datasets (ids should be sufficient)
-
         self.__og_y = og_data.getDataFrame()[og_data.getTarget()]
         self.__og_X = og_data.getDataFrame().drop(og_data.getTarget(), axis=1)
 
         self.__base_models = [(RandomForestRegressor(n_estimators=100), "Rf", "RMSE"),
                               (SVR(), "Svr", "RMSE"),
-                              (LinearRegression(), "lin", "RMSE")]
+                              (LinearRegression(), "lin", "RMSE"),
+                              (LinearSVR(dual=True, max_iter=10000), "linSVR", "RMSE")]
         # TODO: Scale together
         self.__train_data = train
         self.__test_data = test
+
         # TODO: get from FeatureImportance class
-        self.__target_names = ["log_perm", "rf_perm", "svc_perm", "log_shap", "rf_shap",
-                               "svc_shap", "log_lime", "rf_lime", "svc_lime"]
+        self.__target_names = ["lda_shap", "linSVC_shap", "log_shap", "rf_shap", "nb_shap", "svc_shap",
+                               "lda_lime", "linSVC_lime", "log_lime", "rf_lime", "nb_lime", "svc_lime",
+                               "lda_perm", "linSVC_perm", "log_perm", "rf_perm", "nb_perm", "svc_perm"]
         train = train.drop(self.__target_names, axis=1)
         self.__enum = {0: "Auto", 1: "All", 2: "FMF", 3: "LM", 4: "NoLM"}
         self.__feature_sets = [["Auto"], train.columns,
@@ -87,6 +92,9 @@ class MetaModel:
             return X_train, self.__feature_sets[1]
 
         base_model.fit(X_train, y_train)
+        """selector = RFECV(base_model, step=1, cv=5, scoring=make_scorer(sklearn.metrics.mean_squared_error,
+                                                                       greater_is_better=False))
+        selector = selector.fit(X_train, y_train)"""
 
         selector = SelectFromModel(base_model, prefit=True)
         support = selector.get_support(indices=True)
@@ -97,12 +105,6 @@ class MetaModel:
         return X_selected, features
 
     def hyperparameterOptimization(self, model, metric, X, y):
-        # TODO: Implement
-        sc_x = StandardScaler()
-        X = sc_x.fit_transform(X)
-
-        y = preprocessing.scale(y)
-
         model.fit(X, y)
         scale = True
         return model, scale
@@ -111,11 +113,9 @@ class MetaModel:
         X = self.__test_data.drop(self.__target_names, axis=1)
 
         for (model, features, config, scale) in self.__meta_models:
-            sc_x = StandardScaler()
-            X_test = sc_x.fit_transform(X[features]) if scale else X[features]
-
-            y_test = preprocessing.scale(self.__test_data[config[2]]) if scale else self.__test_data[config[2]]
-            y_train = preprocessing.scale(self.__train_data[config[2]]) if scale else self.__train_data[config[2]]
+            X_test = X[features]
+            y_test = self.__test_data[config[2]]
+            y_train = self.__train_data[config[2]]
             y_pred = model.predict(X_test)
 
             if config[2].startswith("rf"):
@@ -129,17 +129,17 @@ class MetaModel:
             else:
                 og_model = LinearRegression()
 
-            r_2 = model.score(X_test, y_test)
+            r_2 = 1 - (sum([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))]) /
+                       sum([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))]))
             rmse = np.sqrt(np.mean(([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))])))
             base = np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))])))
             r = np.corrcoef(y_pred, y_test)[0][1]
             rho = spearmanr(y_pred, y_test)[0]
 
             a, p = self.getRankings(self.__test_data.index, y_pred, y_test)
-
             anova_f, mutual_info, fi, meta_lfi = self.compare(og_model, self.__og_X, self.__og_y, p, a, k)
 
-            self.__stats.append([anova_f, mutual_info, fi, meta_lfi, r_2, rmse, base, r, rho])
+            self.__stats.append([anova_f, mutual_info, fi, meta_lfi, r_2, rmse / base, r, rho])
 
     def getRankings(self, columns, prediction, actual):
         pred_data = {"target": prediction, "names": columns}
