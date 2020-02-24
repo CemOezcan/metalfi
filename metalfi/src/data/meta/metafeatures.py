@@ -1,9 +1,10 @@
 import statistics
+
 import numpy as np
 
 from pandas import DataFrame
 from pymfe.mfe import MFE
-from sklearn.feature_selection import f_classif, mutual_info_classif, chi2
+from sklearn.feature_selection import f_classif, mutual_info_classif
 
 from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
 from metalfi.src.data.meta.importance.lime import LimeImportance
@@ -16,6 +17,7 @@ class MetaFeatures:
     def __init__(self, dataset):
         self.__dataset = dataset
         self.__meta_data = DataFrame()
+        self.__targets = list()
         self.__feature_meta_features = list()
         self.__data_meta_features = list()
         self.__data_meta_feature_names = list()
@@ -49,7 +51,7 @@ class MetaFeatures:
                                   ["min", "median", "max", "sd", "kurtosis", "skewness", "mean"],
                                   ["attr_to_inst", "freq_class", "inst_to_attr", "nr_attr", "nr_class", "nr_inst",
                                    "gravity", "cor", "cov", "nr_disc", "eigenvalues", "nr_cor_attr", "w_lambda",
-                                   "class_ent", "eq_num_attr", "ns_ratio", "h_mean", "iq_range", "kurtosis", "mad",
+                                   "class_ent", "eq_num_attr", "ns_ratio", "iq_range", "kurtosis", "mad",
                                    "max", "mean", "median", "min", "range", "sd", "skewness", "sparsity", "t_mean",
                                    "var", "attr_ent", "class_conc", "joint_ent", "mut_inf", "nr_norm", "nr_outliers",
                                    "nr_cat", "nr_bin", "nr_num"])
@@ -70,7 +72,7 @@ class MetaFeatures:
             X = data_frame[feature]
 
             columns, values = self.run(X.values, y.values, None,
-                                       ["h_mean", "iq_range", "kurtosis", "mad", "max", "mean", "median", "min",
+                                       ["iq_range", "kurtosis", "mad", "max", "mean", "median", "min",
                                         "range", "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent",
                                         "joint_ent", "mut_inf", "nr_norm", "nr_outliers", "nr_cat", "nr_bin", "nr_num",
                                         "var_importance"])
@@ -110,7 +112,6 @@ class MetaFeatures:
     def filterScores(self, data, target):
         f_values, anova_p_values = f_classif(data.drop(target, axis=1), data[target])
         mut_info = mutual_info_classif(data.drop(target, axis=1), data[target])
-        chi_2, chi_2_p_values = chi2(data.drop(target, axis=1), data[target])
 
         for feature in data.drop(target, axis=1).columns:
             loc = data.columns.get_loc(feature)
@@ -119,19 +120,13 @@ class MetaFeatures:
             self.__feature_meta_features[loc].append(data[feature].corr(data[target], method="kendall"))
             self.__feature_meta_features[loc].append(data[feature].corr(data[target], method="spearman"))
             self.__feature_meta_features[loc].append(f_values[loc])
-            self.__feature_meta_features[loc].append(anova_p_values[loc])
             self.__feature_meta_features[loc].append(mut_info[loc])
-            self.__feature_meta_features[loc].append(chi_2[loc])
-            self.__feature_meta_features[loc].append(chi_2_p_values[loc])
 
         self.__feature_meta_feature_names.append("target_p_corr")
         self.__feature_meta_feature_names.append("target_k_corr")
         self.__feature_meta_feature_names.append("target_s_corr")
         self.__feature_meta_feature_names.append("target_F_value")
-        self.__feature_meta_feature_names.append("target_anova_p_value")
         self.__feature_meta_feature_names.append("target_mut_info")
-        self.__feature_meta_feature_names.append("target_chi_2")
-        self.__feature_meta_feature_names.append("target_chi_2_p_value")
 
     def toFeatureVector(self, double_list):
         vector = list()
@@ -156,12 +151,17 @@ class MetaFeatures:
         self.__meta_data = self.__meta_data.drop(self.__dataset.getTarget())
 
     def createTarget(self):
-        dropCol = DropColumnImportance(self.__dataset)
-        shap = ShapImportance(self.__dataset)
         perm = PermutationImportance(self.__dataset)
+        dCol = DropColumnImportance(self.__dataset)
+        shap = ShapImportance(self.__dataset)
         lime = LimeImportance(self.__dataset)
 
-        return self.addTarget(perm) + self.addTarget(dropCol) + self.addTarget(shap) + self.addTarget(lime)
+        self.addTarget(perm)
+        self.addTarget(dCol)
+        self.addTarget(shap)
+        self.addTarget(lime)
+
+        return self.__targets
 
     def addTarget(self, target):
         target.calculateScores()
@@ -175,4 +175,4 @@ class MetaFeatures:
             for x in imp[i].index:
                 self.__meta_data.at[x, target.getModelNames()[i] + name] = imp[i].loc[x].iat[0]
 
-        return target_names
+        self.__targets = self.__targets + target_names

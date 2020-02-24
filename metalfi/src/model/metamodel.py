@@ -22,9 +22,9 @@ class MetaModel:
         self.__og_y = og_data.getDataFrame()[og_data.getTarget()]
         self.__og_X = og_data.getDataFrame().drop(og_data.getTarget(), axis=1)
 
-        self.__base_models = [(RandomForestRegressor(n_estimators=100), "Rf", "RMSE"),
+        self.__base_models = [(RandomForestRegressor(n_estimators=100, n_jobs=4), "Rf", "RMSE"),
                               (SVR(), "Svr", "RMSE"),
-                              (LinearRegression(), "lin", "RMSE"),
+                              (LinearRegression(n_jobs=4), "lin", "RMSE"),
                               (LinearSVR(dual=True, max_iter=10000), "linSVR", "RMSE")]
         # TODO: Scale together
         self.__train_data = train
@@ -121,11 +121,11 @@ class MetaModel:
             y_pred = model.predict(X_test)
 
             if config[2].startswith("rf"):
-                og_model = RandomForestClassifier(n_estimators=10, random_state=0)
+                og_model = RandomForestClassifier(n_estimators=10, random_state=0, n_jobs=4)
             elif config[2].startswith("svc"):
                 og_model = SVC(kernel="rbf", gamma="scale", random_state=0)
             elif config[2].startswith("log"):
-                og_model = LogisticRegression(dual=False, solver="lbfgs", multi_class="auto", max_iter=1000, random_state=0)
+                og_model = LogisticRegression(dual=False, solver="lbfgs", multi_class="auto", max_iter=1000, random_state=0, n_jobs=4)
             elif config[2].startswith("lin"):
                 og_model = LinearSVC(max_iter=10000, dual=False, random_state=0)
             else:
