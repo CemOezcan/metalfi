@@ -1,10 +1,11 @@
 import pickle
+
 import numpy as np
 import pandas as pd
 
 from pathlib import Path
 from pandas import DataFrame
-from sklearn.datasets import load_wine, load_iris, load_boston, fetch_openml
+from sklearn.datasets import load_wine, load_iris, load_boston, fetch_openml, load_diabetes
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, LabelEncoder
 
 
@@ -94,10 +95,10 @@ class Memory:
     def loadOpenML():
         datasets = list()
 
-        ids = [("cloud", 2), ("vowel", 3), ("mammography", 1), ("backache", 1), ("wind", 2), ("credit-approval", 1),
-               ("ilpd-numeric", 2), ("cmc", 2), ("credit-g", 1), ("Engine1", 1), ("primary-tumor", 2), ("bodyfat", 2),
-               ("cpu_act", 3), ("socmob", 2), ("elevators", 2), ("cpu", 2), ("bank8FM", 2), ("puma32H", 2),
-               ("cpu_small", 3), ("SPECTF", 2)]
+        ids = [("cloud", 2), ("backache", 1), ("primary-tumor", 2),  ("EgyptianSkulls", 1), ("SPECTF", 2), ("cpu", 2),
+               ("bodyfat", 2), ("Engine1", 1), ("ESL", 2), ("ilpd-numeric", 2),
+               ("credit-approval", 1), ("vowel", 3), ("socmob", 2), ("ERA", 1), ("LEV", 1), ("credit-g", 1), ("cmc", 2),
+               ("ozone-level-8hr", 1), ("wind", 2), ("mammography", 1), ("bank8FM", 2)]
 
         for name, version in ids:
             dataset = fetch_openml(name=name, version=version, as_frame=True)
@@ -109,6 +110,7 @@ class Memory:
 
             X = data_frame.drop(target, axis=1)
             X_cat = X
+
             y = data_frame[target]
 
             sorted_categories = list()
@@ -119,22 +121,24 @@ class Memory:
                 else:
                     X_cat = X_cat.drop(feature, axis=1)
 
-            if str(type(dataset["target"])) != "category":
-                X_num = X.drop(X_cat.columns, axis=1)
-                num_features = list(set(all_features) - set(cat_features))
-
-                X_enc = OrdinalEncoder(sorted_categories)
+            if str(dataset["target"].dtypes) == "category":
                 y_enc = LabelEncoder()
-
-                X_cat = X_enc.fit_transform(X_cat)
                 y = y_enc.fit_transform(y)
 
-                data_frame = DataFrame(data=np.c_[np.c_[X_cat, X_num], y],
-                                       columns=cat_features + num_features + [target])
-
-                datasets.append((data_frame, name, target))
             else:
-                raise TypeError("Target of %s continuous." % name)
+                est = KBinsDiscretizer(n_bins=2, encode='ordinal')
+                y = est.fit_transform(list(map(lambda x: [x], y)))
+
+            X_num = X.drop(X_cat.columns, axis=1)
+            num_features = list(set(all_features) - set(cat_features))
+
+            X_enc = OrdinalEncoder(sorted_categories)
+            X_cat = X_enc.fit_transform(X_cat)
+
+            data_frame = DataFrame(data=np.c_[np.c_[X_cat, X_num], y],
+                                   columns=cat_features + num_features + [target])
+
+            datasets.append((data_frame, name, target))
 
         return datasets
 
