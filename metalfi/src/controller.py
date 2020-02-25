@@ -58,7 +58,13 @@ class Controller:
         for dataset, name in self.__train_data:
             sc = StandardScaler()
             data = Memory.load(name + "meta.csv", "input")
-            data_frame = DataFrame(data=sc.fit_transform(data), columns=data.columns)
+            fmf = [x for x in data.columns if "." not in x]
+            dmf = [x for x in data.columns if "." in x]
+
+            X_f = DataFrame(data=sc.fit_transform(data[fmf]), columns=fmf)
+            X_d = DataFrame(data=data[dmf], columns=dmf)
+
+            data_frame = pd.concat([X_d, X_f], axis=1)
 
             self.__meta_data.append((data_frame, name))
 

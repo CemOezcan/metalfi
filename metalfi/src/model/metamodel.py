@@ -26,9 +26,11 @@ class MetaModel:
                               (SVR(), "Svr", "RMSE"),
                               (LinearRegression(n_jobs=4), "lin", "RMSE"),
                               (LinearSVR(dual=True, max_iter=10000), "linSVR", "RMSE")]
-        # TODO: Scale together
-        self.__train_data = train
-        self.__test_data = test
+
+        sc1 = StandardScaler()
+        sc1.fit(pd.concat([train, test]))
+        self.__train_data = DataFrame(data=sc1.transform(train), columns=train.columns)
+        self.__test_data = DataFrame(data=sc1.transform(test), columns=test.columns)
 
         # TODO: get from FeatureImportance class
         self.__target_names = ["lda_shap", "linSVC_shap", "log_shap", "rf_shap", "nb_shap", "svc_shap",
