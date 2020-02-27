@@ -1,4 +1,6 @@
 import pandas as pd
+from pandas import DataFrame
+from sklearn.preprocessing import StandardScaler
 
 from metalfi.src.data.dataset import Dataset
 from metalfi.src.data.memory import Memory
@@ -35,9 +37,16 @@ class Controller:
         data_frame_5, target_5 = Memory.loadBoston()
         data_5 = Dataset(data_frame_5, target_5)
 
+        open_ml = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.loadOpenML()]
+
         self.__train_data = [(data_1, "Titanic"), (data_2, "Cancer"), (data_3, "Iris"), (data_4, "Wine"),
-                             (data_5, "Boston")]
-        self.__enum = {"Titanic": 0, "Cancer": 1, "Iris": 2, "Wine": 3, "Boston": 4}
+                             (data_5, "Boston")] + open_ml
+
+        self.__enum = dict({})
+        i = 0
+        for data, name in self.__train_data:
+            self.__enum[name] = i
+            i += 1
 
     def storeMetaData(self):
         for dataset, name in self.__train_data:
@@ -47,14 +56,24 @@ class Controller:
 
     def loadMetaData(self):
         for dataset, name in self.__train_data:
-            self.__meta_data.append((Memory.load(name + "meta.csv", "input"), name))
+            sc = StandardScaler()
+            data = Memory.load(name + "meta.csv", "input")
+            fmf = [x for x in data.columns if "." not in x]
+            dmf = [x for x in data.columns if "." in x]
+
+            X_f = DataFrame(data=sc.fit_transform(data[fmf]), columns=fmf)
+            X_d = DataFrame(data=data[dmf], columns=dmf)
+
+            data_frame = pd.concat([X_d, X_f], axis=1)
+
+            self.__meta_data.append((data_frame, name))
 
     def trainMetaModel(self):
-        # TODO: Combine Meta-Datasets + CV + Different Meta-Feature splits <-- In MetaModel
         self.loadMetaData()
         for i in range(0, len(self.__meta_data)):
             test_data, test_name = self.__meta_data[i]
             train_data = list()
+
             for j in range(0, len(self.__meta_data)):
                 if not (i == j):
                     train_data.append(self.__meta_data[j][0])

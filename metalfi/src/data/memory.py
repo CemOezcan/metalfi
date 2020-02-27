@@ -1,11 +1,12 @@
 import pickle
+
 import numpy as np
 import pandas as pd
 
 from pathlib import Path
 from pandas import DataFrame
-from sklearn.datasets import load_wine, load_iris, load_boston
-from sklearn.preprocessing import KBinsDiscretizer
+from sklearn.datasets import load_wine, load_iris, load_boston, fetch_openml, load_diabetes
+from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, LabelEncoder
 
 
 class Memory:
@@ -31,7 +32,7 @@ class Memory:
         boston = load_boston()
         data_frame = DataFrame(data=boston.data, columns=boston['feature_names'])
 
-        est = KBinsDiscretizer(n_bins=10, encode='ordinal')
+        est = KBinsDiscretizer(n_bins=2, encode='ordinal')
         data_frame["target"] = est.fit_transform(list(map(lambda x: [x], boston.target)))
 
         return data_frame, "target"
@@ -89,6 +90,57 @@ class Memory:
         data_frame = DataFrame(data=np.c_[iris['data'], iris['target']], columns=iris['feature_names'] + ['target'])
 
         return data_frame, "target"
+
+    @staticmethod
+    def loadOpenML():
+        datasets = list()
+
+        ids = [("cloud", 2), ("backache", 1), ("primary-tumor", 2),  ("EgyptianSkulls", 1), ("SPECTF", 2), ("cpu", 2),
+               ("bodyfat", 2), ("Engine1", 1), ("ESL", 2), ("ilpd-numeric", 2),
+               ("credit-approval", 1), ("vowel", 3), ("socmob", 2), ("ERA", 1), ("LEV", 1), ("credit-g", 1), ("cmc", 2),
+               ("ozone-level-8hr", 1), ("wind", 2), ("mammography", 1), ("bank8FM", 2)]
+
+        for name, version in ids:
+            dataset = fetch_openml(name=name, version=version, as_frame=True)
+            categories = fetch_openml(name=name, version=version, as_frame=False)["categories"]
+            all_features = dataset["feature_names"]
+            cat_features = list()
+            data_frame = dataset["frame"].dropna(axis=0)
+            target = dataset["target_names"][0]
+
+            X = data_frame.drop(target, axis=1)
+            X_cat = X
+
+            y = data_frame[target]
+
+            sorted_categories = list()
+            for feature in all_features:
+                if str(data_frame[feature].dtypes) == "category":
+                    cat_features.append(feature)
+                    sorted_categories.append(categories[feature])
+                else:
+                    X_cat = X_cat.drop(feature, axis=1)
+
+            if str(dataset["target"].dtypes) == "category":
+                y_enc = LabelEncoder()
+                y = y_enc.fit_transform(y)
+
+            else:
+                est = KBinsDiscretizer(n_bins=2, encode='ordinal')
+                y = est.fit_transform(list(map(lambda x: [x], y)))
+
+            X_num = X.drop(X_cat.columns, axis=1)
+            num_features = list(set(all_features) - set(cat_features))
+
+            X_enc = OrdinalEncoder(sorted_categories)
+            X_cat = X_enc.fit_transform(X_cat)
+
+            data_frame = DataFrame(data=np.c_[np.c_[X_cat, X_num], y],
+                                   columns=cat_features + num_features + [target])
+
+            datasets.append((data_frame, name, target))
+
+        return datasets
 
     def storePreprocessed(self, data):
         return

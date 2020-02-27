@@ -6,7 +6,7 @@ class MetaDataset:
     def __init__(self, datasets, train=False):
         data_frames = list()
         for dataset in datasets:
-            data_frames.append(dataset.testMetaFeatureVectors())
+            data_frames.append(dataset.testMetaData())
 
         self.__meta_data, self.__target_names = \
             self.calculateTrainingData(datasets) if train else self.calculateTestData(datasets)
@@ -22,7 +22,7 @@ class MetaDataset:
         data_frames = list()
         targets = None
         for dataset in datasets:
-            data, targets = dataset.trainingMetaFeatureVectors()
+            data, targets = dataset.trainMetaData()
             data_frames.append(data)
 
         return pd.concat(data_frames), targets
@@ -31,6 +31,6 @@ class MetaDataset:
     def calculateTestData(datasets):
         data_frames = list()
         for dataset in datasets:
-            data_frames.append(dataset.testMetaFeatureVectors())
+            data_frames.append(dataset.testMetaData())
 
         return pd.concat(data_frames), None
