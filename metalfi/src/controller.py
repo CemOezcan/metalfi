@@ -1,11 +1,16 @@
 import pandas as pd
-from pandas import DataFrame
-from sklearn.preprocessing import StandardScaler
 
+from pandas import DataFrame
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.feature_selection import f_regression
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVR, LinearSVR
 from metalfi.src.data.dataset import Dataset
 from metalfi.src.data.memory import Memory
 from metalfi.src.data.metadataset import MetaDataset
 from metalfi.src.model.evaluation import Evaluation
+from metalfi.src.model.featureselection import MetaFeatureSelection
 from metalfi.src.model.metamodel import MetaModel
 
 
@@ -37,10 +42,10 @@ class Controller:
         data_frame_5, target_5 = Memory.loadBoston()
         data_5 = Dataset(data_frame_5, target_5)
 
-        open_ml = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.loadOpenML()]
+        #open_ml = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.loadOpenML()]
 
         self.__train_data = [(data_1, "Titanic"), (data_2, "Cancer"), (data_3, "Iris"), (data_4, "Wine"),
-                             (data_5, "Boston")] + open_ml
+                             (data_5, "Boston")] #+ open_ml
 
         self.__enum = dict({})
         i = 0
@@ -70,6 +75,25 @@ class Controller:
 
     def trainMetaModel(self):
         self.loadMetaData()
+
+        t = ["lda_shap", "linSVC_shap", "log_shap", "rf_shap", "nb_shap", "svc_shap",
+             "lda_lime", "linSVC_lime", "log_lime", "rf_lime", "nb_lime", "svc_lime",
+             "lda_perm", "linSVC_perm", "log_perm", "rf_perm", "nb_perm", "svc_perm",
+             "lda_dCol", "linSVC_dCol", "log_dCol", "rf_dCol", "nb_dCol", "svc_dCol"]
+
+        meta_models = [(RandomForestRegressor(n_estimators=100, n_jobs=4), "Rf", "RMSE"),
+                       (SVR(), "Svr", "RMSE"),
+                       (LinearRegression(n_jobs=4), "lin", "RMSE"),
+                       (LinearSVR(dual=True, max_iter=10000), "linSVR", "RMSE")]
+
+        data = [d for d, _ in self.__meta_data]
+        fs = MetaFeatureSelection(pd.concat(data), t)
+        sets = {}
+
+        for meta_model, name, _ in meta_models:
+            fs.select(meta_model, f_regression)
+            sets[name] = fs.get_sets()
+
         for i in range(0, len(self.__meta_data)):
             test_data, test_name = self.__meta_data[i]
             train_data = list()
@@ -81,7 +105,7 @@ class Controller:
             path = Memory.getPath() / ("model/" + test_name)
             if not path.is_file():
                 og_data, name = self.__train_data[self.__enum[test_name]]
-                model = MetaModel(pd.concat(train_data), test_name + "meta", test_data, og_data)
+                model = MetaModel(pd.concat(train_data), test_name + "meta", test_data, og_data, sets, meta_models, t)
                 model.fit()
                 Memory.storeModel(model, test_name, None)
 
