@@ -23,6 +23,16 @@ class Controller:
         self.downloadData()
         self.storeMetaData()
 
+        self.__targets = ["lda_shap", "linSVC_shap", "log_shap", "rf_shap", "nb_shap", "svc_shap",
+                          "lda_lime", "linSVC_lime", "log_lime", "rf_lime", "nb_lime", "svc_lime",
+                          "lda_perm", "linSVC_perm", "log_perm", "rf_perm", "nb_perm", "svc_perm",
+                          "lda_dCol", "linSVC_dCol", "log_dCol", "rf_dCol", "nb_dCol", "svc_dCol"]
+
+        self.__meta_models = [(RandomForestRegressor(n_estimators=100, n_jobs=4), "Rf", "RMSE"),
+                              (SVR(), "Svr", "RMSE"),
+                              (LinearRegression(n_jobs=4), "lin", "RMSE"),
+                              (LinearSVR(dual=True, max_iter=10000), "linSVR", "RMSE")]
+
     def getTrainData(self):
         return self.__train_data
 
@@ -42,10 +52,10 @@ class Controller:
         data_frame_5, target_5 = Memory.loadBoston()
         data_5 = Dataset(data_frame_5, target_5)
 
-        #open_ml = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.loadOpenML()]
+        # open_ml = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.loadOpenML()]
 
         self.__train_data = [(data_1, "Titanic"), (data_2, "Cancer"), (data_3, "Iris"), (data_4, "Wine"),
-                             (data_5, "Boston")] #+ open_ml
+                             (data_5, "Boston")]  # + open_ml
 
         self.__enum = dict({})
         i = 0
@@ -73,26 +83,20 @@ class Controller:
 
             self.__meta_data.append((data_frame, name))
 
-    def trainMetaModel(self):
-        self.loadMetaData()
-
-        t = ["lda_shap", "linSVC_shap", "log_shap", "rf_shap", "nb_shap", "svc_shap",
-             "lda_lime", "linSVC_lime", "log_lime", "rf_lime", "nb_lime", "svc_lime",
-             "lda_perm", "linSVC_perm", "log_perm", "rf_perm", "nb_perm", "svc_perm",
-             "lda_dCol", "linSVC_dCol", "log_dCol", "rf_dCol", "nb_dCol", "svc_dCol"]
-
-        meta_models = [(RandomForestRegressor(n_estimators=100, n_jobs=4), "Rf", "RMSE"),
-                       (SVR(), "Svr", "RMSE"),
-                       (LinearRegression(n_jobs=4), "lin", "RMSE"),
-                       (LinearSVR(dual=True, max_iter=10000), "linSVR", "RMSE")]
-
+    def selectMetaFeatures(self):
         data = [d for d, _ in self.__meta_data]
-        fs = MetaFeatureSelection(pd.concat(data), t)
+        fs = MetaFeatureSelection(pd.concat(data), self.__targets)
         sets = {}
 
-        for meta_model, name, _ in meta_models:
+        for meta_model, name, _ in self.__meta_models:
             fs.select(meta_model, f_regression)
             sets[name] = fs.get_sets()
+
+        return sets
+
+    def trainMetaModel(self):
+        self.loadMetaData()
+        sets = self.selectMetaFeatures()
 
         for i in range(0, len(self.__meta_data)):
             test_data, test_name = self.__meta_data[i]
@@ -105,7 +109,8 @@ class Controller:
             path = Memory.getPath() / ("model/" + test_name)
             if not path.is_file():
                 og_data, name = self.__train_data[self.__enum[test_name]]
-                model = MetaModel(pd.concat(train_data), test_name + "meta", test_data, og_data, sets, meta_models, t)
+                model = MetaModel(pd.concat(train_data), test_name + "meta",
+                                  test_data, og_data, sets, self.__meta_models, self.__targets)
                 model.fit()
                 Memory.storeModel(model, test_name, None)
 

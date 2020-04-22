@@ -37,13 +37,10 @@ class MetaFeatureSelection:
 
     def select(self, meta_model, scoring):
         for target in self.__target_names:
-            start = time.time()
-
             y = self.__Y[target]
 
             percentiles = (5, 10, 15, 20, 25, 30, 35, 40, 45, 50)
             p, _ = self.percentile_search(meta_model, scoring, y, percentiles)
-            print(p)
 
             percentiles = (p - 4, p - 3, p-2, p-1, p, p + 1, p + 2, p + 3, p + 4)
             _, features = self.percentile_search(meta_model, scoring, y, percentiles)
@@ -53,9 +50,6 @@ class MetaFeatureSelection:
             shap.summary_plot(imp, self.__X[features], plot_type="bar")"""
 
             self.__sets[target] = features
-            print(len(features))
-            end = time.time()
-            print(end - start)
 
     def percentile_search(self, meta_model, scoring, y, percentiles):
         results = []
@@ -69,8 +63,6 @@ class MetaFeatureSelection:
             subsets.append(features)
             results.append(mean(cross_val_score(estimator=meta_model, X=X, y=y, cv=25)))
 
-        print(results)
-        print(max(results))
         index = results.index(max(results))
         p = percentiles[index]
         f = subsets[index]
