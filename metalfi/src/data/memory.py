@@ -142,8 +142,24 @@ class Memory:
 
         return datasets
 
-    def storePreprocessed(self, data):
-        return
+    @staticmethod
+    def storeMetaFeatures(data):
+        path = Memory.getPath() / "features/selected"
+        if not path.is_file():
+            pickle.dump(data, open(path, 'wb'))
+
+    @staticmethod
+    def loadMetaFeatures():
+        try:
+            path = Memory.getPath() / "features/selected"
+            file = open(path, 'rb')
+            data = pickle.load(file)
+            file.close()
+
+        except FileNotFoundError:
+            data = None
+
+        return data
 
     @staticmethod
     def storeInput(data, name):

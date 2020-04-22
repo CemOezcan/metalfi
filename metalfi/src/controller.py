@@ -84,13 +84,18 @@ class Controller:
             self.__meta_data.append((data_frame, name))
 
     def selectMetaFeatures(self):
-        data = [d for d, _ in self.__meta_data]
-        fs = MetaFeatureSelection(pd.concat(data), self.__targets)
-        sets = {}
+        sets = Memory.loadMetaFeatures()
 
-        for meta_model, name, _ in self.__meta_models:
-            fs.select(meta_model, f_regression)
-            sets[name] = fs.get_sets()
+        if sets is None:
+            data = [d for d, _ in self.__meta_data]
+            fs = MetaFeatureSelection(pd.concat(data), self.__targets)
+            sets = {}
+
+            for meta_model, name, _ in self.__meta_models:
+                fs.select(meta_model, f_regression)
+                sets[name] = fs.get_sets()
+
+            Memory.storeMetaFeatures(sets)
 
         return sets
 
