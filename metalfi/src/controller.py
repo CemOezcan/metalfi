@@ -83,10 +83,10 @@ class Controller:
 
             self.__meta_data.append((data_frame, name))
 
-    def selectMetaFeatures(self):
+    def selectMetaFeatures(self, renew=False):
         sets = Memory.loadMetaFeatures()
 
-        if sets is None:
+        if sets is None or renew:
             data = [d for d, _ in self.__meta_data]
             fs = MetaFeatureSelection(pd.concat(data), self.__targets)
             sets = {}
@@ -126,6 +126,16 @@ class Controller:
     def compare(self, names):
         evaluation = Evaluation(Memory.loadModel(names))
         evaluation.comparisons(["lin"], ["rf_shap"], ["Auto"], True)
+
+    def metaFeatureImportances(self):
+        data = [d for d, _ in self.__meta_data]
+        models = [(RandomForestRegressor(n_estimators=100, n_jobs=4), "Rf", "tree"),
+                  (SVR(), "Svr", "kernel"),
+                  (LinearRegression(n_jobs=4), "lin", "linear"),
+                  (LinearSVR(dual=True, max_iter=10000), "linSVR", "linear")]
+
+        MetaFeatureSelection.metaFeatureImportance(pd.concat(data), self.__targets, models,
+                                                   self.__targets, self.selectMetaFeatures())
 
     def loadModel(self, names):
         return Memory.loadModel(names)

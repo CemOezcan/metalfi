@@ -37,6 +37,8 @@ class Main(object):
         end = time.time()
         print(end - start)
 
+        c.metaFeatureImportances()
+
 
 if __name__ == '__main__':
     Main().main()

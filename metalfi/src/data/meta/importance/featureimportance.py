@@ -9,6 +9,9 @@ from sklearn.svm import SVC, LinearSVC
 class FeatureImportance(ABC):
 
     def __init__(self, dataset):
+        if dataset is None:
+            return
+
         self._dataset = dataset
         self._data_frame = dataset.getDataFrame()
         self._target = self._dataset.getTarget()

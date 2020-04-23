@@ -1,8 +1,12 @@
 import time
 
 from statistics import mean
+
+import shap
 from sklearn.feature_selection import VarianceThreshold, SelectPercentile
 from sklearn.model_selection import cross_val_score
+
+from metalfi.src.data.meta.importance.shap import ShapImportance
 
 
 class MetaFeatureSelection:
@@ -68,3 +72,25 @@ class MetaFeatureSelection:
         f = subsets[index]
 
         return p, f
+
+    @staticmethod
+    def metaFeatureImportance(meta_data, all_targets, models, targets, subsets):
+        print(subsets)
+        all_X = meta_data.drop(all_targets, axis=1)
+        Y = meta_data[targets]
+        for model, name, category in models:
+            for target in targets:
+                print(target)
+                print(subsets[name][target])
+                X = all_X[subsets[name][target]]
+                y = Y[target]
+                s = ShapImportance(None)
+
+                if category == "linear":
+                    imp = s.linearShap(model, X, y)
+                elif category == "tree":
+                    imp = s.treeRegressionShap(model, X, y)
+                else:
+                    imp = s.kernelShap(model, X, y, 5)
+
+                print(imp)
