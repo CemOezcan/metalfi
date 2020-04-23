@@ -64,49 +64,48 @@ class MetaModel:
     def fit(self):
         X = self.__train_data.drop(self.__target_names, axis=1)
 
-        for base_model, base_model_name, metric in self.__base_models:
+        for base_model, base_model_name in self.__base_models:
             for target in self.__target_names:
                 i = 0
                 for feature_set in self.__feature_sets:
                     y = self.__train_data[target]
-                    X_train, selected_features = self.featureSelection(base_model, base_model_name, X, y, target) \
+                    X_train, selected_features = self.featureSelection(base_model_name, X, target) \
                         if feature_set[0] == "Auto" else (X[feature_set], feature_set)
 
-                    model, scale = self.hyperparameterOptimization(base_model, metric, X_train, y)
+                    model = self.hyperparameterOptimization(base_model, X_train, y)
                     feature_set_name = self.__enum.get(i)
 
                     self.__meta_models.append((deepcopy(model), selected_features,
-                                               [base_model_name, metric, target, feature_set_name], scale))
+                                               [base_model_name, target, feature_set_name]))
 
                     i -= -1
 
-    def featureSelection(self, base_model, name, X_train, y_train, target_name):
+    def featureSelection(self, name, X_train, target_name):
         features = self.__selected[name][target_name]
 
         return X_train[features], features
 
-    def hyperparameterOptimization(self, model, metric, X, y):
+    def hyperparameterOptimization(self, model, X, y):
         # TODO: Implement
         model.fit(X, y)
-        scale = True
-        return model, scale
+        return model
 
     def test(self, k):
         X = self.__test_data.drop(self.__target_names, axis=1)
 
-        for (model, features, config, scale) in self.__meta_models:
+        for (model, features, config) in self.__meta_models:
             X_test = X[features]
-            y_test = self.__test_data[config[2]]
-            y_train = self.__train_data[config[2]]
+            y_test = self.__test_data[config[1]]
+            y_train = self.__train_data[config[1]]
             y_pred = model.predict(X_test)
 
-            if config[2].startswith("rf"):
+            if config[1].startswith("rf"):
                 og_model = RandomForestClassifier(n_estimators=10, random_state=0, n_jobs=4)
-            elif config[2].startswith("svc"):
+            elif config[1].startswith("svc"):
                 og_model = SVC(kernel="rbf", gamma="scale", random_state=0)
-            elif config[2].startswith("log"):
+            elif config[1].startswith("log"):
                 og_model = LogisticRegression(dual=False, solver="lbfgs", multi_class="auto", max_iter=1000, random_state=0, n_jobs=4)
-            elif config[2].startswith("lin"):
+            elif config[1].startswith("lin"):
                 og_model = LinearSVC(max_iter=10000, dual=False, random_state=0)
             else:
                 # TODO:
@@ -117,12 +116,11 @@ class MetaModel:
             rmse = np.sqrt(np.mean(([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))])))
             base = np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))])))
             r = np.corrcoef(y_pred, y_test)[0][1]
-            rho = spearmanr(y_pred, y_test)[0]
 
             a, p = self.getRankings(self.__test_data.index, y_pred, y_test)
             anova_f, mutual_info, fi, meta_lfi = self.compare(og_model, self.__og_X, self.__og_y, p, a, k)
 
-            self.__stats.append([anova_f, mutual_info, fi, meta_lfi, r_2, rmse / base, r, rho])
+            self.__stats.append([anova_f, mutual_info, fi, meta_lfi, r_2, rmse / base, r])
 
     def getRankings(self, columns, prediction, actual):
         pred_data = {"target": prediction, "names": columns}

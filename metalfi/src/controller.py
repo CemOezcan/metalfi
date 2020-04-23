@@ -28,10 +28,10 @@ class Controller:
                           "lda_perm", "linSVC_perm", "log_perm", "rf_perm", "nb_perm", "svc_perm",
                           "lda_dCol", "linSVC_dCol", "log_dCol", "rf_dCol", "nb_dCol", "svc_dCol"]
 
-        self.__meta_models = [(RandomForestRegressor(n_estimators=100, n_jobs=4), "Rf", "RMSE"),
-                              (SVR(), "Svr", "RMSE"),
-                              (LinearRegression(n_jobs=4), "lin", "RMSE"),
-                              (LinearSVR(dual=True, max_iter=10000), "linSVR", "RMSE")]
+        self.__meta_models = [(RandomForestRegressor(n_estimators=100, n_jobs=4), "Rf"),
+                              (SVR(), "Svr"),
+                              (LinearRegression(n_jobs=4), "lin"),
+                              (LinearSVR(dual=True, max_iter=10000), "linSVR")]
 
     def getTrainData(self):
         return self.__train_data
@@ -91,8 +91,8 @@ class Controller:
             fs = MetaFeatureSelection(pd.concat(data), self.__targets)
             sets = {}
 
-            for meta_model, name, _ in self.__meta_models:
-                fs.select(meta_model, f_regression)
+            for meta_model, name in self.__meta_models:
+                fs.select(meta_model, f_regression, len(self.__meta_data))
                 sets[name] = fs.get_sets()
 
             Memory.storeMetaFeatures(sets)

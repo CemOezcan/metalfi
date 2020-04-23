@@ -12,7 +12,7 @@ class Evaluation:
             self.__tests = self.vectorAddition(self.__tests, stats)
 
         self.__tests = [list(map(lambda x: x / len(self.__meta_models), stat)) for stat in self.__tests]
-        self.__config = [c for (a, b, c, d) in self.__meta_models[0][0].getMetaModels()]
+        self.__config = [c for (a, b, c) in self.__meta_models[0][0].getMetaModels()]
 
     @staticmethod
     def vectorAddition(x, y):
