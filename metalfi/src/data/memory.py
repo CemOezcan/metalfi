@@ -174,16 +174,13 @@ class Memory:
     def storeModel(model, name, support):
         path = Memory.getPath() / ("model/" + name)
         if not path.is_file():
-            pickle.dump(model, open(path, 'wb'))
-            if support is not None:
-                file = open(Memory.getPath() / ("model/" + name + ".txt"), "w+")
-                file.write(str(support).strip("[]"))
-                file.close()
+            file = open(path, 'wb')
+            pickle.dump(model, file)
+            file.close()
 
     @staticmethod
     def loadModel(names):
         models = list()
-
         for name in names:
             path = Memory.getPath() / ("model/" + name)
             file = open(path, 'rb')
@@ -196,7 +193,9 @@ class Memory:
     @staticmethod
     def renewModel(model, name):
         path = Memory.getPath() / ("model/" + name)
-        pickle.dump(model, open(path, "wb"))
+        file = open(path, "wb")
+        pickle.dump(model, file)
+        file.close()
 
     def storeVisual(self, data):
         return

@@ -100,8 +100,11 @@ class MetaModel:
         model.fit(X, y)
         return model
 
-    def test(self, k):
-        if len(self.__stats) != 0:
+    def test(self, k, renew=False):
+        if renew:
+            self.__stats = list()
+
+        if len(self.__stats) == len(self.__meta_models):
             return
 
         X = self.__test_data.drop(self.__target_names, axis=1)
@@ -149,7 +152,14 @@ class MetaModel:
 
         return og_model
 
-    def compare(self, models, targets, subsets, k):
+    def compare(self, models, targets, subsets, k, renew=False):
+        if renew:
+            self.__results = list()
+            self.__result_configurations = list()
+
+        if len(self.__results) == len(models) * len(targets) * len(subsets):
+            return
+
         X = self.__test_data.drop(self.__target_names, axis=1)
 
         for (model, features, config) in self.__meta_models:
@@ -162,14 +172,14 @@ class MetaModel:
 
                 a, p = self.getRankings(self.__test_data.index, y_pred, y_test)
 
-                columns = X.columns
+                columns = self.__og_X.columns
                 predicted = [columns[i] for i in p]
                 actual = [columns[i] for i in a]
 
                 X_anova_f = SelectKBest(f_classif, k=k).fit_transform(self.__og_X, self.__og_y)
                 X_mutual_info = SelectKBest(mutual_info_classif, k=k).fit_transform(self.__og_X, self.__og_y)
-                X_fi = X[actual[:k]]
-                X_meta_lfi = X[predicted[:k]]
+                X_fi = self.__og_X[actual[:k]]
+                X_meta_lfi = self.__og_X[predicted[:k]]
 
                 sc_X = StandardScaler()
                 X_anova_f = sc_X.fit_transform(X_anova_f)
@@ -182,4 +192,5 @@ class MetaModel:
                 fi = mean(cross_val_score(og_model, X_fi, self.__og_y, cv=5))
                 meta_lfi = mean(cross_val_score(og_model, X_meta_lfi, self.__og_y, cv=5))
 
+                self.__result_configurations.append(config)
                 self.__results.append([anova_f, mutual_info, fi, meta_lfi])

@@ -28,6 +28,15 @@ class Main(object):
         end = time.time()
         print(end - start)
 
+        # Compare
+        start = time.time()
+        c.compare(["Titanic", "Iris", "Cancer", "Wine", "Boston", "cloud", "backache", "primary-tumor",
+                   "EgyptianSkulls", "SPECTF", "cpu", "bodyfat", "Engine1", "ESL", "ilpd-numeric", "credit-approval",
+                   "vowel", "socmob", "ERA", "LEV", "credit-g", "cmc", "ozone-level-8hr", "wind", "mammography",
+                   "bank8FM"])
+        end = time.time()
+        print(end - start)
+
 
 if __name__ == '__main__':
     Main().main()

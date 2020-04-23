@@ -35,16 +35,16 @@ class Evaluation:
             print(self.__config[i])
             print(self.__tests[i])
 
-    def comparisons(self, models, targets, subsets):
+    def comparisons(self, models, targets, subsets, renew=False):
         for (model, name) in self.__meta_models:
-            model.compare(models, targets, subsets, 4)
+            model.compare(models, targets, subsets, 4, renew)
             results = model.getResults()
             Memory.renewModel(model, model.getName()[:-4])
             self.__comparisons = self.vectorAddition(self.__comparisons, results)
 
-        self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), stat)) for stat in self.__comparisons]
+        self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
         self.__parameters = self.__meta_models[0][0].getResultConfig()
 
-        for i in range(len(self.__tests)):
+        for i in range(len(self.__comparisons)):
             print(self.__parameters[i])
             print(self.__comparisons[i])

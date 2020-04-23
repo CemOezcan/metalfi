@@ -124,9 +124,8 @@ class Controller:
         evaluation.predictions()
 
     def compare(self, names):
-        # TODO: Implemment
         evaluation = Evaluation(Memory.loadModel(names))
-        evaluation.comparisons([], [], [])
+        evaluation.comparisons(["lin"], ["rf_shap"], ["Auto"], True)
 
     def loadModel(self, names):
         return Memory.loadModel(names)
