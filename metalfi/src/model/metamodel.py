@@ -101,8 +101,10 @@ class MetaModel:
         return model
 
     def test(self, k):
-        X = self.__test_data.drop(self.__target_names, axis=1)
+        if len(self.__stats) != 0:
+            return
 
+        X = self.__test_data.drop(self.__target_names, axis=1)
         for (model, features, config) in self.__meta_models:
             X_test = X[features]
             y_test = self.__test_data[config[1]]

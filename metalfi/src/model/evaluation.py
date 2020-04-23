@@ -1,3 +1,4 @@
+from metalfi.src.data.memory import Memory
 
 
 class Evaluation:
@@ -24,6 +25,7 @@ class Evaluation:
             # TODO: renew MetaModel object so that calculations do not have to be recalculated
             model.test(4)
             stats = model.getStats()
+            Memory.renewModel(model, model.getName()[:-4])
             self.__tests = self.vectorAddition(self.__tests, stats)
 
         self.__tests = [list(map(lambda x: x / len(self.__meta_models), stat)) for stat in self.__tests]
@@ -36,8 +38,9 @@ class Evaluation:
     def comparisons(self, models, targets, subsets):
         for (model, name) in self.__meta_models:
             model.compare(models, targets, subsets, 4)
-            stats = model.getResults()
-            self.__comparisons = self.vectorAddition(self.__comparisons, stats)
+            results = model.getResults()
+            Memory.renewModel(model, model.getName()[:-4])
+            self.__comparisons = self.vectorAddition(self.__comparisons, results)
 
         self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), stat)) for stat in self.__comparisons]
         self.__parameters = self.__meta_models[0][0].getResultConfig()

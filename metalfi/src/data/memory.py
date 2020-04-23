@@ -193,6 +193,11 @@ class Memory:
 
         return models
 
+    @staticmethod
+    def renewModel(model, name):
+        path = Memory.getPath() / ("model/" + name)
+        pickle.dump(model, open(path, "wb"))
+
     def storeVisual(self, data):
         return
 
