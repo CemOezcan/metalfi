@@ -5,14 +5,10 @@ class Evaluation:
     def __init__(self, meta_models):
         self.__meta_models = meta_models
         self.__tests = list()
+        self.__config = list()
 
-        for (model, name) in self.__meta_models:
-            model.test(4)
-            stats = model.getStats()
-            self.__tests = self.vectorAddition(self.__tests, stats)
-
-        self.__tests = [list(map(lambda x: x / len(self.__meta_models), stat)) for stat in self.__tests]
-        self.__config = [c for (a, b, c) in self.__meta_models[0][0].getMetaModels()]
+        self.__comparisons = list()
+        self.__parameters = list()
 
     @staticmethod
     def vectorAddition(x, y):
@@ -23,7 +19,29 @@ class Evaluation:
 
         return result
 
-    def run(self):
+    def predictions(self):
+        for (model, name) in self.__meta_models:
+            # TODO: renew MetaModel object so that calculations do not have to be recalculated
+            model.test(4)
+            stats = model.getStats()
+            self.__tests = self.vectorAddition(self.__tests, stats)
+
+        self.__tests = [list(map(lambda x: x / len(self.__meta_models), stat)) for stat in self.__tests]
+        self.__config = [c for (a, b, c) in self.__meta_models[0][0].getMetaModels()]
+
         for i in range(len(self.__tests)):
             print(self.__config[i])
             print(self.__tests[i])
+
+    def comparisons(self, models, targets, subsets):
+        for (model, name) in self.__meta_models:
+            model.compare(models, targets, subsets, 4)
+            stats = model.getResults()
+            self.__comparisons = self.vectorAddition(self.__comparisons, stats)
+
+        self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), stat)) for stat in self.__comparisons]
+        self.__parameters = self.__meta_models[0][0].getResultConfig()
+
+        for i in range(len(self.__tests)):
+            print(self.__parameters[i])
+            print(self.__comparisons[i])

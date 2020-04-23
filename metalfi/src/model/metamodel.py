@@ -5,10 +5,12 @@ from copy import deepcopy
 from statistics import mean
 from pandas import DataFrame
 from scipy.stats import spearmanr
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectKBest, f_classif, mutual_info_classif
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.model_selection import cross_val_score
+from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, LinearSVC
 
@@ -24,6 +26,8 @@ class MetaModel:
         self.__file_name = name
         self.__meta_models = list()
         self.__stats = list()
+        self.__results = list()
+        self.__result_configurations = list()
 
         sc1 = StandardScaler()
         sc1.fit(pd.concat([train, test]))
@@ -60,6 +64,12 @@ class MetaModel:
 
     def getEnum(self):
         return self.__enum
+
+    def getResults(self):
+        return self.__results
+
+    def getResultConfig(self):
+        return self.__result_configurations
 
     def fit(self):
         X = self.__train_data.drop(self.__target_names, axis=1)
@@ -99,28 +109,16 @@ class MetaModel:
             y_train = self.__train_data[config[1]]
             y_pred = model.predict(X_test)
 
-            if config[1].startswith("rf"):
-                og_model = RandomForestClassifier(n_estimators=10, random_state=0, n_jobs=4)
-            elif config[1].startswith("svc"):
-                og_model = SVC(kernel="rbf", gamma="scale", random_state=0)
-            elif config[1].startswith("log"):
-                og_model = LogisticRegression(dual=False, solver="lbfgs", multi_class="auto", max_iter=1000, random_state=0, n_jobs=4)
-            elif config[1].startswith("lin"):
-                og_model = LinearSVC(max_iter=10000, dual=False, random_state=0)
-            else:
-                # TODO:
-                og_model = LinearRegression()
-
             r_2 = 1 - (sum([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))]) /
                        sum([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))]))
             rmse = np.sqrt(np.mean(([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))])))
             base = np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))])))
             r = np.corrcoef(y_pred, y_test)[0][1]
 
-            a, p = self.getRankings(self.__test_data.index, y_pred, y_test)
-            anova_f, mutual_info, fi, meta_lfi = self.compare(og_model, self.__og_X, self.__og_y, p, a, k)
+            """a, p = self.getRankings(self.__test_data.index, y_pred, y_test)
+            anova_f, mutual_info, fi, meta_lfi = self.compare(og_model, self.__og_X, self.__og_y, p, a, k)"""
 
-            self.__stats.append([anova_f, mutual_info, fi, meta_lfi, r_2, rmse / base, r])
+            self.__stats.append([r_2, rmse / base, r])
 
     def getRankings(self, columns, prediction, actual):
         pred_data = {"target": prediction, "names": columns}
@@ -130,26 +128,56 @@ class MetaModel:
 
         return act, pred
 
-    @staticmethod
-    def compare(model, X, y, predicted, actual, k):
-        columns = X.columns
-        predicted = [columns[i] for i in predicted]
-        actual = [columns[i] for i in actual]
+    def getOriginalModel(self, name):
+        og_model = None
 
-        X_anova_f = SelectKBest(f_classif, k=k).fit_transform(X, y)
-        X_mutual_info = SelectKBest(mutual_info_classif, k=k).fit_transform(X, y)
-        X_fi = X[actual[:k]]
-        X_meta_lfi = X[predicted[:k]]
+        if name.startswith("rf"):
+            og_model = RandomForestClassifier(n_estimators=10, random_state=0, n_jobs=4)
+        elif name.startswith("svc"):
+            og_model = SVC(kernel="rbf", gamma="scale", random_state=0)
+        elif name.startswith("log"):
+            og_model = LogisticRegression(dual=False, solver="lbfgs", multi_class="auto", max_iter=1000, random_state=0,
+                                          n_jobs=4)
+        elif name.startswith("lin"):
+            og_model = LinearSVC(max_iter=10000, dual=False, random_state=0)
+        elif name.startswith("nb"):
+            og_model = GaussianNB()
+        elif name.startswith("lda"):
+            og_model = LinearDiscriminantAnalysis()
 
-        sc_X = StandardScaler()
-        X_anova_f = sc_X.fit_transform(X_anova_f)
-        X_mutual_info = sc_X.fit_transform(X_mutual_info)
-        X_fi = sc_X.fit_transform(X_fi)
-        X_meta_lfi = sc_X.fit_transform(X_meta_lfi)
+        return og_model
 
-        anova_f = mean(cross_val_score(model, X_anova_f, y, cv=5))
-        mutual_info = mean(cross_val_score(model, X_mutual_info, y, cv=5))
-        fi = mean(cross_val_score(model, X_fi, y, cv=5))
-        meta_lfi = mean(cross_val_score(model, X_meta_lfi, y, cv=5))
+    def compare(self, models, targets, subsets, k):
+        X = self.__test_data.drop(self.__target_names, axis=1)
 
-        return anova_f, mutual_info, fi, meta_lfi
+        for (model, features, config) in self.__meta_models:
+            if config[0] in models and config[1] in targets and config[2] in subsets:
+                self.__result_configurations.append(config)
+                X_test = X[features]
+                y_test = self.__test_data[config[1]]
+                y_pred = model.predict(X_test)
+                og_model = self.getOriginalModel(config[1])
+
+                a, p = self.getRankings(self.__test_data.index, y_pred, y_test)
+
+                columns = X.columns
+                predicted = [columns[i] for i in p]
+                actual = [columns[i] for i in a]
+
+                X_anova_f = SelectKBest(f_classif, k=k).fit_transform(self.__og_X, self.__og_y)
+                X_mutual_info = SelectKBest(mutual_info_classif, k=k).fit_transform(self.__og_X, self.__og_y)
+                X_fi = X[actual[:k]]
+                X_meta_lfi = X[predicted[:k]]
+
+                sc_X = StandardScaler()
+                X_anova_f = sc_X.fit_transform(X_anova_f)
+                X_mutual_info = sc_X.fit_transform(X_mutual_info)
+                X_fi = sc_X.fit_transform(X_fi)
+                X_meta_lfi = sc_X.fit_transform(X_meta_lfi)
+
+                anova_f = mean(cross_val_score(og_model, X_anova_f, self.__og_y, cv=5))
+                mutual_info = mean(cross_val_score(og_model, X_mutual_info, self.__og_y, cv=5))
+                fi = mean(cross_val_score(og_model, X_fi, self.__og_y, cv=5))
+                meta_lfi = mean(cross_val_score(og_model, X_meta_lfi, self.__og_y, cv=5))
+
+                self.__results.append([anova_f, mutual_info, fi, meta_lfi])
