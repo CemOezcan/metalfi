@@ -160,7 +160,12 @@ class MetaModel:
         if len(self.__results) == len(models) * len(targets) * len(subsets):
             return
 
+        sc = StandardScaler()
+        self.__og_X = sc.fit_transform(self.__og_X)
         X = self.__test_data.drop(self.__target_names, axis=1)
+
+        X_anova_f = SelectKBest(f_classif, k=k).fit_transform(self.__og_X, self.__og_y)
+        X_mutual_info = SelectKBest(mutual_info_classif, k=k).fit_transform(self.__og_X, self.__og_y)
 
         for (model, features, config) in self.__meta_models:
             if config[0] in models and config[1] in targets and config[2] in subsets:
@@ -176,16 +181,8 @@ class MetaModel:
                 predicted = [columns[i] for i in p]
                 actual = [columns[i] for i in a]
 
-                X_anova_f = SelectKBest(f_classif, k=k).fit_transform(self.__og_X, self.__og_y)
-                X_mutual_info = SelectKBest(mutual_info_classif, k=k).fit_transform(self.__og_X, self.__og_y)
                 X_fi = self.__og_X[actual[:k]]
                 X_meta_lfi = self.__og_X[predicted[:k]]
-
-                sc_X = StandardScaler()
-                X_anova_f = sc_X.fit_transform(X_anova_f)
-                X_mutual_info = sc_X.fit_transform(X_mutual_info)
-                X_fi = sc_X.fit_transform(X_fi)
-                X_meta_lfi = sc_X.fit_transform(X_meta_lfi)
 
                 anova_f = mean(cross_val_score(og_model, X_anova_f, self.__og_y, cv=5))
                 mutual_info = mean(cross_val_score(og_model, X_mutual_info, self.__og_y, cv=5))
