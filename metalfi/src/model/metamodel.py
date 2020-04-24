@@ -161,7 +161,8 @@ class MetaModel:
             return
 
         sc = StandardScaler()
-        self.__og_X = sc.fit_transform(self.__og_X)
+        sc.fit(self.__og_X)
+        self.__og_X = DataFrame(data=sc.transform(self.__og_X), columns=self.__og_X.columns)
         X = self.__test_data.drop(self.__target_names, axis=1)
 
         X_anova_f = SelectKBest(f_classif, k=k).fit_transform(self.__og_X, self.__og_y)

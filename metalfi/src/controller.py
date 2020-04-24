@@ -52,10 +52,10 @@ class Controller:
         data_frame_5, target_5 = Memory.loadBoston()
         data_5 = Dataset(data_frame_5, target_5)
 
-        open_ml = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.loadOpenML()]
+        #open_ml = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.loadOpenML()]
 
         self.__train_data = [(data_1, "Titanic"), (data_2, "Cancer"), (data_3, "Iris"), (data_4, "Wine"),
-                             (data_5, "Boston")] + open_ml
+                             (data_5, "Boston")] #+ open_ml
 
         self.__enum = dict({})
         i = 0

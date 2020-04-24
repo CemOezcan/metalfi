@@ -1,3 +1,7 @@
+import sys
+
+from pandas import DataFrame
+
 from metalfi.src.data.memory import Memory
 
 
@@ -22,7 +26,6 @@ class Evaluation:
 
     def predictions(self):
         for (model, name) in self.__meta_models:
-            # TODO: renew MetaModel object so that calculations do not have to be recalculated
             model.test(4)
             stats = model.getStats()
             Memory.renewModel(model, model.getName()[:-4])
@@ -31,9 +34,35 @@ class Evaluation:
         self.__tests = [list(map(lambda x: x / len(self.__meta_models), stat)) for stat in self.__tests]
         self.__config = [c for (a, b, c) in self.__meta_models[0][0].getMetaModels()]
 
-        for i in range(len(self.__tests)):
-            print(self.__config[i])
-            print(self.__tests[i])
+        targets = self.__meta_models[0][0].getTargets()
+        algorithms = [x[:-5] for x in targets]
+        metrics = {0: "r2", 1: "rmse", 2: "r"}
+        rows = list()
+
+        all_results = {}
+        for i in metrics:
+            shap = {a: [] for a in algorithms}
+            lime = {a: [] for a in algorithms}
+            perm = {a: [] for a in algorithms}
+            dCol = {a: [] for a in algorithms}
+            metric = {"shap": shap, "lime": lime, "perm": perm, "dCol": dCol}
+
+            index = 0
+            for a, b, c in self.__config:
+                row = a + " x " + c
+                if row not in rows:
+                    rows.append(row)
+
+                metric[b[-4:]][b[:-5]].append(self.__tests[index][i])
+                index -= -1
+
+            all_results[metrics[i]] = metric
+
+        for metric in all_results:
+            for importance in all_results[metric]:
+                Memory.storeDataFrame(DataFrame(data=all_results[metric][importance], index=rows,
+                                                columns=[x for x in all_results[metric][importance]]),
+                                      metric + " x " + importance, "predictions")
 
     def comparisons(self, models, targets, subsets, renew=False):
         for (model, name) in self.__meta_models:

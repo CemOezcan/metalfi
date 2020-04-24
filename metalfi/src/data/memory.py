@@ -201,7 +201,7 @@ class Memory:
     def storeDataFrame(data, name, directory):
         path = Memory.getPath() / ("output/" + directory + "/" + name + ".csv")
         if not path.is_file():
-            data.to_csv(path, index=None, header=True)
+            data.to_csv(path, header=True)
 
     def storeVisual(self, data):
         return
