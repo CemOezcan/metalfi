@@ -1,4 +1,5 @@
 import statistics
+import time
 
 import numpy as np
 
@@ -27,9 +28,11 @@ class MetaFeatures:
         return self.__meta_data
 
     def calculateMetaFeatures(self):
-        self.featureMetaFeatures()
-        self.dataMetaFeatures()
+        uni_time, multi_time, lm_time = self.featureMetaFeatures()
+        data_time = self.dataMetaFeatures()
         self.createMetaData()
+
+        return data_time, uni_time, multi_time, lm_time
 
     def run(self, X, y, summary, features):
         mfe = MFE(summary=summary,
@@ -41,6 +44,7 @@ class MetaFeatures:
         return vector
 
     def dataMetaFeatures(self):
+        start = time.time()
         data_frame = self.__dataset.getDataFrame()
         target = self.__dataset.getTarget()
 
@@ -58,8 +62,12 @@ class MetaFeatures:
 
         self.__data_meta_feature_names = names_1
         self.__data_meta_features = dmf_1
+        end = time.time()
+
+        return end - start
 
     def featureMetaFeatures(self):
+        start_uni = time.time()
         data_frame = self.__dataset.getDataFrame()
         target = self.__dataset.getTarget()
 
@@ -80,8 +88,10 @@ class MetaFeatures:
             self.__feature_meta_features.append(self.toFeatureVector(values))
 
         self.__feature_meta_feature_names = columns
-        self.filterScores(data_frame, target)
+        end_uni = time.time()
+        total_uni = end_uni - start_uni
 
+        start_multi = time.time()
         cov = data_frame.cov()
         p_cor = data_frame.corr("pearson")
         s_cor = data_frame.corr("spearman")
@@ -91,6 +101,15 @@ class MetaFeatures:
         self.correlationFeatureMetaFeatures(p_cor, "_p_corr")
         self.correlationFeatureMetaFeatures(s_cor, "_s_corr")
         self.correlationFeatureMetaFeatures(k_cor, "_k_corr")
+        end_multi = time.time()
+        total_multi = end_multi - start_multi
+
+        start_lm = time.time()
+        self.filterScores(data_frame, target)
+        end_lm = time.time()
+        total_lm = end_lm - start_lm
+
+        return total_uni, total_multi, total_lm
 
     def correlationFeatureMetaFeatures(self, matrix, name):
         for i in range(0, len(matrix.columns)):
@@ -156,12 +175,27 @@ class MetaFeatures:
         shap = ShapImportance(self.__dataset)
         lime = LimeImportance(self.__dataset)
 
+        start_perm = time.time()
         self.addTarget(perm)
-        self.addTarget(dCol)
-        self.addTarget(shap)
-        self.addTarget(lime)
+        end_perm = time.time()
+        total_perm = end_perm - start_perm
 
-        return self.__targets
+        start_dCol = time.time()
+        self.addTarget(dCol)
+        end_dCol = time.time()
+        total_dCol = end_dCol - start_dCol
+
+        start_shap = time.time()
+        self.addTarget(shap)
+        end_shap = time.time()
+        total_shap = end_shap - start_shap
+
+        start_lime = time.time()
+        self.addTarget(lime)
+        end_lime = time.time()
+        total_lime = end_lime - start_lime
+
+        return self.__targets, total_dCol, total_perm, total_lime, total_shap
 
     def addTarget(self, target):
         target.calculateScores()

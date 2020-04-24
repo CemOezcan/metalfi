@@ -66,8 +66,14 @@ class Controller:
     def storeMetaData(self):
         for dataset, name in self.__train_data:
             if not (Memory.getPath() / ("input/" + name + "meta.csv")).is_file():
-                data = MetaDataset([dataset], True).getMetaData()
+                meta = MetaDataset([dataset], True)
+                data = meta.getMetaData()
+                d_times, t_times = meta.getTimes()
                 Memory.storeInput(data, name)
+                Memory.storeDataFrame(DataFrame(data=d_times, index=["Time"], columns=[x for x in d_times]),
+                                      name + "Xmeta", "runtime")
+                Memory.storeDataFrame(DataFrame(data=t_times, index=["Time"], columns=[x for x in t_times]),
+                                      name + "Xtarget", "runtime")
 
     def loadMetaData(self):
         for dataset, name in self.__train_data:

@@ -25,6 +25,7 @@ class Evaluation:
         return result
 
     def predictions(self):
+        # TODO: restructure
         for (model, name) in self.__meta_models:
             model.test(4)
             stats = model.getStats()
