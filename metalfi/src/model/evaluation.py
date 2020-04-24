@@ -65,8 +65,9 @@ class Evaluation:
                                       metric + " x " + importance, "predictions")
 
     def comparisons(self, models, targets, subsets, renew=False):
+        rows = None
         for (model, name) in self.__meta_models:
-            model.compare(models, targets, subsets, 4, renew)
+            rows = model.compare(models, targets, subsets, 4, renew)
             results = model.getResults()
             Memory.renewModel(model, model.getName()[:-4])
             self.__comparisons = self.vectorAddition(self.__comparisons, results)
@@ -74,6 +75,20 @@ class Evaluation:
         self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
         self.__parameters = self.__meta_models[0][0].getResultConfig()
 
-        for i in range(len(self.__comparisons)):
-            print(self.__parameters[i])
-            print(self.__comparisons[i])
+        all_results = {}
+        for model in models:
+            this_model = {}
+            for subset in subsets:
+                index = 0
+                parameters = [(a, b, c) for (a, b, c) in self.__parameters if (a == model and c == subset)]
+                for a, b, c in parameters:
+                    this_model[b] = self.__comparisons[index]
+                    index -= -1
+
+            all_results[model] = this_model
+
+        for model in all_results:
+            for subset in subsets:
+                Memory.storeDataFrame(DataFrame(data=all_results[model], index=rows,
+                                                columns=[x for x in all_results[model]]),
+                                      model + " x " + subset, "selection")

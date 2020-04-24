@@ -199,3 +199,5 @@ class MetaModel:
 
                 self.__result_configurations.append(config)
                 self.__results.append([anova_f, mutual_info, fi, meta_lfi])
+
+        return ["ANOVA", "MI", "FI", "MetaLFI"]
