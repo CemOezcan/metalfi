@@ -197,6 +197,12 @@ class Memory:
         pickle.dump(model, file)
         file.close()
 
+    @staticmethod
+    def storeDataFrame(data, name, directory):
+        path = Memory.getPath() / ("output/" + directory + "/" + name + ".csv")
+        if not path.is_file():
+            data.to_csv(path, index=None, header=True)
+
     def storeVisual(self, data):
         return
 

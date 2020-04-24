@@ -46,7 +46,7 @@ class MetaFeatureSelection:
             percentiles = (5, 10, 15, 20, 25, 30, 35, 40, 45, 50)
             p, _ = self.percentile_search(meta_model, scoring, y, percentiles, k)
 
-            percentiles = (p - 4, p - 3, p-2, p-1, p, p + 1, p + 2, p + 3, p + 4)
+            percentiles = (p - 4, p - 3, p - 2, p - 1, p, p + 1, p + 2, p + 3, p + 4)
             _, features = self.percentile_search(meta_model, scoring, y, percentiles, k)
 
             """meta_model.fit(self.__X[features], y)
@@ -75,13 +75,13 @@ class MetaFeatureSelection:
 
     @staticmethod
     def metaFeatureImportance(meta_data, all_targets, models, targets, subsets):
-        print(subsets)
+        importance = {}
         all_X = meta_data.drop(all_targets, axis=1)
         Y = meta_data[targets]
-        for model, name, category in models:
-            for target in targets:
-                print(target)
-                print(subsets[name][target])
+
+        for target in targets:
+            this_target = list()
+            for model, name, category in models:
                 X = all_X[subsets[name][target]]
                 y = Y[target]
                 s = ShapImportance(None)
@@ -93,4 +93,8 @@ class MetaFeatureSelection:
                 else:
                     imp = s.kernelShap(model, X, y, 5)
 
-                print(imp)
+                this_target.append(imp)
+
+            importance[target] = this_target
+
+        return importance

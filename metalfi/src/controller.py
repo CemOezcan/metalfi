@@ -133,9 +133,36 @@ class Controller:
                   (SVR(), "Svr", "kernel"),
                   (LinearRegression(n_jobs=4), "lin", "linear"),
                   (LinearSVR(dual=True, max_iter=10000), "linSVR", "linear")]
+        targets = ["lda_shap", "linSVC_shap", "log_shap", "rf_shap", "nb_shap", "svc_shap"]
 
-        MetaFeatureSelection.metaFeatureImportance(pd.concat(data), self.__targets, models,
-                                                   self.__targets, self.selectMetaFeatures())
+        importance = MetaFeatureSelection.metaFeatureImportance(pd.concat(data), self.__targets, models,
+                                                                targets, self.selectMetaFeatures())
+
+        meta_features = {}
+        for target in targets:
+            meta_features[target] = set()
+            for data_frame in importance[target]:
+                meta_features[target].update(data_frame.index)
+
+        for target in targets:
+            this_target = {}
+            index = []
+            imp = []
+            for meta_feature in meta_features[target]:
+                this_meta_feature = 0
+                index.append(meta_feature)
+                for data_frame in importance[target]:
+                    if meta_feature in data_frame.index:
+                        this_meta_feature += data_frame.loc[meta_feature].iloc[0]
+
+                this_meta_feature /= len(importance[target])
+                imp.append(this_meta_feature)
+
+            this_target["mean absolute SHAP"] = imp
+            this_target["meta-features"] = index
+            # or index=index
+            Memory.storeDataFrame(DataFrame(data=this_target, columns=["meta-features", "mean absolute SHAP"]),
+                                  target, "importance")
 
     def loadModel(self, names):
         return Memory.loadModel(names)
