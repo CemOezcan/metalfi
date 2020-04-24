@@ -125,7 +125,7 @@ class Controller:
 
     def compare(self, names):
         evaluation = Evaluation(Memory.loadModel(names))
-        evaluation.comparisons(["lin"], ["rf_shap"], ["Auto"], True)
+        evaluation.comparisons(["lin", "Svr"], ["rf_shap", "log_shap"], ["Auto", "LM"], True)
 
     def metaFeatureImportances(self):
         data = [d for d, _ in self.__meta_data]

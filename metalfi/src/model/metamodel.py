@@ -168,9 +168,10 @@ class MetaModel:
         X_anova_f = SelectKBest(f_classif, k=k).fit_transform(self.__og_X, self.__og_y)
         X_mutual_info = SelectKBest(mutual_info_classif, k=k).fit_transform(self.__og_X, self.__og_y)
 
+        cache = {}
+
         for (model, features, config) in self.__meta_models:
             if config[0] in models and config[1] in targets and config[2] in subsets:
-                self.__result_configurations.append(config)
                 X_test = X[features]
                 y_test = self.__test_data[config[1]]
                 y_pred = model.predict(X_test)
@@ -185,9 +186,15 @@ class MetaModel:
                 X_fi = self.__og_X[actual[:k]]
                 X_meta_lfi = self.__og_X[predicted[:k]]
 
-                anova_f = mean(cross_val_score(og_model, X_anova_f, self.__og_y, cv=5))
-                mutual_info = mean(cross_val_score(og_model, X_mutual_info, self.__og_y, cv=5))
-                fi = mean(cross_val_score(og_model, X_fi, self.__og_y, cv=5))
+                key = config[0] + " " + config[1]
+                if key in cache:
+                    anova_f, mutual_info, fi = cache[key]
+                else:
+                    anova_f = mean(cross_val_score(og_model, X_anova_f, self.__og_y, cv=5))
+                    mutual_info = mean(cross_val_score(og_model, X_mutual_info, self.__og_y, cv=5))
+                    fi = mean(cross_val_score(og_model, X_fi, self.__og_y, cv=5))
+                    cache[key] = (anova_f, mutual_info, fi)
+
                 meta_lfi = mean(cross_val_score(og_model, X_meta_lfi, self.__og_y, cv=5))
 
                 self.__result_configurations.append(config)
