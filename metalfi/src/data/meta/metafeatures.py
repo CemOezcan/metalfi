@@ -95,13 +95,13 @@ class MetaFeatures:
         p_cor = X.corr("pearson")
         s_cor = X.corr("spearman")
         k_cor = X.corr("kendall")
-        su_cor = None
+        su_cor = self.symmetricalUncertainty(X=X, y=y, matrix=True)
 
         self.correlationFeatureMetaFeatures(cov, "_cov")
         mean_p = self.correlationFeatureMetaFeatures(p_cor, "_p_corr")
         mean_s = self.correlationFeatureMetaFeatures(s_cor, "_s_corr")
         mean_k = self.correlationFeatureMetaFeatures(k_cor, "_k_corr", threshold=0.7)
-        mean_su = None
+        mean_su = self.correlationFeatureMetaFeatures(su_cor, "_su_corr", threshold=0.6)
 
         end_multi = time.time()
         total_multi = end_multi - start_multi
@@ -161,10 +161,12 @@ class MetaFeatures:
             p = X[feature].corr(y, method="pearson")
             s = X[feature].corr(y, method="kendall")
             k = X[feature].corr(y, method="spearman")
+            su = self.symmetricalUncertainty(X[feature], y, matrix=False)
 
-            self.__feature_meta_features[loc].append(p)
-            self.__feature_meta_features[loc].append(s)
-            self.__feature_meta_features[loc].append(k)
+            self.__feature_meta_features[loc].append(abs(p))
+            self.__feature_meta_features[loc].append(abs(s))
+            self.__feature_meta_features[loc].append(abs(k))
+            self.__feature_meta_features[loc].append(su)
             self.__feature_meta_features[loc].append(f_values[loc])
             self.__feature_meta_features[loc].append(log_anova_p[loc])
             self.__feature_meta_features[loc].append(mut_info[loc])
@@ -173,10 +175,12 @@ class MetaFeatures:
             self.__feature_meta_features[loc].append(abs(p) / np.sqrt(1 + 2 * p_cor[feature]))
             self.__feature_meta_features[loc].append(abs(s) / np.sqrt(1 + 2 * s_cor[feature]))
             self.__feature_meta_features[loc].append(abs(k) / np.sqrt(1 + 2 * k_cor[feature]))
+            self.__feature_meta_features[loc].append(su / np.sqrt(1 + 2 * su_cor[feature]))
 
         self.__feature_meta_feature_names.append("target_p_corr")
-        self.__feature_meta_feature_names.append("target_k_corr")
         self.__feature_meta_feature_names.append("target_s_corr")
+        self.__feature_meta_feature_names.append("target_k_corr")
+        self.__feature_meta_feature_names.append("target_su_corr")
         self.__feature_meta_feature_names.append("target_F_value")
         self.__feature_meta_feature_names.append("target_anova_p_value")
         self.__feature_meta_feature_names.append("target_mut_info")
@@ -185,6 +189,7 @@ class MetaFeatures:
         self.__feature_meta_feature_names.append("target_cb_pearson")
         self.__feature_meta_feature_names.append("target_cb_spearman")
         self.__feature_meta_feature_names.append("target_cb_kendall")
+        self.__feature_meta_feature_names.append("target_cb_SU")
 
     def toFeatureVector(self, double_list):
         vector = list()
