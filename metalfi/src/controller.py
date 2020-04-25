@@ -52,10 +52,10 @@ class Controller:
         data_frame_5, target_5 = Memory.loadBoston()
         data_5 = Dataset(data_frame_5, target_5)
 
-        #open_ml = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.loadOpenML()]
+        open_ml = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.loadOpenML()]
 
         self.__train_data = [(data_1, "Titanic"), (data_2, "Cancer"), (data_3, "Iris"), (data_4, "Wine"),
-                             (data_5, "Boston")] #+ open_ml
+                             (data_5, "Boston")] + open_ml
 
         self.__enum = dict({})
         i = 0
@@ -72,9 +72,9 @@ class Controller:
                 nr_feat, nr_inst = meta.getNrs()
                 Memory.storeInput(data, name)
                 Memory.storeDataFrame(DataFrame(data=d_times, index=["Time"], columns=[x for x in d_times]),
-                                      name + "XmetaX" + nr_feat + "X" + nr_inst, "runtime")
+                                      name + "XmetaX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
                 Memory.storeDataFrame(DataFrame(data=t_times, index=["Time"], columns=[x for x in t_times]),
-                                      name + "Xtarget" + nr_feat + "X" + nr_inst, "runtime")
+                                      name + "XtargetX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
 
     def loadMetaData(self):
         for dataset, name in self.__train_data:

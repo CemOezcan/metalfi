@@ -8,15 +8,15 @@ class Main(object):
 
     @staticmethod
     def main():
-        data = ["Titanic", "Iris", "Cancer", "Wine", "Boston"]
+        data = ["Titanic", "Iris", "Cancer", "Wine", "Boston", "cloud", "backache", "primary-tumor", "EgyptianSkulls",
+                "SPECTF", "cpu", "bodyfat", "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob",
+                "ERA", "LEV", "credit-g", "cmc", "ozone-level-8hr", "wind", "mammography", "bank8FM"]
 
         # Calculate meta-datasets (if necessary)
         start = time.time()
         c = Controller()
         end = time.time()
         print(end - start)
-
-        sys.exit()
 
         # Train meta-models (if necessary)
         start = time.time()
