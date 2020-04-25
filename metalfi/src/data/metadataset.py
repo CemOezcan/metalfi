@@ -4,10 +4,6 @@ import pandas as pd
 class MetaDataset:
 
     def __init__(self, datasets, train=False):
-        data_frames = list()
-        for dataset in datasets:
-            data_frames.append(dataset.testMetaData())
-
         self.__meta_data, self.__target_names, self.__times = \
             self.calculateTrainingData(datasets) if train else self.calculateTestData(datasets)
 
