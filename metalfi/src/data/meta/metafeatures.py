@@ -1,6 +1,7 @@
 import time
 
 import numpy as np
+import pandas as pd
 
 from pandas import DataFrame
 from pymfe.mfe import MFE
@@ -247,3 +248,27 @@ class MetaFeatures:
                 self.__meta_data.at[x, target.getModelNames()[i] + name] = imp[i].loc[x].iat[0]
 
         self.__targets = self.__targets + target_names
+
+    def symmetricalUncertainty(self, X, y, matrix=False):
+        if matrix:
+            data = {}
+            for feature_1 in X.columns:
+                data[feature_1] = {}
+                for feature_2 in X.columns:
+                    columns_1, values_1 = \
+                        self.run(X[feature_1].values, X[feature_2].values, None, ["attr_ent", "mut_inf"])
+                    columns_2, values_2 = \
+                        self.run(X[feature_2].values, X[feature_1].values, None, ["attr_ent", "mut_inf"])
+
+                    mut_inf = np.mean([values_1[1][0], values_2[1][0]])
+                    h_1 = values_1[0][0]
+                    h_2 = values_2[0][0]
+
+                    data[feature_1][feature_2] = (2 * mut_inf) / (h_1 + h_2)
+
+            return DataFrame(data=data, columns=X.columns, index=X.columns)
+
+        columns, values = self.run(X.values, y.values, None, ["attr_ent", "class_ent", "mut_inf"])
+        su = (2 * values[2][0]) / (values[0][0] + values[1])
+
+        return su
