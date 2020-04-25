@@ -1,3 +1,4 @@
+import sys
 import time
 
 from metalfi.src.controller import Controller
@@ -7,7 +8,7 @@ class Main(object):
 
     @staticmethod
     def main():
-        data = ["Iris"]#["Titanic", "Iris", "Cancer", "Wine", "Boston"]
+        data = ["Titanic", "Iris", "Cancer", "Wine", "Boston"]
 
         # Calculate meta-datasets (if necessary)
         start = time.time()
@@ -15,7 +16,9 @@ class Main(object):
         end = time.time()
         print(end - start)
 
-        """# Train meta-models (if necessary)
+        sys.exit()
+
+        # Train meta-models (if necessary)
         start = time.time()
         c.trainMetaModel()
         end = time.time()
@@ -33,7 +36,7 @@ class Main(object):
         end = time.time()
         print(end - start)
 
-        c.metaFeatureImportances()"""
+        c.metaFeatureImportances()
 
 
 if __name__ == '__main__':
