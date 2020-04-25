@@ -1,4 +1,3 @@
-import statistics
 import time
 
 import numpy as np
@@ -98,9 +97,11 @@ class MetaFeatures:
         su_cor = None
 
         self.correlationFeatureMetaFeatures(cov, "_cov")
-        self.correlationFeatureMetaFeatures(p_cor, "_p_corr")
-        self.correlationFeatureMetaFeatures(s_cor, "_s_corr")
-        self.correlationFeatureMetaFeatures(k_cor, "_k_corr")
+        mean_p = self.correlationFeatureMetaFeatures(p_cor, "_p_corr")
+        mean_s = self.correlationFeatureMetaFeatures(s_cor, "_s_corr")
+        mean_k = self.correlationFeatureMetaFeatures(k_cor, "_k_corr", threshold=0.7)
+        mean_su = None
+
         end_multi = time.time()
         total_multi = end_multi - start_multi
 
@@ -114,32 +115,35 @@ class MetaFeatures:
 
         self.__feature_meta_feature_names += columns
 
-        self.filterScores(X, y, p_cor, s_cor, k_cor, su_cor)
+        self.filterScores(X, y, mean_p, mean_s, mean_k, mean_su)
         end_lm = time.time()
         total_lm = end_lm - start_lm
 
         return total_uni, total_multi, total_lm
 
     def correlationFeatureMetaFeatures(self, matrix, name, threshold=0.8):
+        mean_correlation = {}
         for i in range(0, len(matrix.columns)):
             values = list()
             for j in range(0, len(matrix.columns)):
                 if not (i == j):
                     values.append(abs(matrix.iloc[i].iloc[j]))
 
+            mean_correlation[matrix.columns[i]] = np.mean(values)
             percentile = np.percentile(values, 75)
             th = map(lambda x: x > threshold, values)
             th_list = list(map(lambda x: x if (x > threshold) else 0, values))
             percentile_list = list(map(lambda x: x if (x >= percentile) else 0, values))
 
-            self.__feature_meta_features[i] += [statistics.mean(values), statistics.median(values),
-                                                statistics.stdev(values), statistics.variance(values),
-                                                max(values), min(values), percentile, statistics.mean(percentile_list),
-                                                sum(th), sum(th) / len(values), statistics.mean(th_list)]
+            self.__feature_meta_features[i] += [np.mean(values), np.median(values),
+                                                np.std(values), np.var(values),
+                                                max(values), min(values), percentile, np.mean(percentile_list),
+                                                sum(th), sum(th) / len(values), np.mean(th_list)]
 
         self.__feature_meta_feature_names += ["mean" + name, "median" + name, "sd" + name, "var" + name, "max" + name,
                                               "min" + name, "percentile_0,75" + name, "mean_percentile_0,75" + name,
                                               "high_corr" + name, "high_corr_norm" + name, "mean_high_corr" + name]
+        return mean_correlation
 
     def filterScores(self, X, y, p_cor, s_cor, k_cor, su_cor):
         sc = MinMaxScaler()
@@ -153,15 +157,22 @@ class MetaFeatures:
 
         for feature in X.columns:
             loc = X.columns.get_loc(feature)
+            p = X[feature].corr(y, method="pearson")
+            s = X[feature].corr(y, method="kendall")
+            k = X[feature].corr(y, method="spearman")
 
-            self.__feature_meta_features[loc].append(X[feature].corr(y, method="pearson"))
-            self.__feature_meta_features[loc].append(X[feature].corr(y, method="kendall"))
-            self.__feature_meta_features[loc].append(X[feature].corr(y, method="spearman"))
+            self.__feature_meta_features[loc].append(p)
+            self.__feature_meta_features[loc].append(s)
+            self.__feature_meta_features[loc].append(k)
             self.__feature_meta_features[loc].append(f_values[loc])
             self.__feature_meta_features[loc].append(log_anova_p[loc])
             self.__feature_meta_features[loc].append(mut_info[loc])
             self.__feature_meta_features[loc].append(chi2_values[loc])
             self.__feature_meta_features[loc].append(log_chi2_p[loc])
+            self.__feature_meta_features[loc].append(abs(p) / np.sqrt(1 + 2 * p_cor[feature]))
+            self.__feature_meta_features[loc].append(abs(s) / np.sqrt(1 + 2 * s_cor[feature]))
+            self.__feature_meta_features[loc].append(abs(k) / np.sqrt(1 + 2 * k_cor[feature]))
+
 
         self.__feature_meta_feature_names.append("target_p_corr")
         self.__feature_meta_feature_names.append("target_k_corr")
@@ -171,6 +182,9 @@ class MetaFeatures:
         self.__feature_meta_feature_names.append("target_mut_info")
         self.__feature_meta_feature_names.append("target_chi2")
         self.__feature_meta_feature_names.append("target_chi2_p_value")
+        self.__feature_meta_feature_names.append("target_cb_pearson")
+        self.__feature_meta_feature_names.append("target_cb_spearman")
+        self.__feature_meta_feature_names.append("target_cb_kendall")
 
     def toFeatureVector(self, double_list):
         vector = list()
