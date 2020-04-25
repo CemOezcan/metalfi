@@ -173,7 +173,6 @@ class MetaFeatures:
             self.__feature_meta_features[loc].append(abs(s) / np.sqrt(1 + 2 * s_cor[feature]))
             self.__feature_meta_features[loc].append(abs(k) / np.sqrt(1 + 2 * k_cor[feature]))
 
-
         self.__feature_meta_feature_names.append("target_p_corr")
         self.__feature_meta_feature_names.append("target_k_corr")
         self.__feature_meta_feature_names.append("target_s_corr")
@@ -201,7 +200,8 @@ class MetaFeatures:
     def createMetaData(self):
         self.__meta_data = DataFrame(columns=self.__feature_meta_feature_names,
                                      data=self.__feature_meta_features,
-                                     index=self.__dataset.getDataFrame().drop(self.__dataset.getTarget(), axis=1).columns)
+                                     index=self.__dataset.getDataFrame().drop(self.__dataset.getTarget(),
+                                                                              axis=1).columns)
 
         for i in range(0, len(self.__data_meta_feature_names)):
             self.__meta_data[self.__data_meta_feature_names[i]] = self.__data_meta_features[i]
