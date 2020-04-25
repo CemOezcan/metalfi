@@ -69,11 +69,12 @@ class Controller:
                 meta = MetaDataset([dataset], True)
                 data = meta.getMetaData()
                 d_times, t_times = meta.getTimes()
+                nr_feat, nr_inst = meta.getNrs()
                 Memory.storeInput(data, name)
                 Memory.storeDataFrame(DataFrame(data=d_times, index=["Time"], columns=[x for x in d_times]),
-                                      name + "Xmeta", "runtime")
+                                      name + "XmetaX" + nr_feat + "X" + nr_inst, "runtime")
                 Memory.storeDataFrame(DataFrame(data=t_times, index=["Time"], columns=[x for x in t_times]),
-                                      name + "Xtarget", "runtime")
+                                      name + "Xtarget" + nr_feat + "X" + nr_inst, "runtime")
 
     def loadMetaData(self):
         for dataset, name in self.__train_data:

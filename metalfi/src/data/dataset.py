@@ -38,7 +38,7 @@ class Dataset:
                      "total": d_total}
         target_time = {"LOFO": d, "PIMP": p, "LIME": l, "SHAP": s, "total": t_total}
 
-        return data, targets, (data_time, target_time)
+        return data, targets, (data_time, target_time), len(self.__data_frame.columns) - 1, len(self.__data_frame.index)
 
     def testMetaData(self):
         mf = MetaFeatures(self)
