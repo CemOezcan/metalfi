@@ -13,6 +13,8 @@ class MetaFeatureSelection:
 
     def __init__(self, meta_data, target_names):
         self.__X = meta_data.drop(target_names, axis=1)
+        fmf = [x for x in self.__X.columns if "." not in x]
+        self.__X = self.__X[fmf]
         self.__Y = meta_data[target_names]
         self.__target_names = target_names
         self.__sets = {}
@@ -43,7 +45,7 @@ class MetaFeatureSelection:
         for target in self.__target_names:
             y = self.__Y[target]
 
-            percentiles = (5, 10, 15, 20, 25, 30, 35, 40, 45, 50)
+            percentiles = (5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95)
             p, _ = self.percentile_search(meta_model, scoring, y, percentiles, k)
 
             percentiles = (p - 4, p - 3, p - 2, p - 1, p, p + 1, p + 2, p + 3, p + 4)

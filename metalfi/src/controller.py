@@ -127,11 +127,11 @@ class Controller:
                 Memory.storeModel(model, test_name, None)
 
     def evaluate(self, names):
-        evaluation = Evaluation(Memory.loadModel(names))
+        evaluation = Evaluation(names)
         evaluation.predictions()
 
     def compare(self, names):
-        evaluation = Evaluation(Memory.loadModel(names))
+        evaluation = Evaluation(names)
         evaluation.comparisons(["lin", "Svr"], ["rf_shap", "log_shap"], ["Auto", "LM"], True)
 
     def metaFeatureImportances(self):

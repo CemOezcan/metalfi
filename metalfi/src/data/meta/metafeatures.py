@@ -152,7 +152,8 @@ class MetaFeatures:
 
         chi2_values, chi2_p_values = chi2(X_sc, y)
         f_values, anova_p_values = f_classif(X, y)
-        log_anova_p = [np.log(x) for x in anova_p_values]
+        log_anova_p = list(map((lambda x: -500 if x == float("-inf") else x), [np.log(x) for x in anova_p_values]))
+        print(log_anova_p)
         log_chi2_p = [np.log(x) for x in chi2_p_values]
         mut_info = mutual_info_classif(X, y)
 
@@ -268,8 +269,10 @@ class MetaFeatures:
                     mut_inf = np.mean([values_1[1][0], values_2[1][0]])
                     h_1 = values_1[0][0]
                     h_2 = values_2[0][0]
-
-                    data[feature_1][feature_2] = (2 * mut_inf) / (h_1 + h_2)
+                    if h_1 == 0.0 and h_2 == 0.0:
+                        data[feature_1][feature_2] = 1
+                    else:
+                        data[feature_1][feature_2] = (2 * mut_inf) / (h_1 + h_2)
 
             return DataFrame(data=data, columns=X.columns, index=X.columns)
 

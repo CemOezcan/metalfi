@@ -26,16 +26,18 @@ class Evaluation:
 
     def predictions(self):
         # TODO: restructure
-        for (model, name) in self.__meta_models:
+        model = None
+        for name in self.__meta_models:
+            model, _ = Memory.loadModel([name])[0]
             model.test(4)
             stats = model.getStats()
             Memory.renewModel(model, model.getName()[:-4])
             self.__tests = self.vectorAddition(self.__tests, stats)
 
         self.__tests = [list(map(lambda x: x / len(self.__meta_models), stat)) for stat in self.__tests]
-        self.__config = [c for (a, b, c) in self.__meta_models[0][0].getMetaModels()]
+        self.__config = [c for (a, b, c) in model.getMetaModels()]
 
-        targets = self.__meta_models[0][0].getTargets()
+        targets = model.getTargets()
         algorithms = [x[:-5] for x in targets]
         metrics = {0: "r2", 1: "rmse", 2: "r"}
         rows = list()
@@ -67,14 +69,16 @@ class Evaluation:
 
     def comparisons(self, models, targets, subsets, renew=False):
         rows = None
-        for (model, name) in self.__meta_models:
+        model = None
+        for name in self.__meta_models:
+            model = Memory.loadModel(name)
             rows = model.compare(models, targets, subsets, 4, renew)
             results = model.getResults()
             Memory.renewModel(model, model.getName()[:-4])
             self.__comparisons = self.vectorAddition(self.__comparisons, results)
 
         self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
-        self.__parameters = self.__meta_models[0][0].getResultConfig()
+        self.__parameters = model.getResultConfig()
 
         all_results = {}
         for model in models:
