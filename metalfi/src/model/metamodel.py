@@ -7,7 +7,7 @@ from pandas import DataFrame
 from scipy.stats import spearmanr
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_selection import SelectKBest, f_classif, mutual_info_classif
+from sklearn.feature_selection import SelectKBest, f_classif, mutual_info_classif, SelectPercentile
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.model_selection import cross_val_score
 from sklearn.naive_bayes import GaussianNB
@@ -165,8 +165,8 @@ class MetaModel:
         self.__og_X = DataFrame(data=sc.transform(self.__og_X), columns=self.__og_X.columns)
         X = self.__test_data.drop(self.__target_names, axis=1)
 
-        X_anova_f = SelectKBest(f_classif, k=k).fit_transform(self.__og_X, self.__og_y)
-        X_mutual_info = SelectKBest(mutual_info_classif, k=k).fit_transform(self.__og_X, self.__og_y)
+        X_anova_f = SelectPercentile(f_classif, percentile=k).fit_transform(self.__og_X, self.__og_y)
+        X_mutual_info = SelectPercentile(mutual_info_classif, percentile=k).fit_transform(self.__og_X, self.__og_y)
 
         cache = {}
 

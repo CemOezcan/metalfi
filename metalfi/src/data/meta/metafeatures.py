@@ -186,10 +186,10 @@ class MetaFeatures:
         self.__feature_meta_feature_names.append("target_mut_info")
         self.__feature_meta_feature_names.append("target_chi2")
         self.__feature_meta_feature_names.append("target_chi2_p_value")
-        self.__feature_meta_feature_names.append("target_cb_pearson")
-        self.__feature_meta_feature_names.append("target_cb_spearman")
-        self.__feature_meta_feature_names.append("target_cb_kendall")
-        self.__feature_meta_feature_names.append("target_cb_SU")
+        self.__feature_meta_feature_names.append("cb_pearson")
+        self.__feature_meta_feature_names.append("cb_spearman")
+        self.__feature_meta_feature_names.append("cb_kendall")
+        self.__feature_meta_feature_names.append("cb_SU")
 
     def toFeatureVector(self, double_list):
         vector = list()

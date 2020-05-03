@@ -8,9 +8,10 @@ class Main(object):
 
     @staticmethod
     def main():
-        data = ["Titanic", "Iris", "Cancer", "Wine", "Boston", "cloud", "backache", "primary-tumor", "EgyptianSkulls",
-                "SPECTF", "cpu", "bodyfat", "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob",
-                "ERA", "LEV", "credit-g", "cmc", "ozone-level-8hr", "wind", "mammography", "bank8FM"]
+        data = ["Titanic", "Iris", "Cancer", "Wine", "Boston", "tic-tac-toe", "phoneme", "banknote-authentication",
+                "haberman", "servo", "cloud", "primary-tumor", "EgyptianSkulls", "SPECTF", "cpu", "bodyfat",
+                "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob", "ERA", "LEV", "credit-g",
+                "cmc", "ozone-level-8hr", "wind", "bank8FM"]
 
         # Calculate meta-datasets (if necessary)
         start = time.time()
@@ -30,13 +31,13 @@ class Main(object):
         end = time.time()
         print(end - start)
 
+        c.metaFeatureImportances()
+
         # Compare
         start = time.time()
         c.compare(data)
         end = time.time()
         print(end - start)
-
-        c.metaFeatureImportances()
 
 
 if __name__ == '__main__':

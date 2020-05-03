@@ -66,6 +66,7 @@ class Controller:
     def storeMetaData(self):
         for dataset, name in self.__train_data:
             if not (Memory.getPath() / ("input/" + name + "meta.csv")).is_file():
+                print("meta-data calc.: " + name)
                 meta = MetaDataset([dataset], True)
                 data = meta.getMetaData()
                 d_times, t_times = meta.getTimes()
@@ -99,6 +100,7 @@ class Controller:
             sets = {}
 
             for meta_model, name in self.__meta_models:
+                print("Select meta-features: " + name)
                 fs.select(meta_model, f_regression, len(self.__meta_data))
                 sets[name] = fs.get_sets()
 
@@ -120,6 +122,7 @@ class Controller:
 
             path = Memory.getPath() / ("model/" + test_name)
             if not path.is_file():
+                print("Train meta-model: " + test_name)
                 og_data, name = self.__train_data[self.__enum[test_name]]
                 model = MetaModel(pd.concat(train_data), test_name + "meta",
                                   test_data, og_data, sets, self.__meta_models, self.__targets)
@@ -132,7 +135,8 @@ class Controller:
 
     def compare(self, names):
         evaluation = Evaluation(names)
-        evaluation.comparisons(["lin", "Svr"], ["rf_shap", "log_shap"], ["Auto", "LM"], True)
+        evaluation.comparisons(["lin", "Svr", "Rf", "linSVR"],
+                               ["linSVC_shap", "log_shap", "rf_shap", "nb_shap", "svc_shap"], ["Auto"], True)
 
     def metaFeatureImportances(self):
         data = [d for d, _ in self.__meta_data]

@@ -43,13 +43,15 @@ class MetaFeatureSelection:
 
     def select(self, meta_model, scoring, k):
         for target in self.__target_names:
+            print("Select for target: " + target)
             y = self.__Y[target]
 
             percentiles = (5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95)
-            p, _ = self.percentile_search(meta_model, scoring, y, percentiles, k)
+            p, _ = self.percentile_search(meta_model, scoring, y, percentiles, 25)
 
             percentiles = (p - 4, p - 3, p - 2, p - 1, p, p + 1, p + 2, p + 3, p + 4)
-            _, features = self.percentile_search(meta_model, scoring, y, percentiles, k)
+            p_1, features = self.percentile_search(meta_model, scoring, y, percentiles, 25)
+            print("Percentile: " + str(p_1))
 
             """meta_model.fit(self.__X[features], y)
             imp = shap.TreeExplainer(meta_model, self.__X[features]).shap_values(self.__X[features])

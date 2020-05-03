@@ -28,6 +28,7 @@ class Evaluation:
         # TODO: restructure
         model = None
         for name in self.__meta_models:
+            print("Test meta-model: " + name)
             model, _ = Memory.loadModel([name])[0]
             model.test(4)
             stats = model.getStats()
@@ -49,6 +50,7 @@ class Evaluation:
             perm = {a: [] for a in algorithms}
             dCol = {a: [] for a in algorithms}
             metric = {"shap": shap, "lime": lime, "perm": perm, "dCol": dCol}
+            print("Metric: " + metrics[i])
 
             index = 0
             for a, b, c in self.__config:
@@ -71,8 +73,9 @@ class Evaluation:
         rows = None
         model = None
         for name in self.__meta_models:
-            model = Memory.loadModel(name)
-            rows = model.compare(models, targets, subsets, 4, renew)
+            print("Compare meta-model: " + name)
+            model, _ = Memory.loadModel([name])[0]
+            rows = model.compare(models, targets, subsets, 25, renew)
             results = model.getResults()
             Memory.renewModel(model, model.getName()[:-4])
             self.__comparisons = self.vectorAddition(self.__comparisons, results)
