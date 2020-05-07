@@ -99,7 +99,7 @@ class Memory:
                ("primary-tumor", 2),  ("EgyptianSkulls", 1), ("SPECTF", 2), ("cpu", 2),
                ("bodyfat", 2), ("Engine1", 1), ("ESL", 2), ("ilpd-numeric", 2),
                ("credit-approval", 1), ("vowel", 3), ("socmob", 2), ("ERA", 1), ("LEV", 1), ("credit-g", 1), ("cmc", 2),
-               ("ozone-level-8hr", 1), ("wind", 2), ("bank8FM", 2)]
+               ("wind", 2), ("bank8FM", 2)]
 
         for name, version in ids:
             dataset = fetch_openml(name=name, version=version, as_frame=True)

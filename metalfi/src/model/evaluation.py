@@ -75,7 +75,7 @@ class Evaluation:
         for name in self.__meta_models:
             print("Compare meta-model: " + name)
             model, _ = Memory.loadModel([name])[0]
-            rows = model.compare(models, targets, subsets, 25, renew)
+            rows = model.compare(models, targets, subsets, 33, renew)
             results = model.getResults()
             Memory.renewModel(model, model.getName()[:-4])
             self.__comparisons = self.vectorAddition(self.__comparisons, results)
@@ -88,10 +88,11 @@ class Evaluation:
             this_model = {}
             for subset in subsets:
                 index = 0
-                parameters = [(a, b, c) for (a, b, c) in self.__parameters if (a == model and c == subset)]
-                for a, b, c in parameters:
-                    this_model[b] = self.__comparisons[index]
-                    index -= -1
+                for a, b, c in self.__parameters:
+                    if a == model and c == subset:
+                        this_model[b] = self.__comparisons[index]
+
+                    index += 1
 
             all_results[model] = this_model
 

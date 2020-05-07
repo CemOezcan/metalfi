@@ -167,6 +167,7 @@ class MetaModel:
 
         X_anova_f = SelectPercentile(f_classif, percentile=k).fit_transform(self.__og_X, self.__og_y)
         X_mutual_info = SelectPercentile(mutual_info_classif, percentile=k).fit_transform(self.__og_X, self.__og_y)
+        k_number = len(X_anova_f[0])
 
         cache = {}
 
@@ -183,8 +184,8 @@ class MetaModel:
                 predicted = [columns[i] for i in p]
                 actual = [columns[i] for i in a]
 
-                X_fi = self.__og_X[actual[:k]]
-                X_meta_lfi = self.__og_X[predicted[:k]]
+                X_fi = self.__og_X[actual[:k_number]]
+                X_meta_lfi = self.__og_X[predicted[:k_number]]
 
                 key = config[0] + " " + config[1]
                 if key in cache:

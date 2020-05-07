@@ -2,6 +2,7 @@ import sys
 import time
 
 from metalfi.src.controller import Controller
+from metalfi.src.visual.visualization import Visualization
 
 
 class Main(object):
@@ -11,7 +12,7 @@ class Main(object):
         data = ["Titanic", "Iris", "Cancer", "Wine", "Boston", "tic-tac-toe", "phoneme", "banknote-authentication",
                 "haberman", "servo", "cloud", "primary-tumor", "EgyptianSkulls", "SPECTF", "cpu", "bodyfat",
                 "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob", "ERA", "LEV", "credit-g",
-                "cmc", "ozone-level-8hr", "wind", "bank8FM"]
+                "cmc", "wind", "bank8FM"]
 
         # Calculate meta-datasets (if necessary)
         start = time.time()
