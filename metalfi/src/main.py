@@ -26,8 +26,6 @@ class Main(object):
         end = time.time()
         print(end - start)
 
-        c.metaFeatureImportances()
-
         # Load trained meta-models from storage and get evaluation results
         start = time.time()
         c.evaluate(data)

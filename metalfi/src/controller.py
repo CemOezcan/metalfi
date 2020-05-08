@@ -91,19 +91,28 @@ class Controller:
 
             self.__meta_data.append((data_frame, name))
 
-    def selectMetaFeatures(self, meta_model_name=""):
-        data = [d for d, n in self.__meta_data if n != meta_model_name]
-        fs = MetaFeatureSelection(pd.concat(data), self.__targets)
-        sets = {}
+    def selectMetaFeatures(self, meta_model_name="", memory=False):
+        sets = None
+        if memory:
+            sets = Memory.loadMetaFeatures()
 
-        for meta_model, name in self.__meta_models:
-            print("Select meta-features: " + name)
-            tree = (name == "Rf")
-            percentiles = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30) if (name == "Svr") \
-                else (2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+        if sets is None:
+            data = [d for d, n in self.__meta_data if n != meta_model_name]
+            fs = MetaFeatureSelection(pd.concat(data), self.__targets)
+            sets = {}
 
-            fs.select(meta_model, f_regression, percentiles, k=10, tree=tree)
-            sets[name] = fs.get_sets()
+            for meta_model, name in self.__meta_models:
+                print("Select meta-features: " + name)
+                tree = (name == "Rf")
+                percentiles = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30) if (name == "Svr") \
+                    else (2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+                if memory:
+                    percentiles = (15, 15)
+
+                sets[name] = fs.select(meta_model, f_regression, percentiles, k=10, tree=tree)
+
+        if memory:
+            Memory.storeMetaFeatures(sets)
 
         return sets
 
@@ -144,9 +153,8 @@ class Controller:
                   (LinearRegression(n_jobs=4), "lin", "linear"),
                   (LinearSVR(dual=True, max_iter=10000), "linSVR", "linear")]
         targets = ["lda_shap", "linSVC_shap", "log_shap", "rf_shap", "nb_shap", "svc_shap"]
-
-        importance = MetaFeatureSelection.metaFeatureImportance(pd.concat(data), self.__targets, models,
-                                                                targets, self.selectMetaFeatures())
+        importance = MetaFeatureSelection.metaFeatureImportance(pd.concat(data), self.__targets, models, targets,
+                                                                self.selectMetaFeatures(memory=True))
 
         meta_features = {}
         for target in targets:

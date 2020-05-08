@@ -17,17 +17,14 @@ class MetaFeatureSelection:
         self.__X = self.__X[fmf]
         self.__Y = meta_data[target_names]
         self.__target_names = target_names
-        self.__sets = {}
 
         support = VarianceThreshold(threshold=0.2).fit(self.__X).get_support(indices=True)
         features = [x for x in list(self.__X.columns) if list(self.__X.columns).index(x) in support]
 
         self.__X = self.__X[features]
 
-    def get_sets(self):
-        return self.__sets
-
     def select(self, meta_model, scoring, percentiles=(5, 10, 15, 20, 25, 30), k=10, tree=False):
+        sets = {}
         for target in self.__target_names:
             y = self.__Y[target]
             print("Select for target: " + target)
@@ -39,7 +36,9 @@ class MetaFeatureSelection:
             else:
                 p, features = self.percentile_search(meta_model, scoring, y, percentiles, k, self.__X)
 
-            self.__sets[target] = features
+            sets[target] = features
+
+        return sets
 
     @staticmethod
     def percentile_search(meta_model, scoring, y, percentiles, k, new_X):
