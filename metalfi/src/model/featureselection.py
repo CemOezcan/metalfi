@@ -3,7 +3,7 @@ import time
 from statistics import mean
 
 import shap
-from sklearn.feature_selection import VarianceThreshold, SelectPercentile
+from sklearn.feature_selection import VarianceThreshold, SelectPercentile, SelectFromModel
 from sklearn.model_selection import cross_val_score
 
 from metalfi.src.data.meta.importance.shap import ShapImportance
@@ -24,50 +24,33 @@ class MetaFeatureSelection:
 
         self.__X = self.__X[features]
 
-        """cm = self.__X.corr()
-        remove = []
-
-        for i in range(len(cm.columns)):
-            for j in range(i, len(cm.columns)):
-                col = cm.columns[i]
-                row = cm.index[j]
-                if (cm.iloc[i, j] >= 0.8) and (col != row):
-                    if not (col in remove):
-                        if not (row in remove):
-                            remove.append(col)
-                            
-        self.__X = self.__X.drop(remove, axis=1)"""
-
     def get_sets(self):
         return self.__sets
 
-    def select(self, meta_model, scoring, k):
+    def select(self, meta_model, scoring, percentiles=(5, 10, 15, 20, 25, 30), k=10, tree=False):
         for target in self.__target_names:
-            print("Select for target: " + target)
             y = self.__Y[target]
+            print("Select for target: " + target)
 
-            percentiles = (5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95)
-            p, _ = self.percentile_search(meta_model, scoring, y, percentiles, 25)
-
-            percentiles = (p - 4, p - 3, p - 2, p - 1, p, p + 1, p + 2, p + 3, p + 4)
-            p_1, features = self.percentile_search(meta_model, scoring, y, percentiles, 25)
-            print("Percentile: " + str(p_1))
-
-            """meta_model.fit(self.__X[features], y)
-            imp = shap.TreeExplainer(meta_model, self.__X[features]).shap_values(self.__X[features])
-            shap.summary_plot(imp, self.__X[features], plot_type="bar")"""
+            if tree:
+                sel = SelectFromModel(estimator=meta_model).fit(self.__X, y)
+                support = sel.get_support(indices=True)
+                features = [x for x in list(self.__X.columns) if list(self.__X.columns).index(x) in support]
+            else:
+                p, features = self.percentile_search(meta_model, scoring, y, percentiles, k, self.__X)
 
             self.__sets[target] = features
 
-    def percentile_search(self, meta_model, scoring, y, percentiles, k):
+    @staticmethod
+    def percentile_search(meta_model, scoring, y, percentiles, k, new_X):
         results = []
         subsets = []
 
         for p in percentiles:
-            support = SelectPercentile(score_func=scoring, percentile=p).fit(self.__X, y).get_support(indices=True)
-            features = [x for x in list(self.__X.columns) if list(self.__X.columns).index(x) in support]
+            support = SelectPercentile(score_func=scoring, percentile=p).fit(new_X, y).get_support(indices=True)
+            features = [x for x in list(new_X.columns) if list(new_X.columns).index(x) in support]
 
-            X = self.__X[features]
+            X = new_X[features]
             subsets.append(features)
             results.append(mean(cross_val_score(estimator=meta_model, X=X, y=y, cv=k)))
 

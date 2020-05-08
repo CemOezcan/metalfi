@@ -91,26 +91,24 @@ class Controller:
 
             self.__meta_data.append((data_frame, name))
 
-    def selectMetaFeatures(self, renew=False):
-        sets = Memory.loadMetaFeatures()
+    def selectMetaFeatures(self, meta_model_name=""):
+        data = [d for d, n in self.__meta_data if n != meta_model_name]
+        fs = MetaFeatureSelection(pd.concat(data), self.__targets)
+        sets = {}
 
-        if sets is None or renew:
-            data = [d for d, _ in self.__meta_data]
-            fs = MetaFeatureSelection(pd.concat(data), self.__targets)
-            sets = {}
+        for meta_model, name in self.__meta_models:
+            print("Select meta-features: " + name)
+            tree = (name == "Rf")
+            percentiles = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30) if (name == "Svr") \
+                else (2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
 
-            for meta_model, name in self.__meta_models:
-                print("Select meta-features: " + name)
-                fs.select(meta_model, f_regression, len(self.__meta_data))
-                sets[name] = fs.get_sets()
-
-            Memory.storeMetaFeatures(sets)
+            fs.select(meta_model, f_regression, percentiles, k=10, tree=tree)
+            sets[name] = fs.get_sets()
 
         return sets
 
     def trainMetaModel(self):
         self.loadMetaData()
-        sets = self.selectMetaFeatures()
 
         for i in range(0, len(self.__meta_data)):
             test_data, test_name = self.__meta_data[i]
@@ -125,7 +123,8 @@ class Controller:
                 print("Train meta-model: " + test_name)
                 og_data, name = self.__train_data[self.__enum[test_name]]
                 model = MetaModel(pd.concat(train_data), test_name + "meta",
-                                  test_data, og_data, sets, self.__meta_models, self.__targets)
+                                  test_data, og_data, self.selectMetaFeatures(test_name),
+                                  self.__meta_models, self.__targets)
                 model.fit()
                 Memory.storeModel(model, test_name, None)
 
