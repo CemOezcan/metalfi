@@ -110,7 +110,6 @@ class Visualization:
         path = (Memory.getPath() / directory)
 
         data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in os.listdir(path)]
-        print(data)
         for frame, name in data:
             width = 0.2
             fig, ax = plt.subplots()
@@ -139,5 +138,18 @@ class Visualization:
             ax.set_xticklabels(list(frame.columns))
             ax.legend()
             plt.ylim([0.7, 0.925])
+            plt.show()
+
+    @staticmethod
+    def metaFeatureImportance():
+        directory = "output/importance"
+        path = (Memory.getPath() / directory)
+        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in os.listdir(path)]
+
+        for frame, name in data:
+            frame = frame.sort_values(by="mean absolute SHAP")
+            plt.barh(list(frame["meta-features"])[:15], list(frame["mean absolute SHAP"])[:15])
+            plt.yticks(list(frame["meta-features"])[:15], list(frame["meta-features"])[:15])
+            plt.title(name[:-4])
             plt.show()
 
