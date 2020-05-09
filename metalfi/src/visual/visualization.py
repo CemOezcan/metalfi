@@ -47,13 +47,13 @@ class Visualization:
         target_data = Visualization.fetch_runtime_data("XtargetX", 20000)
         meta_data = Visualization.fetch_runtime_data("XmetaX", 20000)
         for x in target_data:
-            if x == "SHAP" or x == "LIME" or x == "total":
+            if x == "total":
                 continue
             target_data[x][x] /= 5
             plt.plot(target_data[x].columns[0], x, data=target_data[x], linewidth=2)
 
         for x in meta_data:
-            if x == "total" or x == "multivariate":
+            if x == "univariate" or x == "landmarking" or x == "multivariate" or x == "data":
                 continue
             plt.plot(meta_data[x].columns[0], x, data=meta_data[x], linewidth=2)
 
@@ -68,14 +68,14 @@ class Visualization:
         data = list()
         names = list()
         for x in target_data:
-            if x == "total":
+            if x == "total" or x == "SHAP" or x == "LIME":
                 continue
             names.append(x)
             target_data[x][x] /= 5
             data.append(target_data[x][x].values)
 
         for x in meta_data:
-            if x != "total":
+            if x == "total" or x == "multivariate":
                 continue
             names.append(x)
             data.append(meta_data[x][x].values)
@@ -131,13 +131,13 @@ class Visualization:
             """plt.bar(pos_fi, fi, label="FI")
             plt.bar(pos_meta, meta, label="MetaLFI")"""
 
-            ax.set_ylabel("Scores")
-            ax.set_yticks([0.8, 0.825, 0.85, 0.875, 0.9, 0.925, 0.95])
+            ax.set_ylabel("Acc. Scores")
+            ax.set_yticks([0.775, 0.8, 0.825, 0.85])
             ax.set_title(name[:-4])
             ax.set_xticks(x)
             ax.set_xticklabels(list(frame.columns))
             ax.legend()
-            plt.ylim([0.7, 0.925])
+            plt.ylim([0.75, 0.85])
             plt.show()
 
     @staticmethod
