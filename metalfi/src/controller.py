@@ -22,15 +22,14 @@ class Controller:
         self.__meta_data = list()
         self.downloadData()
         self.storeMetaData()
+        self.__targets = ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP",
+                          "linSVC_LIME", "LOG_LIME", "RF_LIME", "NB_LIME", "SVC_LIME",
+                          "linSVC_PIMP", "LOG_PIMP", "RF_PIMP", "NB_PIMP", "SVC_PIMP",
+                          "linSVC_LOFO", "LOG_LOFO", "RF_LOFO", "NB_LOFO", "SVC_LOFO"]
 
-        self.__targets = ["lda_shap", "linSVC_shap", "log_shap", "rf_shap", "nb_shap", "svc_shap",
-                          "lda_lime", "linSVC_lime", "log_lime", "rf_lime", "nb_lime", "svc_lime",
-                          "lda_perm", "linSVC_perm", "log_perm", "rf_perm", "nb_perm", "svc_perm",
-                          "lda_dCol", "linSVC_dCol", "log_dCol", "rf_dCol", "nb_dCol", "svc_dCol"]
-
-        self.__meta_models = [(RandomForestRegressor(n_estimators=100, n_jobs=4), "Rf"),
-                              (SVR(), "Svr"),
-                              (LinearRegression(n_jobs=4), "lin"),
+        self.__meta_models = [(RandomForestRegressor(n_estimators=100, n_jobs=4), "RF"),
+                              (SVR(), "SVR"),
+                              (LinearRegression(n_jobs=4), "LIN"),
                               (LinearSVR(dual=True, max_iter=10000), "linSVR")]
 
     def getTrainData(self):
@@ -103,8 +102,8 @@ class Controller:
 
             for meta_model, name in self.__meta_models:
                 print("Select meta-features: " + name)
-                tree = (name == "Rf")
-                percentiles = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30) if (name == "Svr") \
+                tree = (name == "RF")
+                percentiles = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30) if (name == "SVR") \
                     else (2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
                 if memory:
                     percentiles = (15, 15)
@@ -143,16 +142,16 @@ class Controller:
 
     def compare(self, names):
         evaluation = Evaluation(names)
-        evaluation.comparisons(["lin", "Svr", "Rf", "linSVR"],
-                               ["linSVC_shap", "log_shap", "rf_shap", "nb_shap", "svc_shap"], ["Auto"], True)
+        evaluation.comparisons(["LIN", "SVR", "RF", "linSVR"],
+                               ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP"], ["Auto"], True)
 
     def metaFeatureImportances(self):
         data = [d for d, _ in self.__meta_data]
-        models = [(RandomForestRegressor(n_estimators=100, n_jobs=4), "Rf", "tree"),
-                  (SVR(), "Svr", "kernel"),
-                  (LinearRegression(n_jobs=4), "lin", "linear"),
+        models = [(RandomForestRegressor(n_estimators=100, n_jobs=4), "RF", "tree"),
+                  (SVR(), "SVR", "kernel"),
+                  (LinearRegression(n_jobs=4), "LIN", "linear"),
                   (LinearSVR(dual=True, max_iter=10000), "linSVR", "linear")]
-        targets = ["lda_shap", "linSVC_shap", "log_shap", "rf_shap", "nb_shap", "svc_shap"]
+        targets = ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP"]
         importance = MetaFeatureSelection.metaFeatureImportance(pd.concat(data), self.__targets, models, targets,
                                                                 self.selectMetaFeatures(memory=True))
 

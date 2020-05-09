@@ -12,7 +12,7 @@ class LimeImportance(FeatureImportance):
 
     def __init__(self, dataset):
         super(LimeImportance, self).__init__(dataset)
-        self._name = "_lime"
+        self._name = "_LIME"
         linSVC = LinearSVC(max_iter=10000, dual=False)
         svc = SVC(kernel="rbf", gamma="scale")
 
@@ -34,7 +34,6 @@ class LimeImportance(FeatureImportance):
                 self._feature_importances.append(self.limeImportance(model, self._target))
 
     def limeImportance(self, model, target):
-        # TODO: Sampling for efficiency?
         sc = StandardScaler()
         X = DataFrame(data=sc.fit_transform(self._data_frame.drop(target, axis=1)),
                       columns=self._data_frame.drop(target, axis=1).columns)

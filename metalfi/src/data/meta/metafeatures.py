@@ -1,3 +1,4 @@
+import sys
 import time
 
 import numpy as np
@@ -114,7 +115,8 @@ class MetaFeatures:
             self.__feature_meta_features[loc].append(values[1][loc])
             self.__feature_meta_features[loc].append(values[2][loc])
 
-        self.__feature_meta_feature_names += columns
+        for column in columns:
+            self.__feature_meta_feature_names.append("target_" + column)
 
         self.filterScores(X, y, mean_p, mean_s, mean_k, mean_su)
         end_lm = time.time()
@@ -141,9 +143,11 @@ class MetaFeatures:
                                                 max(values), min(values), percentile, np.mean(percentile_list),
                                                 sum(th), sum(th) / len(values), np.mean(th_list)]
 
-        self.__feature_meta_feature_names += ["mean" + name, "median" + name, "sd" + name, "var" + name, "max" + name,
-                                              "min" + name, "percentile_0,75" + name, "mean_percentile_0,75" + name,
-                                              "high_corr" + name, "high_corr_norm" + name, "mean_high_corr" + name]
+        self.__feature_meta_feature_names += ["multi_mean" + name, "multi_median" + name, "multi_sd" + name,
+                                              "multi_var" + name, "multi_max" + name, "multi_min" + name,
+                                              "multi_percentile_0,75" + name, "multi_mean_percentile_0,75" + name,
+                                              "multi_high_corr" + name, "multi_high_corr_norm" + name,
+                                              "multi_mean_high_corr" + name]
         return mean_correlation
 
     def filterScores(self, X, y, p_cor, s_cor, k_cor, su_cor):
@@ -154,7 +158,6 @@ class MetaFeatures:
         f_values, anova_p_values = f_classif(X, y)
         log_anova_p = list(map((lambda x: -500 if x == float("-inf") else x), [np.log(x) for x in anova_p_values]))
         log_chi2_p = [np.log(x) for x in chi2_p_values]
-        mut_info = mutual_info_classif(X, y)
 
         for feature in X.columns:
             loc = X.columns.get_loc(feature)
@@ -169,7 +172,6 @@ class MetaFeatures:
             self.__feature_meta_features[loc].append(su)
             self.__feature_meta_features[loc].append(f_values[loc])
             self.__feature_meta_features[loc].append(log_anova_p[loc])
-            self.__feature_meta_features[loc].append(mut_info[loc])
             self.__feature_meta_features[loc].append(chi2_values[loc])
             self.__feature_meta_features[loc].append(log_chi2_p[loc])
             self.__feature_meta_features[loc].append(abs(p) / np.sqrt(1 + 2 * p_cor[feature]))
@@ -183,13 +185,12 @@ class MetaFeatures:
         self.__feature_meta_feature_names.append("target_su_corr")
         self.__feature_meta_feature_names.append("target_F_value")
         self.__feature_meta_feature_names.append("target_anova_p_value")
-        self.__feature_meta_feature_names.append("target_mut_info")
         self.__feature_meta_feature_names.append("target_chi2")
         self.__feature_meta_feature_names.append("target_chi2_p_value")
-        self.__feature_meta_feature_names.append("cb_pearson")
-        self.__feature_meta_feature_names.append("cb_spearman")
-        self.__feature_meta_feature_names.append("cb_kendall")
-        self.__feature_meta_feature_names.append("cb_SU")
+        self.__feature_meta_feature_names.append("multi_cb_pearson")
+        self.__feature_meta_feature_names.append("multi_cb_spearman")
+        self.__feature_meta_feature_names.append("multi_cb_kendall")
+        self.__feature_meta_feature_names.append("multi_cb_SU")
 
     def toFeatureVector(self, double_list):
         vector = list()

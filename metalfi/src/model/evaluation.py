@@ -49,7 +49,7 @@ class Evaluation:
             lime = {a: [] for a in algorithms}
             perm = {a: [] for a in algorithms}
             dCol = {a: [] for a in algorithms}
-            metric = {"shap": shap, "lime": lime, "perm": perm, "dCol": dCol}
+            metric = {"SHAP": shap, "LIME": lime, "PIMP": perm, "LOFO": dCol}
             print("Metric: " + metrics[i])
 
             index = 0

@@ -39,13 +39,14 @@ class MetaModel:
         fmf = \
             [x for x in train.columns if "." not in x]
         lm = \
-            [x for x in train.columns
-             if (x.startswith("target") or x == "joint_ent" or x == "mut_inf" or x == "var_importance")]
-        no_lm = \
-            [x for x in train.columns if (x not in lm)]
+            [x for x in train.columns if x.startswith("target_")]
+        multi = \
+            [x for x in train.columns if x.startswith("multi_")]
+        uni = \
+            [x for x in train.columns if (x in fmf) and (x not in multi) and (x not in lm)]
 
-        self.__feature_sets = [["Auto"], train.columns, fmf, lm, no_lm]
-        self.__enum = {0: "Auto", 1: "All", 2: "FMF", 3: "LM", 4: "NoLM"}
+        self.__feature_sets = [["Auto"], train.columns, fmf, lm, multi, uni]
+        self.__enum = {0: "Auto", 1: "All", 2: "FMF", 3: "LM", 4: "Multi", 5: "Uni"}
 
     def getName(self):
         return self.__file_name
@@ -120,9 +121,6 @@ class MetaModel:
             base = np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))])))
             r = np.corrcoef(y_pred, y_test)[0][1]
 
-            """a, p = self.getRankings(self.__test_data.index, y_pred, y_test)
-            anova_f, mutual_info, fi, meta_lfi = self.compare(og_model, self.__og_X, self.__og_y, p, a, k)"""
-
             self.__stats.append([r_2, rmse / base, r])
 
     def getRankings(self, columns, prediction, actual):
@@ -136,19 +134,17 @@ class MetaModel:
     def getOriginalModel(self, name):
         og_model = None
 
-        if name.startswith("rf"):
+        if name.startswith("RF"):
             og_model = RandomForestClassifier(n_estimators=10, random_state=0, n_jobs=4)
-        elif name.startswith("svc"):
+        elif name.startswith("SVC"):
             og_model = SVC(kernel="rbf", gamma="scale", random_state=0)
-        elif name.startswith("log"):
+        elif name.startswith("LOG"):
             og_model = LogisticRegression(dual=False, solver="lbfgs", multi_class="auto", max_iter=1000, random_state=0,
                                           n_jobs=4)
-        elif name.startswith("lin"):
+        elif name.startswith("linSVC"):
             og_model = LinearSVC(max_iter=10000, dual=False, random_state=0)
-        elif name.startswith("nb"):
+        elif name.startswith("NB"):
             og_model = GaussianNB()
-        elif name.startswith("lda"):
-            og_model = LinearDiscriminantAnalysis()
 
         return og_model
 

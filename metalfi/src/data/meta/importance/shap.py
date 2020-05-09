@@ -11,7 +11,7 @@ class ShapImportance(FeatureImportance):
 
     def __init__(self, dataset):
         super(ShapImportance, self).__init__(dataset)
-        self._name = "_shap"
+        self._name = "_SHAP"
 
     def calculateScores(self):
         sc = StandardScaler()
