@@ -9,7 +9,7 @@ class PermutationImportance(FeatureImportance):
 
     def __init__(self, dataset):
         super(PermutationImportance, self).__init__(dataset)
-        self._name = "_perm"
+        self._name = "_PIMP"
 
     def calculateScores(self):
         # TODO: Calc. importances for feature subsets that are multicollinear

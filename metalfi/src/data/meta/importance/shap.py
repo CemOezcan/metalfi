@@ -11,7 +11,7 @@ class ShapImportance(FeatureImportance):
 
     def __init__(self, dataset):
         super(ShapImportance, self).__init__(dataset)
-        self._name = "_shap"
+        self._name = "_SHAP"
 
     def calculateScores(self):
         sc = StandardScaler()
@@ -49,9 +49,16 @@ class ShapImportance(FeatureImportance):
 
         return self.createDataFrame(imp, X)
 
-    def kernelShap(self, model, X, y):
+    def treeRegressionShap(self, model, X, y):
         model.fit(X, y)
-        X_summary = shap.kmeans(X, 10)
+        imp = shap.TreeExplainer(model).shap_values(X)
+        shap.summary_plot(imp, X, plot_type="bar")
+
+        return self.createDataFrame(imp, X)
+
+    def kernelShap(self, model, X, y, k=10):
+        model.fit(X, y)
+        X_summary = shap.kmeans(X, k)
         imp = shap.KernelExplainer(model.predict, X_summary).shap_values(X)
         shap.summary_plot(imp, X, plot_type="bar")
 

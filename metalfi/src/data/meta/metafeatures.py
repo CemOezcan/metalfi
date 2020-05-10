@@ -1,10 +1,13 @@
-import statistics
+import sys
+import time
 
 import numpy as np
+import pandas as pd
 
 from pandas import DataFrame
 from pymfe.mfe import MFE
-from sklearn.feature_selection import f_classif, mutual_info_classif
+from sklearn.feature_selection import f_classif, mutual_info_classif, chi2
+from sklearn.preprocessing import MinMaxScaler
 
 from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
 from metalfi.src.data.meta.importance.lime import LimeImportance
@@ -27,9 +30,11 @@ class MetaFeatures:
         return self.__meta_data
 
     def calculateMetaFeatures(self):
-        self.featureMetaFeatures()
-        self.dataMetaFeatures()
+        uni_time, multi_time, lm_time = self.featureMetaFeatures()
+        data_time = self.dataMetaFeatures()
         self.createMetaData()
+
+        return data_time, uni_time, multi_time, lm_time
 
     def run(self, X, y, summary, features):
         mfe = MFE(summary=summary,
@@ -41,6 +46,7 @@ class MetaFeatures:
         return vector
 
     def dataMetaFeatures(self):
+        start = time.time()
         data_frame = self.__dataset.getDataFrame()
         target = self.__dataset.getTarget()
 
@@ -58,75 +64,133 @@ class MetaFeatures:
 
         self.__data_meta_feature_names = names_1
         self.__data_meta_features = dmf_1
+        end = time.time()
+
+        return end - start
 
     def featureMetaFeatures(self):
+        start_uni = time.time()
         data_frame = self.__dataset.getDataFrame()
         target = self.__dataset.getTarget()
 
         y = data_frame[target]
-        data_frame.drop(target, axis=1)
-
+        X = data_frame.drop(target, axis=1)
         columns = list()
 
-        for feature in data_frame.columns:
-            X = data_frame[feature]
+        for feature in X.columns:
+            X_temp = data_frame[feature]
 
-            columns, values = self.run(X.values, y.values, None,
+            columns, values = self.run(X_temp.values, y.values, None,
                                        ["iq_range", "kurtosis", "mad", "max", "mean", "median", "min",
-                                        "range", "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent",
-                                        "joint_ent", "mut_inf", "nr_norm", "nr_outliers", "nr_cat", "nr_bin", "nr_num",
-                                        "var_importance"])
+                                        "range", "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent", "nr_norm",
+                                        "nr_outliers", "nr_cat", "nr_bin", "nr_num"])
 
             self.__feature_meta_features.append(self.toFeatureVector(values))
 
         self.__feature_meta_feature_names = columns
-        self.filterScores(data_frame, target)
+        end_uni = time.time()
+        total_uni = end_uni - start_uni
 
-        cov = data_frame.cov()
-        p_cor = data_frame.corr("pearson")
-        s_cor = data_frame.corr("spearman")
-        k_cor = data_frame.corr("kendall")
+        start_multi = time.time()
+        cov = X.cov()
+        p_cor = X.corr("pearson")
+        s_cor = X.corr("spearman")
+        k_cor = X.corr("kendall")
+        su_cor = self.symmetricalUncertainty(X=X, y=y, matrix=True)
 
         self.correlationFeatureMetaFeatures(cov, "_cov")
-        self.correlationFeatureMetaFeatures(p_cor, "_p_corr")
-        self.correlationFeatureMetaFeatures(s_cor, "_s_corr")
-        self.correlationFeatureMetaFeatures(k_cor, "_k_corr")
+        mean_p = self.correlationFeatureMetaFeatures(p_cor, "_p_corr")
+        mean_s = self.correlationFeatureMetaFeatures(s_cor, "_s_corr")
+        mean_k = self.correlationFeatureMetaFeatures(k_cor, "_k_corr", threshold=0.7)
+        mean_su = self.correlationFeatureMetaFeatures(su_cor, "_su_corr", threshold=0.6)
 
-    def correlationFeatureMetaFeatures(self, matrix, name):
+        end_multi = time.time()
+        total_multi = end_multi - start_multi
+
+        start_lm = time.time()
+        columns, values = self.run(X.values, y.values, None, ["joint_ent", "mut_inf", "var_importance"])
+        for feature in X.columns:
+            loc = X.columns.get_loc(feature)
+            self.__feature_meta_features[loc].append(values[0][loc])
+            self.__feature_meta_features[loc].append(values[1][loc])
+            self.__feature_meta_features[loc].append(values[2][loc])
+
+        for column in columns:
+            self.__feature_meta_feature_names.append("target_" + column)
+
+        self.filterScores(X, y, mean_p, mean_s, mean_k, mean_su)
+        end_lm = time.time()
+        total_lm = end_lm - start_lm
+
+        return total_uni, total_multi, total_lm
+
+    def correlationFeatureMetaFeatures(self, matrix, name, threshold=0.8):
+        mean_correlation = {}
         for i in range(0, len(matrix.columns)):
             values = list()
             for j in range(0, len(matrix.columns)):
                 if not (i == j):
                     values.append(abs(matrix.iloc[i].iloc[j]))
 
-            self.__feature_meta_features[i] += [statistics.mean(values), statistics.median(values),
-                                                statistics.stdev(values), statistics.variance(values),
-                                                max(values), min(values), np.percentile(values, 75),
-                                                sum(map(lambda x: x > 0.8, values)),
-                                                sum(map(lambda x: x > 0.8, values)) / len(values)]
+            mean_correlation[matrix.columns[i]] = np.mean(values)
+            percentile = np.percentile(values, 75)
+            th = map(lambda x: x > threshold, values)
+            th_list = list(map(lambda x: x if (x > threshold) else 0, values))
+            percentile_list = list(map(lambda x: x if (x >= percentile) else 0, values))
 
-        self.__feature_meta_feature_names += ["mean" + name, "median" + name, "sd" + name, "var" + name, "max" + name,
-                                              "min" + name, "quantile_0,75" + name, "high_corr" + name,
-                                              "high_corr_norm" + name]
+            self.__feature_meta_features[i] += [np.mean(values), np.median(values),
+                                                np.std(values), np.var(values),
+                                                max(values), min(values), percentile, np.mean(percentile_list),
+                                                sum(th), sum(th) / len(values), np.mean(th_list)]
 
-    def filterScores(self, data, target):
-        f_values, anova_p_values = f_classif(data.drop(target, axis=1), data[target])
-        mut_info = mutual_info_classif(data.drop(target, axis=1), data[target])
+        self.__feature_meta_feature_names += ["multi_mean" + name, "multi_median" + name, "multi_sd" + name,
+                                              "multi_var" + name, "multi_max" + name, "multi_min" + name,
+                                              "multi_percentile_0,75" + name, "multi_mean_percentile_0,75" + name,
+                                              "multi_high_corr" + name, "multi_high_corr_norm" + name,
+                                              "multi_mean_high_corr" + name]
+        return mean_correlation
 
-        for feature in data.drop(target, axis=1).columns:
-            loc = data.columns.get_loc(feature)
+    def filterScores(self, X, y, p_cor, s_cor, k_cor, su_cor):
+        sc = MinMaxScaler()
+        X_sc = sc.fit_transform(X)
 
-            self.__feature_meta_features[loc].append(data[feature].corr(data[target], method="pearson"))
-            self.__feature_meta_features[loc].append(data[feature].corr(data[target], method="kendall"))
-            self.__feature_meta_features[loc].append(data[feature].corr(data[target], method="spearman"))
+        chi2_values, chi2_p_values = chi2(X_sc, y)
+        f_values, anova_p_values = f_classif(X, y)
+        log_anova_p = list(map((lambda x: -500 if x == float("-inf") else x), [np.log(x) for x in anova_p_values]))
+        log_chi2_p = [np.log(x) for x in chi2_p_values]
+
+        for feature in X.columns:
+            loc = X.columns.get_loc(feature)
+            p = X[feature].corr(y, method="pearson")
+            s = X[feature].corr(y, method="kendall")
+            k = X[feature].corr(y, method="spearman")
+            su = self.symmetricalUncertainty(X[feature], y, matrix=False)
+
+            self.__feature_meta_features[loc].append(abs(p))
+            self.__feature_meta_features[loc].append(abs(s))
+            self.__feature_meta_features[loc].append(abs(k))
+            self.__feature_meta_features[loc].append(su)
             self.__feature_meta_features[loc].append(f_values[loc])
-            self.__feature_meta_features[loc].append(mut_info[loc])
+            self.__feature_meta_features[loc].append(log_anova_p[loc])
+            self.__feature_meta_features[loc].append(chi2_values[loc])
+            self.__feature_meta_features[loc].append(log_chi2_p[loc])
+            self.__feature_meta_features[loc].append(abs(p) / np.sqrt(1 + 2 * p_cor[feature]))
+            self.__feature_meta_features[loc].append(abs(s) / np.sqrt(1 + 2 * s_cor[feature]))
+            self.__feature_meta_features[loc].append(abs(k) / np.sqrt(1 + 2 * k_cor[feature]))
+            self.__feature_meta_features[loc].append(su / np.sqrt(1 + 2 * su_cor[feature]))
 
         self.__feature_meta_feature_names.append("target_p_corr")
-        self.__feature_meta_feature_names.append("target_k_corr")
         self.__feature_meta_feature_names.append("target_s_corr")
+        self.__feature_meta_feature_names.append("target_k_corr")
+        self.__feature_meta_feature_names.append("target_su_corr")
         self.__feature_meta_feature_names.append("target_F_value")
-        self.__feature_meta_feature_names.append("target_mut_info")
+        self.__feature_meta_feature_names.append("target_anova_p_value")
+        self.__feature_meta_feature_names.append("target_chi2")
+        self.__feature_meta_feature_names.append("target_chi2_p_value")
+        self.__feature_meta_feature_names.append("multi_cb_pearson")
+        self.__feature_meta_feature_names.append("multi_cb_spearman")
+        self.__feature_meta_feature_names.append("multi_cb_kendall")
+        self.__feature_meta_feature_names.append("multi_cb_SU")
 
     def toFeatureVector(self, double_list):
         vector = list()
@@ -143,12 +207,11 @@ class MetaFeatures:
     def createMetaData(self):
         self.__meta_data = DataFrame(columns=self.__feature_meta_feature_names,
                                      data=self.__feature_meta_features,
-                                     index=self.__dataset.getDataFrame().columns)
+                                     index=self.__dataset.getDataFrame().drop(self.__dataset.getTarget(),
+                                                                              axis=1).columns)
 
         for i in range(0, len(self.__data_meta_feature_names)):
             self.__meta_data[self.__data_meta_feature_names[i]] = self.__data_meta_features[i]
-
-        self.__meta_data = self.__meta_data.drop(self.__dataset.getTarget())
 
     def createTarget(self):
         perm = PermutationImportance(self.__dataset)
@@ -156,12 +219,27 @@ class MetaFeatures:
         shap = ShapImportance(self.__dataset)
         lime = LimeImportance(self.__dataset)
 
+        start_perm = time.time()
         self.addTarget(perm)
-        self.addTarget(dCol)
-        self.addTarget(shap)
-        self.addTarget(lime)
+        end_perm = time.time()
+        total_perm = end_perm - start_perm
 
-        return self.__targets
+        start_dCol = time.time()
+        self.addTarget(dCol)
+        end_dCol = time.time()
+        total_dCol = end_dCol - start_dCol
+
+        start_shap = time.time()
+        self.addTarget(shap)
+        end_shap = time.time()
+        total_shap = end_shap - start_shap
+
+        start_lime = time.time()
+        self.addTarget(lime)
+        end_lime = time.time()
+        total_lime = end_lime - start_lime
+
+        return self.__targets, total_dCol, total_perm, total_lime, total_shap
 
     def addTarget(self, target):
         target.calculateScores()
@@ -176,3 +254,29 @@ class MetaFeatures:
                 self.__meta_data.at[x, target.getModelNames()[i] + name] = imp[i].loc[x].iat[0]
 
         self.__targets = self.__targets + target_names
+
+    def symmetricalUncertainty(self, X, y, matrix=False):
+        if matrix:
+            data = {}
+            for feature_1 in X.columns:
+                data[feature_1] = {}
+                for feature_2 in X.columns:
+                    columns_1, values_1 = \
+                        self.run(X[feature_1].values, X[feature_2].values, None, ["attr_ent", "mut_inf"])
+                    columns_2, values_2 = \
+                        self.run(X[feature_2].values, X[feature_1].values, None, ["attr_ent", "mut_inf"])
+
+                    mut_inf = np.mean([values_1[1][0], values_2[1][0]])
+                    h_1 = values_1[0][0]
+                    h_2 = values_2[0][0]
+                    if h_1 == 0.0 and h_2 == 0.0:
+                        data[feature_1][feature_2] = 1
+                    else:
+                        data[feature_1][feature_2] = (2 * mut_inf) / (h_1 + h_2)
+
+            return DataFrame(data=data, columns=X.columns, index=X.columns)
+
+        columns, values = self.run(X.values, y.values, None, ["attr_ent", "class_ent", "mut_inf"])
+        su = (2 * values[2][0]) / (values[0][0] + values[1])
+
+        return su

@@ -94,11 +94,12 @@ class Memory:
     @staticmethod
     def loadOpenML():
         datasets = list()
-
-        ids = [("cloud", 2), ("backache", 1), ("primary-tumor", 2),  ("EgyptianSkulls", 1), ("SPECTF", 2), ("cpu", 2),
+        ids = [("tic-tac-toe", 1), ("phoneme", 1),
+               ("banknote-authentication", 1), ("haberman", 1), ("servo", 1), ("cloud", 2),
+               ("primary-tumor", 2),  ("EgyptianSkulls", 1), ("SPECTF", 2), ("cpu", 2),
                ("bodyfat", 2), ("Engine1", 1), ("ESL", 2), ("ilpd-numeric", 2),
                ("credit-approval", 1), ("vowel", 3), ("socmob", 2), ("ERA", 1), ("LEV", 1), ("credit-g", 1), ("cmc", 2),
-               ("ozone-level-8hr", 1), ("wind", 2), ("mammography", 1), ("bank8FM", 2)]
+               ("bank8FM", 2), ("wind", 2)]
 
         for name, version in ids:
             dataset = fetch_openml(name=name, version=version, as_frame=True)
@@ -142,8 +143,24 @@ class Memory:
 
         return datasets
 
-    def storePreprocessed(self, data):
-        return
+    @staticmethod
+    def storeMetaFeatures(data):
+        path = Memory.getPath() / "features/selected"
+        if not path.is_file():
+            pickle.dump(data, open(path, 'wb'))
+
+    @staticmethod
+    def loadMetaFeatures():
+        try:
+            path = Memory.getPath() / "features/selected"
+            file = open(path, 'rb')
+            data = pickle.load(file)
+            file.close()
+
+        except FileNotFoundError:
+            data = None
+
+        return data
 
     @staticmethod
     def storeInput(data, name):
@@ -158,16 +175,13 @@ class Memory:
     def storeModel(model, name, support):
         path = Memory.getPath() / ("model/" + name)
         if not path.is_file():
-            pickle.dump(model, open(path, 'wb'))
-            if support is not None:
-                file = open(Memory.getPath() / ("model/" + name + ".txt"), "w+")
-                file.write(str(support).strip("[]"))
-                file.close()
+            file = open(path, 'wb')
+            pickle.dump(model, file)
+            file.close()
 
     @staticmethod
     def loadModel(names):
         models = list()
-
         for name in names:
             path = Memory.getPath() / ("model/" + name)
             file = open(path, 'rb')
@@ -176,6 +190,19 @@ class Memory:
             models.append((data, name))
 
         return models
+
+    @staticmethod
+    def renewModel(model, name):
+        path = Memory.getPath() / ("model/" + name)
+        file = open(path, "wb")
+        pickle.dump(model, file)
+        file.close()
+
+    @staticmethod
+    def storeDataFrame(data, name, directory):
+        path = Memory.getPath() / ("output/" + directory + "/" + name + ".csv")
+        if not path.is_file():
+            data.to_csv(path, header=True)
 
     def storeVisual(self, data):
         return
