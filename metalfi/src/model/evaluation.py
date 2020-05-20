@@ -24,6 +24,38 @@ class Evaluation:
 
         return result
 
+    def q_4(self):
+        rows = list()
+        model, _ = Memory.loadModel([self.__meta_models[0]])[0]
+        config = [c for (a, b, c) in model.getMetaModels()]
+        meta_model_names = list(set([c[0] for c in config]))
+        data = {"R^2": {key: list() for key in meta_model_names},
+                "RMSE": {key: list() for key in meta_model_names},
+                "r": {key: list() for key in meta_model_names}}
+
+        for data_set in self.__meta_models:
+            rows.append(data_set)
+            model, _ = Memory.loadModel([data_set])[0]
+            tuples = [t for t in list(zip(config, model.getStats()))
+                      if (t[0][1][-4:] != "LOFO") and (t[0][2] == "Auto")]
+
+            for name in meta_model_names:
+                numerator = [0, 0, 0]
+                denominator = 0
+                for t in tuples:
+                    if t[0][0] == name:
+                        numerator = list(map(sum, zip(numerator, t[1])))
+                        denominator += 1
+
+                values = list(map(lambda x: x / denominator, numerator))
+                data["R^2"][name].append(values[0])
+                data["RMSE"][name].append(values[1])
+                data["r"][name].append(values[2])
+
+        for metric in data:
+            Memory.storeDataFrame(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]),
+                                  metric, "questions/q4")
+
     def predictions(self):
         # TODO: restructure
         model = None
