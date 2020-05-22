@@ -24,37 +24,84 @@ class Evaluation:
 
         return result
 
-    def q_4(self):
-        rows = list()
+    def questions(self):
         model, _ = Memory.loadModel([self.__meta_models[0]])[0]
         config = [c for (a, b, c) in model.getMetaModels()]
-        meta_model_names = list(set([c[0] for c in config]))
-        data = {"R^2": {key: list() for key in meta_model_names},
-                "RMSE": {key: list() for key in meta_model_names},
-                "r": {key: list() for key in meta_model_names}}
 
+        # Q_3
+        target_names = list(dict.fromkeys([c[1] for c in config if c[1][-4:] != "LOFO"]))
+        data_3 = {"R^2": {key: list() for key in target_names},
+                  "RMSE": {key: list() for key in target_names},
+                  "r": {key: list() for key in target_names}}
+
+        # Q_4
+        meta_model_names = list(set([c[0] for c in config]))
+        data_4 = {"R^2": {key: list() for key in meta_model_names},
+                  "RMSE": {key: list() for key in meta_model_names},
+                  "r": {key: list() for key in meta_model_names}}
+
+        rows = list()
         for data_set in self.__meta_models:
+            print("Questions, " + data_set)
             rows.append(data_set)
             model, _ = Memory.loadModel([data_set])[0]
-            tuples = [t for t in list(zip(config, model.getStats()))
-                      if (t[0][1][-4:] != "LOFO") and (t[0][2] == "Auto")]
+            data_3 = self.createQuestionCsv(model, config, target_names, data_3, 1)
+            data_4 = self.createQuestionCsv(model, config, meta_model_names, data_4, 0)
 
-            for name in meta_model_names:
-                numerator = [0, 0, 0]
-                denominator = 0
-                for t in tuples:
-                    if t[0][0] == name:
-                        numerator = list(map(sum, zip(numerator, t[1])))
-                        denominator += 1
+        self.q_3(data_3, rows)
+        self.q_4(data_4, rows)
 
-                values = list(map(lambda x: x / denominator, numerator))
-                data["R^2"][name].append(values[0])
-                data["RMSE"][name].append(values[1])
-                data["r"][name].append(values[2])
+    def q_3(self, data, rows):
+        for metric in data:
+            data_frame = DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]])
+            Memory.storeDataFrame(data_frame, metric, "questions/q3")
 
+            dictionary = {"SHAP": [0] * len(rows), "PIMP": [0] * len(rows), "LIME": [0] * len(rows)}
+            self.helper_q_3(dictionary, data_frame, rows, metric, "targets_", targets=True)
+
+            dictionary = {"linSVC": [0] * len(rows), "LOG": [0] * len(rows), "RF": [0] * len(rows),
+                          "NB": [0] * len(rows), "SVC": [0] * len(rows)}
+            self.helper_q_3(dictionary, data_frame, rows, metric, "base_")
+
+    @staticmethod
+    def helper_q_3(dictionary, data_frame, rows, metric, name, targets=False):
+        for key in dictionary:
+            if targets:
+                subset = [column for column in data_frame.columns if (key == column[-4:])]
+            else:
+                subset = [column for column in data_frame.columns if (key == column[:-5])]
+
+            for column in subset:
+                dictionary[key] = list(map(sum, zip(dictionary[key], list(data_frame[column].values))))
+
+            dictionary[key] = [element / len(subset) for element in dictionary[key]]
+
+        Memory.storeDataFrame(DataFrame(data=dictionary, index=rows, columns=[x for x in dictionary]),
+                              name + metric, "questions/q3")
+
+    def q_4(self, data, rows):
         for metric in data:
             Memory.storeDataFrame(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]),
                                   metric, "questions/q4")
+
+    def createQuestionCsv(self, model, config, names, data, index):
+        tuples = [t for t in list(zip(config, model.getStats()))
+                  if (t[0][1][-4:] != "LOFO") and (t[0][2] == "Auto")]
+
+        for name in names:
+            numerator = [0, 0, 0]
+            denominator = 0
+            for t in tuples:
+                if t[0][index] == name:
+                    numerator = list(map(sum, zip(numerator, t[1])))
+                    denominator += 1
+
+            values = list(map(lambda x: x / denominator, numerator))
+            data["R^2"][name].append(values[0])
+            data["RMSE"][name].append(values[1])
+            data["r"][name].append(values[2])
+
+        return data
 
     def predictions(self):
         # TODO: restructure

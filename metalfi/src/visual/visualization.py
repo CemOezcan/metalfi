@@ -4,7 +4,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
+import scikit_posthocs as sp
 from pandas import DataFrame
+import scipy.stats as ss
 from pandas.plotting import table
 from metalfi.src.data.memory import Memory
 
@@ -152,4 +154,25 @@ class Visualization:
             plt.yticks(list(frame["meta-features"])[:15], list(frame["meta-features"])[:15])
             plt.title(name[:-4])
             plt.show()
+
+    @staticmethod
+    def compareMeans(folder):
+        directory = "output/questions/" + folder
+        path = (Memory.getPath() / directory)
+
+        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in os.listdir(path)]
+
+        for data_frame, metric in data:
+            print(data_frame.columns)
+            d = list()
+            for column in data_frame.columns:
+                print("mean " + column + ": ", np.mean(data_frame[column].values))
+                d.append(data_frame[column].values)
+
+            _, p_value = ss.friedmanchisquare(*d)
+            print(p_value, metric)
+            if p_value < 0.05:
+                print(sp.sign_table(sp.posthoc_nemenyi_friedman(np.array(d).T)))
+
+        return
 

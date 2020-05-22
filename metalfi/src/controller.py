@@ -1,3 +1,5 @@
+import sys
+
 import pandas as pd
 
 from pandas import DataFrame
@@ -138,7 +140,8 @@ class Controller:
 
     def evaluate(self, names):
         evaluation = Evaluation(names)
-        evaluation.predictions()
+        #evaluation.predictions()
+        evaluation.questions()
 
     def compare(self, names):
         evaluation = Evaluation(names)
