@@ -28,6 +28,12 @@ class Evaluation:
         model, _ = Memory.loadModel([self.__meta_models[0]])[0]
         config = [c for (a, b, c) in model.getMetaModels()]
 
+        # Q_2
+        subset_names = list(dict.fromkeys([c[2] for c in config]))
+        data_2 = {"R^2": {key: list() for key in subset_names},
+                  "RMSE": {key: list() for key in subset_names},
+                  "r": {key: list() for key in subset_names}}
+
         # Q_3
         target_names = list(dict.fromkeys([c[1] for c in config if c[1][-4:] != "LOFO"]))
         data_3 = {"R^2": {key: list() for key in target_names},
@@ -45,11 +51,19 @@ class Evaluation:
             print("Questions, " + data_set)
             rows.append(data_set)
             model, _ = Memory.loadModel([data_set])[0]
+
+            data_2 = self.createQuestionCsv(model, config, subset_names, data_2, 2, filter_subsets=False)
             data_3 = self.createQuestionCsv(model, config, target_names, data_3, 1)
             data_4 = self.createQuestionCsv(model, config, meta_model_names, data_4, 0)
 
+        self.q_2(data_2, rows)
         self.q_3(data_3, rows)
         self.q_4(data_4, rows)
+
+    def q_2(self, data, rows):
+        for metric in data:
+            Memory.storeDataFrame(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]),
+                                  metric, "questions/q2")
 
     def q_3(self, data, rows):
         for metric in data:
@@ -62,6 +76,14 @@ class Evaluation:
             dictionary = {"linSVC": [0] * len(rows), "LOG": [0] * len(rows), "RF": [0] * len(rows),
                           "NB": [0] * len(rows), "SVC": [0] * len(rows)}
             self.helper_q_3(dictionary, data_frame, rows, metric, "base_")
+
+    def q_4(self, data, rows):
+        for metric in data:
+            Memory.storeDataFrame(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]),
+                                  metric, "questions/q4")
+
+    def q_5(self, data, rows):
+        return
 
     @staticmethod
     def helper_q_3(dictionary, data_frame, rows, metric, name, targets=False):
@@ -79,14 +101,12 @@ class Evaluation:
         Memory.storeDataFrame(DataFrame(data=dictionary, index=rows, columns=[x for x in dictionary]),
                               name + metric, "questions/q3")
 
-    def q_4(self, data, rows):
-        for metric in data:
-            Memory.storeDataFrame(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]),
-                                  metric, "questions/q4")
-
-    def createQuestionCsv(self, model, config, names, data, index):
-        tuples = [t for t in list(zip(config, model.getStats()))
-                  if (t[0][1][-4:] != "LOFO") and (t[0][2] == "Auto")]
+    def createQuestionCsv(self, model, config, names, data, index, filter_subsets=True):
+        if filter_subsets:
+            tuples = [t for t in list(zip(config, model.getStats()))
+                      if (t[0][1][-4:] != "LOFO") and (t[0][2] == "Auto")]
+        else:
+            tuples = [t for t in list(zip(config, model.getStats())) if (t[0][1][-4:] != "LOFO")]
 
         for name in names:
             numerator = [0, 0, 0]
