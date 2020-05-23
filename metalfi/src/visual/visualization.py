@@ -163,16 +163,28 @@ class Visualization:
         data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in os.listdir(path)]
 
         for data_frame, metric in data:
-            print(data_frame.columns)
             d = list()
+            names = list()
+            ranks = [0] * len(data_frame.index)
+
+            for i in range(len(data_frame.index)):
+                copy = data_frame.iloc[i].values
+                values = np.array(copy) if ("RMSE" in metric) else np.array(list(map(lambda x: -x, copy)))
+                temp = values.argsort()
+                current_ranks = np.array([0] * len(values))
+                current_ranks[temp] = np.arange(len(values))
+                current_ranks = list(map(lambda x: x + 1, current_ranks))
+                ranks = list(map(np.add, ranks, current_ranks))
+
+            ranks = list(map(lambda x: x / len(data_frame.index), ranks))
+
             for column in data_frame.columns:
+                names.append(column)
                 print("mean " + column + ": ", np.mean(data_frame[column].values))
                 d.append(data_frame[column].values)
 
-            _, p_value = ss.friedmanchisquare(*d)
-            print(p_value, metric)
+            val, p_value = ss.friedmanchisquare(*d)
+            print(p_value)
             if p_value < 0.05:
-                print(sp.sign_table(sp.posthoc_nemenyi_friedman(np.array(d).T)))
-
-        return
+                print(sp.sign_array(sp.posthoc_nemenyi_friedman(np.array(d).T)))
 

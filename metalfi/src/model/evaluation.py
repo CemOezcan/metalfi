@@ -29,13 +29,13 @@ class Evaluation:
         config = [c for (a, b, c) in model.getMetaModels()]
 
         # Q_2
-        subset_names = list(dict.fromkeys([c[2] for c in config]))
+        subset_names = list(dict.fromkeys([c[2] for c in config if c[2] != "All"]))
         data_2 = {"R^2": {key: list() for key in subset_names},
                   "RMSE": {key: list() for key in subset_names},
                   "r": {key: list() for key in subset_names}}
 
         # Q_3
-        target_names = list(dict.fromkeys([c[1] for c in config if c[1][-4:] != "LOFO"]))
+        target_names = list(dict.fromkeys([c[1] for c in config]))
         data_3 = {"R^2": {key: list() for key in target_names},
                   "RMSE": {key: list() for key in target_names},
                   "r": {key: list() for key in target_names}}
@@ -60,9 +60,9 @@ class Evaluation:
             rows.append(data_set)
             model, _ = Memory.loadModel([data_set])[0]
 
-            data_2 = self.createQuestionCsv(model, config, subset_names, data_2, 2, filter_subsets=False)
-            data_3 = self.createQuestionCsv(model, config, target_names, data_3, 1)
-            data_4 = self.createQuestionCsv(model, config, meta_model_names, data_4, 0)
+            data_2 = self.createQuestionCsv(model, config, subset_names, data_2, 2, question=2)
+            data_3 = self.createQuestionCsv(model, config, target_names, data_3, 1, question=3)
+            data_4 = self.createQuestionCsv(model, config, meta_model_names, data_4, 0, question=4)
             data_5 = self.createQuestion5Csv(model, data_5, "linSVR", "Auto")
 
         self.q_2(data_2, rows)
@@ -80,7 +80,8 @@ class Evaluation:
             data_frame = DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]])
             Memory.storeDataFrame(data_frame, metric, "questions/q3")
 
-            dictionary = {"SHAP": [0] * len(rows), "PIMP": [0] * len(rows), "LIME": [0] * len(rows)}
+            dictionary = {"SHAP": [0] * len(rows), "PIMP": [0] * len(rows), "LIME": [0] * len(rows),
+                          "LOFO": [0] * len(rows)}
             self.helper_q_3(dictionary, data_frame, rows, metric, "targets_", targets=True)
 
             dictionary = {"linSVC": [0] * len(rows), "LOG": [0] * len(rows), "RF": [0] * len(rows),
@@ -103,7 +104,7 @@ class Evaluation:
             if targets:
                 subset = [column for column in data_frame.columns if (key == column[-4:])]
             else:
-                subset = [column for column in data_frame.columns if (key == column[:-5])]
+                subset = [column for column in data_frame.columns if (key == column[:-5]) and (column[-4:] != "LOFO")]
 
             for column in subset:
                 dictionary[key] = list(map(sum, zip(dictionary[key], list(data_frame[column].values))))
@@ -113,12 +114,15 @@ class Evaluation:
         Memory.storeDataFrame(DataFrame(data=dictionary, index=rows, columns=[x for x in dictionary]),
                               name + metric, "questions/q3")
 
-    def createQuestionCsv(self, model, config, names, data, index, filter_subsets=True):
-        if filter_subsets:
-            tuples = [t for t in list(zip(config, model.getStats()))
-                      if (t[0][1][-4:] != "LOFO") and (t[0][2] == "Auto")]
+    def createQuestionCsv(self, model, config, names, data, index, question):
+        if question == 2:
+            tuples = [t for t in list(zip(config, model.getStats())) if (t[0][2] != "All") and (t[0][1][:-4] != "LOFO")]
+        elif question == 3:
+            tuples = [t for t in list(zip(config, model.getStats())) if (t[0][2] == "Auto")]
+        elif question == 4:
+            tuples = [t for t in list(zip(config, model.getStats())) if (t[0][2] == "Auto") and (t[0][1][:-4] != "LOFO")]
         else:
-            tuples = [t for t in list(zip(config, model.getStats())) if (t[0][1][-4:] != "LOFO")]
+            tuples = list()
 
         for name in names:
             numerator = [0, 0, 0]
