@@ -9,8 +9,6 @@ class Main(object):
 
     @staticmethod
     def main():
-        Visualization.compareMeans("q2")
-        sys.exit()
         data = ["Titanic", "Iris", "Cancer", "Wine", "Boston", "tic-tac-toe", "phoneme", "banknote-authentication",
                 "haberman", "servo", "cloud", "primary-tumor", "EgyptianSkulls", "SPECTF", "cpu", "bodyfat",
                 "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob", "ERA", "LEV", "credit-g",
@@ -35,6 +33,8 @@ class Main(object):
         print(end - start)
 
         c.metaFeatureImportances()
+
+        sys.exit()
 
         # Compare
         start = time.time()

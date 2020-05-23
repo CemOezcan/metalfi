@@ -108,6 +108,7 @@ class Controller:
                 percentiles = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30) if (name == "SVR") \
                     else (2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
                 if memory:
+                    tree = False
                     percentiles = (15, 15)
 
                 sets[name] = fs.select(meta_model, f_regression, percentiles, k=10, tree=tree)
@@ -141,7 +142,7 @@ class Controller:
     def evaluate(self, names):
         evaluation = Evaluation(names)
         #evaluation.predictions()
-        evaluation.questions()
+        #evaluation.questions()
 
     def compare(self, names):
         evaluation = Evaluation(names)
