@@ -41,13 +41,18 @@ class Evaluation:
                   "r": {key: list() for key in target_names}}
 
         # Q_4
-        meta_model_names = list(set([c[0] for c in config]))
+        meta_model_names = list(dict.fromkeys([c[0] for c in config]))
         data_4 = {"R^2": {key: list() for key in meta_model_names},
                   "RMSE": {key: list() for key in meta_model_names},
                   "r": {key: list() for key in meta_model_names}}
 
         # Q_5
-
+        selection_names = ["ANOVA", "MI", "FI", "MetaLFI"]
+        data_5 = {"LOG_SHAP": {key: list() for key in selection_names},
+                  "linSVC_SHAP": {key: list() for key in selection_names},
+                  "NB_SHAP": {key: list() for key in selection_names},
+                  "RF_SHAP": {key: list() for key in selection_names},
+                  "SVC_SHAP": {key: list() for key in selection_names}}
 
         rows = list()
         for data_set in self.__meta_models:
@@ -58,10 +63,12 @@ class Evaluation:
             data_2 = self.createQuestionCsv(model, config, subset_names, data_2, 2, filter_subsets=False)
             data_3 = self.createQuestionCsv(model, config, target_names, data_3, 1)
             data_4 = self.createQuestionCsv(model, config, meta_model_names, data_4, 0)
+            data_5 = self.createQuestion5Csv(model, data_5, "linSVR", "Auto")
 
         self.q_2(data_2, rows)
         self.q_3(data_3, rows)
         self.q_4(data_4, rows)
+        self.q_5(data_5, rows)
 
     def q_2(self, data, rows):
         for metric in data:
@@ -86,7 +93,9 @@ class Evaluation:
                                   metric, "questions/q4")
 
     def q_5(self, data, rows):
-        return
+        for target in data:
+            Memory.storeDataFrame(DataFrame(data=data[target], index=rows, columns=[x for x in data[target]]),
+                                  target, "questions/q5")
 
     @staticmethod
     def helper_q_3(dictionary, data_frame, rows, metric, name, targets=False):
@@ -126,8 +135,27 @@ class Evaluation:
 
         return data
 
+    def createQuestion5Csv(self, model, data, meta_model_name, subset_name):
+        tuples = [t for t in list(zip(model.getResultConfig(), model.getResults()))
+                  if (t[0][0] == meta_model_name) and (t[0][2] == subset_name)]
+
+        for key in data:
+            values = [0, 0, 0, 0]
+            avg = 0
+
+            for t in [t for t in tuples if t[0][1] == key]:
+                values = list(map(sum, zip(values, t[1])))
+                avg += 1
+
+            values = [value / avg for value in values]
+            data[key]["ANOVA"].append(values[0])
+            data[key]["MI"].append(values[1])
+            data[key]["FI"].append(values[2])
+            data[key]["MetaLFI"].append(values[3])
+
+        return data
+
     def predictions(self):
-        # TODO: restructure
         model = None
         for name in self.__meta_models:
             print("Test meta-model: " + name)
