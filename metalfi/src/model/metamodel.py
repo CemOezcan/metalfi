@@ -121,6 +121,9 @@ class MetaModel:
             base = np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))])))
             r = np.corrcoef(y_pred, y_test)[0][1]
 
+            if np.math.isnan(r):
+                r_2, rmse, base, r = -2, rmse, 1, 0
+
             self.__stats.append([r_2, rmse / base, r])
 
     def getRankings(self, columns, prediction, actual):

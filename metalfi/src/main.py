@@ -11,7 +11,7 @@ class Main(object):
     def main():
         data = ["Titanic", "Iris", "Cancer", "Wine", "Boston", "tic-tac-toe", "phoneme", "banknote-authentication",
                 "haberman", "servo", "cloud", "primary-tumor", "EgyptianSkulls", "SPECTF", "cpu", "bodyfat",
-                "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob", "LEV", "credit-g",
+                "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob", "ERA", "LEV", "credit-g",
                 "cmc", "wind", "bank8FM"]
 
         # Calculate meta-datasets (if necessary)
@@ -39,6 +39,13 @@ class Main(object):
         c.compare(data)
         end = time.time()
         print(end - start)
+
+        # Tests
+        c.questions(data)
+        Visualization.compareMeans("q2")
+        Visualization.compareMeans("q3")
+        Visualization.compareMeans("q4")
+        Visualization.compareMeans("q5")
 
 
 if __name__ == '__main__':

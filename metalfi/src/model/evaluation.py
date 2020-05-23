@@ -118,9 +118,12 @@ class Evaluation:
         if question == 2:
             tuples = [t for t in list(zip(config, model.getStats())) if (t[0][2] != "All") and (t[0][1][:-4] != "LOFO")]
         elif question == 3:
-            tuples = [t for t in list(zip(config, model.getStats())) if (t[0][2] == "Auto")]
+            tuples = [t for t in list(zip(config, model.getStats()))
+                      if ((t[0][0] != "RF") and (t[0][2] == "LM")) or ((t[0][0] == "RF") and(t[0][2] == "FMF"))]
         elif question == 4:
-            tuples = [t for t in list(zip(config, model.getStats())) if (t[0][2] == "Auto") and (t[0][1][:-4] != "LOFO")]
+            tuples = [t for t in list(zip(config, model.getStats()))
+                      if (t[0][1][:-4] != "LOFO") and
+                      (((t[0][0] != "RF") and (t[0][2] == "LM")) or((t[0][0] == "RF") and (t[0][2] == "FMF")))]
         else:
             tuples = list()
 

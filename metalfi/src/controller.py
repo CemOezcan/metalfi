@@ -141,8 +141,11 @@ class Controller:
 
     def evaluate(self, names):
         evaluation = Evaluation(names)
-        #evaluation.predictions()
-        #evaluation.questions()
+        evaluation.predictions()
+
+    def questions(self, names):
+        evaluation = Evaluation(names)
+        evaluation.questions()
 
     def compare(self, names):
         evaluation = Evaluation(names)
