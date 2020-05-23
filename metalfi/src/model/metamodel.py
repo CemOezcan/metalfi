@@ -30,11 +30,10 @@ class MetaModel:
         self.__result_configurations = list()
 
         sc1 = StandardScaler()
-        sc1.fit(pd.concat([train, test]))
+        sc1.fit(train)
         self.__train_data = DataFrame(data=sc1.transform(train), columns=train.columns)
         self.__test_data = DataFrame(data=sc1.transform(test), columns=test.columns)
 
-        # TODO: get from FeatureImportance class
         train = train.drop(self.__target_names, axis=1)
         fmf = \
             [x for x in train.columns if "." not in x]
