@@ -121,7 +121,7 @@ class MetaModel:
             r = np.corrcoef(y_pred, y_test)[0][1]
 
             if np.math.isnan(r):
-                r_2, rmse, base, r = -2, rmse, 1, 0
+                r_2, rmse, base, r = 0, 1, 1, 0
 
             self.__stats.append([r_2, rmse / base, r])
 

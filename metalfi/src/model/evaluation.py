@@ -203,8 +203,8 @@ class Evaluation:
         for metric in all_results:
             for importance in all_results[metric]:
                 Memory.storeDataFrame(DataFrame(data=all_results[metric][importance], index=rows,
-                                                columns=[x for x in all_results[metric][importance]]),
-                                      metric + " x " + importance, "predictions")
+                                                columns=[x for x in all_results[metric][importance]]).round(3),
+                                      metric + "x" + importance, "predictions")
 
     def comparisons(self, models, targets, subsets, renew=False):
         rows = None

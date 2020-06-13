@@ -61,21 +61,21 @@ class Visualization:
         plt.show()
 
     @staticmethod
-    def runtime_boxplot():
-        target_data = Visualization.fetch_runtime_data("XtargetX")
-        meta_data = Visualization.fetch_runtime_data("XmetaX")
+    def runtime_boxplot(threshold, targets, meta):
+        target_data = Visualization.fetch_runtime_data("XtargetX", threshold)
+        meta_data = Visualization.fetch_runtime_data("XmetaX", threshold)
 
         data = list()
         names = list()
         for x in target_data:
-            if x == "total" or x == "SHAP" or x == "LIME":
+            if x not in targets:
                 continue
             names.append(x)
             target_data[x][x] /= 5
             data.append(target_data[x][x].values)
 
         for x in meta_data:
-            if x == "total" or x == "multivariate":
+            if x not in meta:
                 continue
             names.append(x)
             data.append(meta_data[x][x].values)
@@ -178,7 +178,7 @@ class Visualization:
 
             for column in data_frame.columns:
                 names.append(column)
-                #print("mean " + column + ": ", np.mean(data_frame[column].values))
+                print("mean " + column + ": ", np.mean(data_frame[column].values))
                 d.append(data_frame[column].values)
 
             val, p_value = ss.friedmanchisquare(*d)
@@ -189,7 +189,7 @@ class Visualization:
     @staticmethod
     def createTimeline(names, ranks, metric, sign_matrix):
         fig, ax = plt.subplots()
-        ax.set(title=metric)
+        ax.set(title=metric[:-4])
 
         levels = np.tile([-5, 5, -3, 3, -1, 1], len(ranks))[:len(ranks)]
         marker, _, _ = ax.stem(ranks, levels, linefmt="C3--", basefmt="k-", use_line_collection=True)
