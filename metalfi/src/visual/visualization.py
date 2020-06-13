@@ -180,21 +180,19 @@ class Visualization:
                 names.append(column)
                 d.append(data_frame[column].values)
 
-            if (len(names) < 10) and (not (("rLIN" in metric) or ("rNON" in metric) or ("RMSE" in metric))):
+            if len(names) < 10:
                 val, p_value = ss.friedmanchisquare(*d)
                 if p_value < 0.05:
                     fig, ax = plt.subplots()
                     ax.boxplot(d, notch=True, showfliers=False)
                     plt.xticks(list(range(1, len(d) + 1)), names)
-
-                    plt.show()
+                    Memory.storeVisual(plt, metric[:-4])
                     Visualization.createTimeline(names, ranks, metric,
                                                  sp.sign_array(sp.posthoc_nemenyi_friedman(np.array(d).T)))
 
     @staticmethod
     def createTimeline(names, ranks, metric, sign_matrix):
         fig, ax = plt.subplots()
-        ax.set(title=metric[:-4])
 
         levels = np.tile([-5, 5, -3, 3, -1, 1], len(ranks))[:len(ranks)]
         marker, _, _ = ax.stem(ranks, levels, linefmt="C3--", basefmt="k-", use_line_collection=True)
@@ -230,4 +228,4 @@ class Visualization:
                 plt.axvspan(max(values), min(values), facecolor=colors[c % len(colors)], alpha=0.2)
                 c += 1
 
-        plt.show()
+        Memory.storeVisual(plt, metric[:-4] + "CD")

@@ -201,7 +201,7 @@ class Evaluation:
 
             index = 0
             for a, b, c in self.__config:
-                row = a + " x " + c
+                row = "$" + a + "_{" + c + "}$"
                 if row not in rows:
                     rows.append(row)
 
@@ -212,9 +212,9 @@ class Evaluation:
 
         for metric in all_results:
             for importance in all_results[metric]:
-                Memory.storeDataFrame(DataFrame(data=all_results[metric][importance], index=rows,
-                                                columns=[x for x in all_results[metric][importance]]).round(3),
-                                      metric + "x" + importance, "predictions")
+                data_frame = DataFrame(data=all_results[metric][importance], index=rows,
+                                       columns=[x for x in all_results[metric][importance]])
+                Memory.storeDataFrame(data_frame.round(3), metric + "x" + importance, "predictions")
 
     def comparisons(self, models, targets, subsets, renew=False):
         rows = None
