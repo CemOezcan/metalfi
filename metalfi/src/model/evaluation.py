@@ -29,10 +29,15 @@ class Evaluation:
         config = [c for (a, b, c) in model.getMetaModels()]
 
         # Q_2
-        subset_names = list(dict.fromkeys([c[2] for c in config if c[2] != "All"]))
-        data_2 = {"R^2": {key: list() for key in subset_names},
-                  "RMSE": {key: list() for key in subset_names},
-                  "r": {key: list() for key in subset_names}}
+        subset_names_lin = list(dict.fromkeys([c[2] for c in config if c[2] != "All"]))
+        subset_names_non = list(dict.fromkeys([c[2] for c in config]))
+        data_2_lin = {"R^2": {key: list() for key in subset_names_lin},
+                      "RMSE": {key: list() for key in subset_names_lin},
+                      "r": {key: list() for key in subset_names_lin}}
+
+        data_2_non = {"R^2": {key: list() for key in subset_names_non},
+                      "RMSE": {key: list() for key in subset_names_non},
+                      "r": {key: list() for key in subset_names_non}}
 
         # Q_3
         target_names = list(dict.fromkeys([c[1] for c in config]))
@@ -60,20 +65,22 @@ class Evaluation:
             rows.append(data_set)
             model, _ = Memory.loadModel([data_set])[0]
 
-            data_2 = self.createQuestionCsv(model, config, subset_names, data_2, 2, question=2)
+            data_2_lin = self.createQuestionCsv(model, config, subset_names_lin, data_2_lin, 2, question=2, linear=True)
+            data_2_non = self.createQuestionCsv(model, config, subset_names_non, data_2_non, 2, question=2, linear=False)
             data_3 = self.createQuestionCsv(model, config, target_names, data_3, 1, question=3)
             data_4 = self.createQuestionCsv(model, config, meta_model_names, data_4, 0, question=4)
             data_5 = self.createQuestion5Csv(model, data_5, "linSVR", "Auto")
 
-        self.q_2(data_2, rows)
+        self.q_2(data_2_lin, rows, "LIN")
+        self.q_2(data_2_non, rows, "NON")
         self.q_3(data_3, rows)
         self.q_4(data_4, rows)
         self.q_5(data_5, rows)
 
-    def q_2(self, data, rows):
+    def q_2(self, data, rows, end):
         for metric in data:
             Memory.storeDataFrame(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]),
-                                  metric, "questions/q2")
+                                  metric + end, "questions/q2")
 
     def q_3(self, data, rows):
         for metric in data:
@@ -114,16 +121,19 @@ class Evaluation:
         Memory.storeDataFrame(DataFrame(data=dictionary, index=rows, columns=[x for x in dictionary]),
                               name + metric, "questions/q3")
 
-    def createQuestionCsv(self, model, config, names, data, index, question):
+    def createQuestionCsv(self, model, config, names, data, index, question, linear=False):
         if question == 2:
-            tuples = [t for t in list(zip(config, model.getStats())) if (t[0][2] != "All") and (t[0][1][:-4] != "LOFO")]
+            if linear:
+                tuples = [t for t in list(zip(config, model.getStats())) if (t[0][0].lower().startswith("lin"))]
+            else:
+                tuples = [t for t in list(zip(config, model.getStats())) if not (t[0][0].lower().startswith("lin"))]
         elif question == 3:
             tuples = [t for t in list(zip(config, model.getStats()))
-                      if ((t[0][0] != "RF") and (t[0][2] == "LM")) or ((t[0][0] == "RF") and(t[0][2] == "FMF"))]
+                      if ((t[0][0] != "RF") and (t[0][2] == "Auto")) or ((t[0][0] == "RF") and(t[0][2] == "FMF"))]
         elif question == 4:
             tuples = [t for t in list(zip(config, model.getStats()))
                       if (t[0][1][:-4] != "LOFO") and
-                      (((t[0][0] != "RF") and (t[0][2] == "LM")) or((t[0][0] == "RF") and (t[0][2] == "FMF")))]
+                      (((t[0][0] != "RF") and (t[0][2] == "Auto")) or((t[0][0] == "RF") and (t[0][2] == "FMF")))]
         else:
             tuples = list()
 

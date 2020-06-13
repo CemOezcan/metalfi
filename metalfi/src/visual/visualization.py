@@ -81,7 +81,7 @@ class Visualization:
             data.append(meta_data[x][x].values)
 
         fig, ax = plt.subplots()
-        ax.boxplot(data)
+        ax.boxplot(data, notch=True, showfliers=False)
         plt.xticks(list(range(1, len(data) + 1)), names)
 
         plt.show()
@@ -121,10 +121,10 @@ class Visualization:
 
             x = np.arange(len(anova))
 
-            pos_anova = ax.bar(x - 1.5*width, anova, width, label="ANOVA")
-            pos_mi = ax.bar(x - width/2, mi, width, label="MI")
-            pos_fi = ax.bar(x + width/2, fi, width, label="FI")
-            pos_meta = ax.bar(x + 1.5*width, meta, width, label="MetaLFI")
+            pos_anova = ax.bar(x - 1.5 * width, anova, width, label="ANOVA")
+            pos_mi = ax.bar(x - width / 2, mi, width, label="MI")
+            pos_fi = ax.bar(x + width / 2, fi, width, label="FI")
+            pos_meta = ax.bar(x + 1.5 * width, meta, width, label="MetaLFI")
 
             """plt.bar(pos_anova, anova, label="ANOVA")
             plt.bar(pos_mi, mi, label="MI")"""
@@ -178,13 +178,18 @@ class Visualization:
 
             for column in data_frame.columns:
                 names.append(column)
-                print("mean " + column + ": ", np.mean(data_frame[column].values))
                 d.append(data_frame[column].values)
 
-            val, p_value = ss.friedmanchisquare(*d)
-            if (p_value < 0.05) and (len(names) < 10):
-                Visualization.createTimeline(names, ranks, metric,
-                                             sp.sign_array(sp.posthoc_nemenyi_friedman(np.array(d).T)))
+            if (len(names) < 10) and (not (("rLIN" in metric) or ("rNON" in metric) or ("RMSE" in metric))):
+                val, p_value = ss.friedmanchisquare(*d)
+                if p_value < 0.05:
+                    fig, ax = plt.subplots()
+                    ax.boxplot(d, notch=True, showfliers=False)
+                    plt.xticks(list(range(1, len(d) + 1)), names)
+
+                    plt.show()
+                    Visualization.createTimeline(names, ranks, metric,
+                                                 sp.sign_array(sp.posthoc_nemenyi_friedman(np.array(d).T)))
 
     @staticmethod
     def createTimeline(names, ranks, metric, sign_matrix):
@@ -226,5 +231,3 @@ class Visualization:
                 c += 1
 
         plt.show()
-
-
