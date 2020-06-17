@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
+
 import scikit_posthocs as sp
 from pandas import DataFrame
 import scipy.stats as ss
@@ -247,6 +247,6 @@ class Visualization:
         frame = DataFrame.from_dict(new)
         corr = frame.corr("spearman")
 
-        ax = sns.heatmap(corr, xticklabels=corr.columns, yticklabels=corr.columns, cmap="RdBu")
+        print(corr)
 
         return data
