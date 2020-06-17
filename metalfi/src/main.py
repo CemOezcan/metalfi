@@ -19,7 +19,7 @@ class Main(object):
         c = Controller()
         end = time.time()
         print(end - start)
-        
+
         # Train meta-models (if necessary)
         start = time.time()
         c.trainMetaModel()
@@ -46,6 +46,10 @@ class Main(object):
         Visualization.compareMeans("q3")
         Visualization.compareMeans("q4")
         Visualization.compareMeans("q5")
+        Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["landmarking", "univariate", "data"], "fast")
+        Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["multivariate", "total"], "multi")
+        Visualization.runtime_boxplot(100000000, ["SHAP", "LIME"], ["total"], "slow")
+        Visualization.performance()
 
 
 if __name__ == '__main__':

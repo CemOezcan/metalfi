@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-
+import seaborn as sns
 import scikit_posthocs as sp
 from pandas import DataFrame
 import scipy.stats as ss
@@ -61,7 +61,7 @@ class Visualization:
         plt.show()
 
     @staticmethod
-    def runtime_boxplot(threshold, targets, meta):
+    def runtime_boxplot(threshold, targets, meta, name):
         target_data = Visualization.fetch_runtime_data("XtargetX", threshold)
         meta_data = Visualization.fetch_runtime_data("XmetaX", threshold)
 
@@ -83,8 +83,8 @@ class Visualization:
         fig, ax = plt.subplots()
         ax.boxplot(data, notch=True, showfliers=False)
         plt.xticks(list(range(1, len(data) + 1)), names)
+        Memory.storeVisual(plt, name)
 
-        plt.show()
 
     @staticmethod
     def fetch_predictions():
@@ -133,12 +133,11 @@ class Visualization:
 
             ax.set_ylabel("Acc. Scores")
             ax.set_yticks([0.775, 0.8, 0.825, 0.85])
-            ax.set_title(name[:-4])
             ax.set_xticks(x)
             ax.set_xticklabels(list(frame.columns))
             ax.legend()
             plt.ylim([0.75, 0.85])
-            plt.show()
+            Memory.storeVisual(plt, name[:-4])
 
     @staticmethod
     def metaFeatureImportance():
@@ -150,8 +149,9 @@ class Visualization:
             frame = frame.sort_values(by="mean absolute SHAP")
             plt.barh(list(frame["meta-features"])[:15], list(frame["mean absolute SHAP"])[:15])
             plt.yticks(list(frame["meta-features"])[:15], list(frame["meta-features"])[:15])
-            plt.title(name[:-4])
-            plt.show()
+            if "RF_" in name[:-4]:
+                plt.show()
+            Memory.storeVisual(plt, name[:-4])
 
     @staticmethod
     def compareMeans(folder):
@@ -229,3 +229,24 @@ class Visualization:
                 c += 1
 
         Memory.storeVisual(plt, metric[:-4] + "CD")
+
+    @staticmethod
+    def correlateMetrics():
+        directory = "output/predictions"
+        path = (Memory.getPath() / directory)
+
+        new = {"r2": list(), "r": list(), "rmse": list()}
+
+        data = [(Memory.load(name, directory), name) for name in os.listdir(path)]
+        columns = data[0][0].columns
+
+        for d, n in data:
+            for column in columns[1:]:
+                new[n[:-9]] += list(d[column].values)
+
+        frame = DataFrame.from_dict(new)
+        corr = frame.corr("spearman")
+
+        ax = sns.heatmap(corr, xticklabels=corr.columns, yticklabels=corr.columns, cmap="RdBu")
+
+        return data

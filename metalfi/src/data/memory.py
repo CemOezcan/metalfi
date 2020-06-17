@@ -207,6 +207,7 @@ class Memory:
     @staticmethod
     def storeVisual(plt, name):
         plt.savefig(Memory.getPath() / ("visual/" + name + ".png"))
+        plt.close()
 
     @staticmethod
     def getPath():

@@ -80,7 +80,7 @@ class MetaFeatureSelection:
                     imp = s.kernelShap(model, X, y, 5)
 
                 array = imp["Importances"].values
-                array = list(np.interp(array, (array.min(), array.max()), (0, +1)))
+                array = list(np.interp(array, (array.min(), array.max()), (0, 1)))
                 for i in range(len(imp.index)):
                     imp.iloc[i, 0] = array[i]
 
