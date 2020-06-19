@@ -6,6 +6,8 @@ import numpy as np
 import scikit_posthocs as sp
 from pandas import DataFrame
 import scipy.stats as ss
+from sklearn.preprocessing import StandardScaler
+
 from metalfi.src.data.memory import Memory
 
 
@@ -84,7 +86,6 @@ class Visualization:
         ax.boxplot(data, notch=True, showfliers=False)
         plt.xticks(list(range(1, len(data) + 1)), names)
         Memory.storeVisual(plt, name)
-
 
     @staticmethod
     def fetch_predictions():
@@ -232,12 +233,11 @@ class Visualization:
 
     @staticmethod
     def correlateMetrics():
+        new = {"r2": list(), "r": list(), "rmse": list()}
         directory = "output/predictions"
         path = (Memory.getPath() / directory)
-
-        new = {"r2": list(), "r": list(), "rmse": list()}
-
         data = [(Memory.load(name, directory), name) for name in os.listdir(path)]
+
         columns = data[0][0].columns
 
         for d, n in data:
@@ -250,3 +250,44 @@ class Visualization:
         print(corr)
 
         return data
+
+    @staticmethod
+    def createHistogram():
+        directory = "input"
+        path = (Memory.getPath() / directory)
+        sc = StandardScaler()
+        data = list()
+
+        for name in os.listdir(path):
+            d = Memory.load(name, directory)
+            df = DataFrame(data=sc.fit_transform(d), columns=d.columns)
+            data.append(df)
+
+        frame = pd.concat(data)
+
+        lofo = [x for x in frame.columns if "LOFO" in x]
+        shap = [x for x in frame.columns if "SHAP" in x]
+        pimp = [x for x in frame.columns if "PIMP" in x]
+        lime = [x for x in frame.columns if "LIME" in x]
+        lm = [x for x in frame.columns if not x.startswith("target_")]
+
+        matrix = frame.corr()
+        matrix = matrix.drop([x for x in lofo + shap + pimp + lime + lm], axis=0)
+        matrix = matrix.drop([x for x in list(frame.columns) if x not in lofo + shap + pimp + lime], axis=1)
+
+        def f(targets): return np.mean([np.mean(list([val for val in list(map(abs, matrix[x].values)) if val < 1])) for x in targets])
+
+        print(f(lofo))
+        print(f(pimp))
+        print(f(shap))
+        print(f(lime))
+
+        values = [frame[column] for column in lofo]
+
+        n, _, _ = plt.hist(x=values, rwidth=1)
+        plt.grid(axis='y')
+        plt.xlabel('Value')
+        plt.ylabel('Frequency')
+        plt.title('LOFO')
+        plt.show()
+        plt.close()
