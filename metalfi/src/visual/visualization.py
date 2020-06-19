@@ -1,10 +1,13 @@
 import os
+import re
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
 import scikit_posthocs as sp
 from pandas import DataFrame
+from decimal import Decimal
 import scipy.stats as ss
 from sklearn.preprocessing import StandardScaler
 
@@ -291,3 +294,32 @@ class Visualization:
         plt.title('LOFO')
         plt.show()
         plt.close()
+
+    @staticmethod
+    def cleanUp():
+        directory = "output/predictions"
+        path = (Memory.getPath() / directory)
+
+        file_names = [name for name in os.listdir(path) if name.endswith('.csv')]
+
+        data = list()
+        for name in file_names:
+            file = Memory.load(name, directory)
+            data.append((file, name))
+
+        for data_frame, name in data:
+            for i in range(len(data_frame.index)):
+                for j in range(1, len(data_frame.columns)):
+                    string = str(data_frame.iloc[i].iloc[j])
+                    if abs(data_frame.iloc[i].iloc[j]) > 10:
+                        d = '%.2e' % Decimal(string)
+                        data_frame.iloc[i, j] = d
+                    elif "e" in string:
+                        match = re.split(r'e', string)
+                        match[0] = str(round(float(match[0]), 2))
+                        data_frame.iloc[i, j] = float(match[0] + "e" + match[1])
+                    else:
+                        data_frame.iloc[i, j] = round(data_frame.iloc[i].iloc[j], 3)
+
+            data_frame = data_frame.set_index("Unnamed: 0")
+            Memory.storeDataFrame(data_frame, name[:-4], "predictions", True)
