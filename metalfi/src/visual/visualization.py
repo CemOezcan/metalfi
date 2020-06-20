@@ -141,6 +141,7 @@ class Visualization:
             ax.set_xticklabels(list(frame.columns))
             ax.legend()
             plt.ylim([0.75, 0.85])
+            plt.show()
             Memory.storeVisual(plt, name[:-4])
 
     @staticmethod

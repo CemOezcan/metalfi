@@ -149,7 +149,7 @@ class Controller:
 
     def compare(self, names):
         evaluation = Evaluation(names)
-        evaluation.comparisons(["LIN", "SVR", "RF", "linSVR"],
+        evaluation.comparisons(["linSVR"],
                                ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP"], ["Auto"], True)
 
     def metaFeatureImportances(self):

@@ -9,10 +9,18 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectKBest, f_classif, mutual_info_classif, SelectPercentile
 from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, LinearSVC
+
+from metalfi.src.data.dataset import Dataset
+from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
+from metalfi.src.data.meta.importance.lime import LimeImportance
+from metalfi.src.data.meta.importance.permutation import PermutationImportance
+from metalfi.src.data.meta.importance.shap import ShapImportance
+from metalfi.src.data.meta.metafeatures import MetaFeatures
+from metalfi.src.model.evaluation import Evaluation
 
 
 class MetaModel:
@@ -200,3 +208,94 @@ class MetaModel:
                 self.__results.append([anova_f, mutual_info, fi, meta_lfi])
 
         return ["ANOVA", "MI", "FI", "MetaLFI"]
+
+    def last_question(self, models, targets, subsets, k, renew=False):
+        self.__result_configurations = list()
+        self.__results = list()
+        meta_models = [(model, features, config[1], config) for (model, features, config) in self.__meta_models
+                       if ((config[0] in models) and (config[1] in targets) and (config[2] in subsets))]
+        self.__result_configurations += [config for (_, _, _, config) in meta_models]
+        results = {0: list(), 1: list(), 2: list(), 3: list()}
+
+        for i in range(0, 4):
+            sc = StandardScaler()
+            X_train, X_test, y_train, y_test = train_test_split(self.__og_X, self.__og_y,
+                                                                test_size=0.25, random_state=i)
+
+            X_train = DataFrame(data=sc.fit_transform(X_train), columns=self.__og_X.columns)
+            X_test = DataFrame(data=sc.fit_transform(X_test), columns=self.__og_X.columns)
+            whole_train = DataFrame(data=sc.transform(X_train), columns=self.__og_X.columns)
+            whole_train["target"] = y_train.values
+            X_meta, y_meta = self.get_meta(whole_train, "target", targets)
+
+            selector_anova = SelectPercentile(f_classif, percentile=k)
+            selector_anova.fit(X_train, y_train)
+            selector_mi = SelectPercentile(f_classif, percentile=k)
+            selector_mi.fit(X_train, y_train)
+
+            X_anova_train = selector_anova.transform(X_train)
+            X_mi_train = selector_mi.transform(X_train)
+
+            X_anova_test = selector_anova.transform(X_test)
+            X_mi_test = selector_mi.transform(X_test)
+            k_number = len(X_anova_test[0])
+
+            for model, features, target, config in meta_models:
+                X_temp = X_meta[features]
+                y_temp = y_meta[target]
+                y_pred = model.predict(X_temp)
+                og_model = self.getOriginalModel(target)
+                columns = self.__og_X.columns
+
+                a, p = self.getRankings(self.__test_data.index, y_pred, y_temp)
+                predicted = [columns[i] for i in p]
+                actual = [columns[i] for i in a]
+
+                X_fi_train = X_train[actual[:k_number]]
+                X_metalfi_train = X_train[predicted[:k_number]]
+
+                X_fi_test = X_test[actual[:k_number]]
+                X_metalfi_test = X_test[predicted[:k_number]]
+
+                og_model.fit(X_fi_train, y_train)
+                fi = og_model.score(X_fi_test, y_test)
+
+                og_model.fit(X_metalfi_train, y_train)
+                metalfi = og_model.score(X_metalfi_test, y_test)
+
+                og_model.fit(X_anova_train, y_train)
+                anova = og_model.score(X_anova_test, y_test)
+
+                og_model.fit(X_mi_train, y_train)
+                mi = og_model.score(X_mi_test, y_test)
+
+                results[i].append([anova, mi, fi, metalfi])
+
+        for i in results:
+            self.__results = Evaluation.vectorAddition(self.__results, results[i])
+
+        self.__results = [list(map(lambda x: x / 4, result)) for result in self.__results]
+
+        return ["ANOVA", "MI", "FI", "MetaLFI"]
+
+    def get_meta(self, data_frame, target, targets):
+        new_targets = [x[-4:] for x in targets]
+        dataset = Dataset(data_frame, target)
+        meta_features = MetaFeatures(dataset)
+        meta_features.calculateMetaFeatures()
+
+        if "SHAP" in new_targets:
+            meta_features.addTarget(ShapImportance(dataset))
+
+        if "PIMP" in new_targets:
+            meta_features.addTarget(PermutationImportance(dataset))
+
+        if "LOFO" in new_targets:
+            meta_features.addTarget(DropColumnImportance(dataset))
+
+        if "LIME" in new_targets:
+            meta_features.addTarget(LimeImportance(dataset))
+
+        meta_data = meta_features.getMetaData()
+
+        return meta_data.drop(targets, axis=1), meta_data[targets]

@@ -31,14 +31,14 @@ class ShapImportance(FeatureImportance):
     def treeShap(self, model, X, y):
         model.fit(X, y)
         imp = shap.TreeExplainer(model).shap_values(X)
-        shap.summary_plot(imp[1], X, plot_type="bar")
+        #shap.summary_plot(imp[1], X, plot_type="bar")
 
         return self.createDataFrame(imp[1], X)
 
     def linearShap(self, model, X, y):
         model.fit(X, y)
         imp = shap.LinearExplainer(model, X).shap_values(X)
-        shap.summary_plot(imp, X, plot_type="bar")
+        #shap.summary_plot(imp, X, plot_type="bar")
 
         return self.createDataFrame(imp, X)
 
@@ -52,7 +52,7 @@ class ShapImportance(FeatureImportance):
     def treeRegressionShap(self, model, X, y):
         model.fit(X, y)
         imp = shap.TreeExplainer(model).shap_values(X)
-        shap.summary_plot(imp, X, plot_type="bar")
+        #shap.summary_plot(imp, X, plot_type="bar")
 
         return self.createDataFrame(imp, X)
 
@@ -60,7 +60,7 @@ class ShapImportance(FeatureImportance):
         model.fit(X, y)
         X_summary = shap.kmeans(X, k)
         imp = shap.KernelExplainer(model.predict, X_summary).shap_values(X)
-        shap.summary_plot(imp, X, plot_type="bar")
+        #shap.summary_plot(imp, X, plot_type="bar")
 
         return self.createDataFrame(imp, X)
 
