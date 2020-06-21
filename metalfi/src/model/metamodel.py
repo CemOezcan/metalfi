@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import pandas as pd
 
@@ -9,7 +11,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectKBest, f_classif, mutual_info_classif, SelectPercentile
 from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.model_selection import cross_val_score, train_test_split, KFold
 from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, LinearSVC
@@ -215,22 +217,22 @@ class MetaModel:
         meta_models = [(model, features, config[1], config) for (model, features, config) in self.__meta_models
                        if ((config[0] in models) and (config[1] in targets) and (config[2] in subsets))]
         self.__result_configurations += [config for (_, _, _, config) in meta_models]
-        results = {0: list(), 1: list(), 2: list(), 3: list()}
+        results = {0: list(), 1: list(), 2: list(), 3: list(), 4: list()}
 
-        for i in range(0, 4):
+        folds = self.get_cross_validation_folds(self.__og_X, self.__og_y, k=5)
+        i = 0
+        for X_train, X_test, y_train, y_test in folds:
             sc = StandardScaler()
-            X_train, X_test, y_train, y_test = train_test_split(self.__og_X, self.__og_y,
-                                                                test_size=0.25, random_state=i)
 
             X_train = DataFrame(data=sc.fit_transform(X_train), columns=self.__og_X.columns)
             X_test = DataFrame(data=sc.fit_transform(X_test), columns=self.__og_X.columns)
             whole_train = DataFrame(data=sc.transform(X_train), columns=self.__og_X.columns)
-            whole_train["target"] = y_train.values
+            whole_train["target"] = y_train
             X_meta, y_meta = self.get_meta(whole_train, "target", targets)
 
             selector_anova = SelectPercentile(f_classif, percentile=k)
             selector_anova.fit(X_train, y_train)
-            selector_mi = SelectPercentile(f_classif, percentile=k)
+            selector_mi = SelectPercentile(mutual_info_classif, percentile=k)
             selector_mi.fit(X_train, y_train)
 
             X_anova_train = selector_anova.transform(X_train)
@@ -271,6 +273,8 @@ class MetaModel:
 
                 results[i].append([anova, mi, fi, metalfi])
 
+            i += 1
+
         for i in results:
             self.__results = Evaluation.vectorAddition(self.__results, results[i])
 
@@ -299,3 +303,16 @@ class MetaModel:
         meta_data = meta_features.getMetaData()
 
         return meta_data.drop(targets, axis=1), meta_data[targets]
+
+    def get_cross_validation_folds(self, X, y, k=5):
+        X_temp = X.values
+        y_temp = y.values
+
+        kf = KFold(n_splits=k, shuffle=True, random_state=115)
+        kf.get_n_splits(X)
+
+        folds = list()
+        for train_index, test_index in kf.split(X):
+            folds.append((X_temp[train_index], X_temp[test_index], y_temp[train_index], y_temp[test_index]))
+
+        return folds

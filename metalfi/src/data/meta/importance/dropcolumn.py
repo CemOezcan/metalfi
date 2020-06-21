@@ -30,7 +30,7 @@ class DropColumnImportance(FeatureImportance):
 
         model.fit(X, y)
         imp = dropcol_importances(model, X, y)
-        plot_importances(imp).view()
+        #plot_importances(imp).view()
         return imp
 
     def oobDropcolImportance(self, model, target):
@@ -39,5 +39,5 @@ class DropColumnImportance(FeatureImportance):
 
         model.fit(X, y)
         imp = oob_dropcol_importances(model, X, y)
-        plot_importances(imp).view()
+        #plot_importances(imp).view()
         return imp

@@ -222,7 +222,7 @@ class Evaluation:
         for name in self.__meta_models:
             print("Compare meta-model: " + name)
             model, _ = Memory.loadModel([name])[0]
-            rows = model.compare(models, targets, subsets, 33, renew)
+            rows = model.last_question(models, targets, subsets, 33, renew)
             results = model.getResults()
             Memory.renewModel(model, model.getName()[:-4])
             self.__comparisons = self.vectorAddition(self.__comparisons, results)
