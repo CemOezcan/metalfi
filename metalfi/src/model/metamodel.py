@@ -168,50 +168,6 @@ class MetaModel:
         if len(self.__results) == len(models) * len(targets) * len(subsets):
             return
 
-        sc = StandardScaler()
-        sc.fit(self.__og_X)
-        self.__og_X = DataFrame(data=sc.transform(self.__og_X), columns=self.__og_X.columns)
-        X = self.__test_data.drop(self.__target_names, axis=1)
-
-        X_anova_f = SelectPercentile(f_classif, percentile=k).fit_transform(self.__og_X, self.__og_y)
-        X_mutual_info = SelectPercentile(mutual_info_classif, percentile=k).fit_transform(self.__og_X, self.__og_y)
-        k_number = len(X_anova_f[0])
-
-        cache = {}
-
-        for (model, features, config) in self.__meta_models:
-            if config[0] in models and config[1] in targets and config[2] in subsets:
-                X_test = X[features]
-                y_test = self.__test_data[config[1]]
-                y_pred = model.predict(X_test)
-                og_model = self.getOriginalModel(config[1])
-
-                a, p = self.getRankings(self.__test_data.index, y_pred, y_test)
-
-                columns = self.__og_X.columns
-                predicted = [columns[i] for i in p]
-                actual = [columns[i] for i in a]
-
-                X_fi = self.__og_X[actual[:k_number]]
-                X_meta_lfi = self.__og_X[predicted[:k_number]]
-
-                key = config[0] + " " + config[1]
-                if key in cache:
-                    anova_f, mutual_info, fi = cache[key]
-                else:
-                    anova_f = mean(cross_val_score(og_model, X_anova_f, self.__og_y, cv=5))
-                    mutual_info = mean(cross_val_score(og_model, X_mutual_info, self.__og_y, cv=5))
-                    fi = mean(cross_val_score(og_model, X_fi, self.__og_y, cv=5))
-                    cache[key] = (anova_f, mutual_info, fi)
-
-                meta_lfi = mean(cross_val_score(og_model, X_meta_lfi, self.__og_y, cv=5))
-
-                self.__result_configurations.append(config)
-                self.__results.append([anova_f, mutual_info, fi, meta_lfi])
-
-        return ["ANOVA", "MI", "FI", "MetaLFI"]
-
-    def last_question(self, models, targets, subsets, k, renew=False):
         self.__result_configurations = list()
         self.__results = list()
         meta_models = [(model, features, config[1], config) for (model, features, config) in self.__meta_models
