@@ -16,7 +16,8 @@ class DropColumnImportance(FeatureImportance):
             self._feature_importances.append(self.dropcolImportance(model, self._target))
 
         for model in self._tree_models:
-            self._feature_importances.append(self.dropcolImportance(model, self._target))
+            new_model = RandomForestClassifier(oob_score=True, n_estimators=100, n_jobs=4, random_state=115)
+            self._feature_importances.append(self.oobDropcolImportance(new_model, self._target))
 
         for model in self._kernel_models:
             self._feature_importances.append(self.dropcolImportance(model, self._target))
@@ -29,7 +30,7 @@ class DropColumnImportance(FeatureImportance):
 
         model.fit(X, y)
         imp = dropcol_importances(model, X, y)
-        plot_importances(imp).view()
+        #plot_importances(imp).view()
         return imp
 
     def oobDropcolImportance(self, model, target):

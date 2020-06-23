@@ -1,3 +1,5 @@
+import sys
+
 import pandas as pd
 
 from pandas import DataFrame
@@ -106,6 +108,7 @@ class Controller:
                 percentiles = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30) if (name == "SVR") \
                     else (2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
                 if memory:
+                    tree = False
                     percentiles = (15, 15)
 
                 sets[name] = fs.select(meta_model, f_regression, percentiles, k=10, tree=tree)
@@ -140,9 +143,13 @@ class Controller:
         evaluation = Evaluation(names)
         evaluation.predictions()
 
+    def questions(self, names):
+        evaluation = Evaluation(names)
+        evaluation.questions()
+
     def compare(self, names):
         evaluation = Evaluation(names)
-        evaluation.comparisons(["LIN", "SVR", "RF", "linSVR"],
+        evaluation.comparisons(["linSVR"],
                                ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP"], ["Auto"], True)
 
     def metaFeatureImportances(self):

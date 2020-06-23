@@ -96,7 +96,7 @@ class Memory:
         datasets = list()
         ids = [("tic-tac-toe", 1), ("phoneme", 1),
                ("banknote-authentication", 1), ("haberman", 1), ("servo", 1), ("cloud", 2),
-               ("primary-tumor", 2),  ("EgyptianSkulls", 1), ("SPECTF", 2), ("cpu", 2),
+               ("primary-tumor", 2), ("EgyptianSkulls", 1), ("SPECTF", 2), ("cpu", 2),
                ("bodyfat", 2), ("Engine1", 1), ("ESL", 2), ("ilpd-numeric", 2),
                ("credit-approval", 1), ("vowel", 3), ("socmob", 2), ("ERA", 1), ("LEV", 1), ("credit-g", 1), ("cmc", 2),
                ("bank8FM", 2), ("wind", 2)]
@@ -199,13 +199,15 @@ class Memory:
         file.close()
 
     @staticmethod
-    def storeDataFrame(data, name, directory):
+    def storeDataFrame(data, name, directory, renew=False):
         path = Memory.getPath() / ("output/" + directory + "/" + name + ".csv")
-        if not path.is_file():
+        if renew or not path.is_file():
             data.to_csv(path, header=True)
 
-    def storeVisual(self, data):
-        return
+    @staticmethod
+    def storeVisual(plt, name):
+        plt.savefig(Memory.getPath() / ("visual/" + name + ".png"))
+        plt.close()
 
     @staticmethod
     def getPath():

@@ -12,7 +12,6 @@ class PermutationImportance(FeatureImportance):
         self._name = "_PIMP"
 
     def calculateScores(self):
-        # TODO: Calc. importances for feature subsets that are multicollinear
         models = self._linear_models + self._tree_models + self._kernel_models
 
         for model in models:
@@ -26,7 +25,7 @@ class PermutationImportance(FeatureImportance):
         y = self._data_frame[target]
 
         imp = cv_importances(model, X, y)
-        plot_importances(imp).view()
+        #plot_importances(imp).view()
 
         return imp
 
@@ -39,5 +38,5 @@ class PermutationImportance(FeatureImportance):
         #print(cross_val_score(model, X, y, cv=5))
         model.fit(X, y)
         imp = importances(model, X, y)
-        plot_importances(imp).view()
+        #plot_importances(imp).view()
         return imp

@@ -24,8 +24,155 @@ class Evaluation:
 
         return result
 
+    def questions(self):
+        model, _ = Memory.loadModel([self.__meta_models[0]])[0]
+        config = [c for (a, b, c) in model.getMetaModels()]
+
+        # Q_2
+        subset_names_lin = list(dict.fromkeys([c[2] for c in config if c[2] != "All"]))
+        subset_names_non = list(dict.fromkeys([c[2] for c in config]))
+        data_2_lin = {"R^2": {key: list() for key in subset_names_lin},
+                      "RMSE": {key: list() for key in subset_names_lin},
+                      "r": {key: list() for key in subset_names_lin}}
+
+        data_2_non = {"R^2": {key: list() for key in subset_names_non},
+                      "RMSE": {key: list() for key in subset_names_non},
+                      "r": {key: list() for key in subset_names_non}}
+
+        # Q_3
+        target_names = list(dict.fromkeys([c[1] for c in config]))
+        data_3 = {"R^2": {key: list() for key in target_names},
+                  "RMSE": {key: list() for key in target_names},
+                  "r": {key: list() for key in target_names}}
+
+        # Q_4
+        meta_model_names = list(dict.fromkeys([c[0] for c in config]))
+        data_4 = {"R^2": {key: list() for key in meta_model_names},
+                  "RMSE": {key: list() for key in meta_model_names},
+                  "r": {key: list() for key in meta_model_names}}
+
+        # Q_5
+        selection_names = ["ANOVA", "MI", "FI", "MetaLFI"]
+        data_5 = {"LOG_SHAP": {key: list() for key in selection_names},
+                  "linSVC_SHAP": {key: list() for key in selection_names},
+                  "NB_SHAP": {key: list() for key in selection_names},
+                  "RF_SHAP": {key: list() for key in selection_names},
+                  "SVC_SHAP": {key: list() for key in selection_names}}
+
+        rows = list()
+        for data_set in self.__meta_models:
+            print("Questions, " + data_set)
+            rows.append(data_set)
+            model, _ = Memory.loadModel([data_set])[0]
+
+            data_2_lin = self.createQuestionCsv(model, config, subset_names_lin, data_2_lin, 2, question=2, linear=True)
+            data_2_non = self.createQuestionCsv(model, config, subset_names_non, data_2_non, 2, question=2, linear=False)
+            data_3 = self.createQuestionCsv(model, config, target_names, data_3, 1, question=3)
+            data_4 = self.createQuestionCsv(model, config, meta_model_names, data_4, 0, question=4)
+            data_5 = self.createQuestion5Csv(model, data_5, "linSVR", "Auto")
+
+        self.q_2(data_2_lin, rows, "LIN")
+        self.q_2(data_2_non, rows, "NON")
+        self.q_3(data_3, rows)
+        self.q_4(data_4, rows)
+        self.q_5(data_5, rows)
+
+    def q_2(self, data, rows, end):
+        for metric in data:
+            Memory.storeDataFrame(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]),
+                                  metric + end, "questions/q2")
+
+    def q_3(self, data, rows):
+        for metric in data:
+            data_frame = DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]])
+            Memory.storeDataFrame(data_frame, metric, "questions/q3")
+
+            dictionary = {"SHAP": [0] * len(rows), "PIMP": [0] * len(rows), "LIME": [0] * len(rows),
+                          "LOFO": [0] * len(rows)}
+            self.helper_q_3(dictionary, data_frame, rows, metric, "targets_", targets=True)
+
+            dictionary = {"linSVC": [0] * len(rows), "LOG": [0] * len(rows), "RF": [0] * len(rows),
+                          "NB": [0] * len(rows), "SVC": [0] * len(rows)}
+            self.helper_q_3(dictionary, data_frame, rows, metric, "base_")
+
+    def q_4(self, data, rows):
+        for metric in data:
+            Memory.storeDataFrame(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]),
+                                  metric, "questions/q4")
+
+    def q_5(self, data, rows):
+        for target in data:
+            Memory.storeDataFrame(DataFrame(data=data[target], index=rows, columns=[x for x in data[target]]),
+                                  target, "questions/q5")
+
+    @staticmethod
+    def helper_q_3(dictionary, data_frame, rows, metric, name, targets=False):
+        for key in dictionary:
+            if targets:
+                subset = [column for column in data_frame.columns if (key == column[-4:])]
+            else:
+                subset = [column for column in data_frame.columns if (key == column[:-5]) and (column[-4:] != "LOFO")]
+
+            for column in subset:
+                dictionary[key] = list(map(sum, zip(dictionary[key], list(data_frame[column].values))))
+
+            dictionary[key] = [element / len(subset) for element in dictionary[key]]
+
+        Memory.storeDataFrame(DataFrame(data=dictionary, index=rows, columns=[x for x in dictionary]),
+                              name + metric, "questions/q3")
+
+    def createQuestionCsv(self, model, config, names, data, index, question, linear=False):
+        if question == 2:
+            if linear:
+                tuples = [t for t in list(zip(config, model.getStats())) if (t[0][0].lower().startswith("lin"))]
+            else:
+                tuples = [t for t in list(zip(config, model.getStats())) if not (t[0][0].lower().startswith("lin"))]
+        elif question == 3:
+            tuples = [t for t in list(zip(config, model.getStats()))
+                      if ((t[0][0] != "RF") and (t[0][2] == "Auto")) or ((t[0][0] == "RF") and(t[0][2] == "FMF"))]
+        elif question == 4:
+            tuples = [t for t in list(zip(config, model.getStats()))
+                      if (t[0][1][:-4] != "LOFO") and
+                      (((t[0][0] != "RF") and (t[0][2] == "Auto")) or((t[0][0] == "RF") and (t[0][2] == "FMF")))]
+        else:
+            tuples = list()
+
+        for name in names:
+            numerator = [0, 0, 0]
+            denominator = 0
+            for t in tuples:
+                if t[0][index] == name:
+                    numerator = list(map(sum, zip(numerator, t[1])))
+                    denominator += 1
+
+            values = list(map(lambda x: x / denominator, numerator))
+            data["R^2"][name].append(values[0])
+            data["RMSE"][name].append(values[1])
+            data["r"][name].append(values[2])
+
+        return data
+
+    def createQuestion5Csv(self, model, data, meta_model_name, subset_name):
+        tuples = [t for t in list(zip(model.getResultConfig(), model.getResults()))
+                  if (t[0][0] == meta_model_name) and (t[0][2] == subset_name)]
+
+        for key in data:
+            values = [0, 0, 0, 0]
+            avg = 0
+
+            for t in [t for t in tuples if t[0][1] == key]:
+                values = list(map(sum, zip(values, t[1])))
+                avg += 1
+
+            values = [value / avg for value in values]
+            data[key]["ANOVA"].append(values[0])
+            data[key]["MI"].append(values[1])
+            data[key]["FI"].append(values[2])
+            data[key]["MetaLFI"].append(values[3])
+
+        return data
+
     def predictions(self):
-        # TODO: restructure
         model = None
         for name in self.__meta_models:
             print("Test meta-model: " + name)
@@ -54,7 +201,7 @@ class Evaluation:
 
             index = 0
             for a, b, c in self.__config:
-                row = a + " x " + c
+                row = "$" + a + "_{" + c + "}$"
                 if row not in rows:
                     rows.append(row)
 
@@ -65,9 +212,9 @@ class Evaluation:
 
         for metric in all_results:
             for importance in all_results[metric]:
-                Memory.storeDataFrame(DataFrame(data=all_results[metric][importance], index=rows,
-                                                columns=[x for x in all_results[metric][importance]]),
-                                      metric + " x " + importance, "predictions")
+                data_frame = DataFrame(data=all_results[metric][importance], index=rows,
+                                       columns=[x for x in all_results[metric][importance]])
+                Memory.storeDataFrame(data_frame.round(3), metric + "x" + importance, "predictions")
 
     def comparisons(self, models, targets, subsets, renew=False):
         rows = None

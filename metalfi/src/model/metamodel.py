@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import pandas as pd
 
@@ -9,10 +11,18 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectKBest, f_classif, mutual_info_classif, SelectPercentile
 from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, train_test_split, KFold
 from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, LinearSVC
+
+from metalfi.src.data.dataset import Dataset
+from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
+from metalfi.src.data.meta.importance.lime import LimeImportance
+from metalfi.src.data.meta.importance.permutation import PermutationImportance
+from metalfi.src.data.meta.importance.shap import ShapImportance
+from metalfi.src.data.meta.metafeatures import MetaFeatures
+from metalfi.src.model.evaluation import Evaluation
 
 
 class MetaModel:
@@ -30,11 +40,10 @@ class MetaModel:
         self.__result_configurations = list()
 
         sc1 = StandardScaler()
-        sc1.fit(pd.concat([train, test]))
+        sc1.fit(train)
         self.__train_data = DataFrame(data=sc1.transform(train), columns=train.columns)
         self.__test_data = DataFrame(data=sc1.transform(test), columns=test.columns)
 
-        # TODO: get from FeatureImportance class
         train = train.drop(self.__target_names, axis=1)
         fmf = \
             [x for x in train.columns if "." not in x]
@@ -121,6 +130,9 @@ class MetaModel:
             base = np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))])))
             r = np.corrcoef(y_pred, y_test)[0][1]
 
+            if np.math.isnan(r):
+                r_2, rmse, base, r = 0, 1, 1, 0
+
             self.__stats.append([r_2, rmse / base, r])
 
     def getRankings(self, columns, prediction, actual):
@@ -156,45 +168,107 @@ class MetaModel:
         if len(self.__results) == len(models) * len(targets) * len(subsets):
             return
 
-        sc = StandardScaler()
-        sc.fit(self.__og_X)
-        self.__og_X = DataFrame(data=sc.transform(self.__og_X), columns=self.__og_X.columns)
-        X = self.__test_data.drop(self.__target_names, axis=1)
+        self.__result_configurations = list()
+        self.__results = list()
+        meta_models = [(model, features, config[1], config) for (model, features, config) in self.__meta_models
+                       if ((config[0] in models) and (config[1] in targets) and (config[2] in subsets))]
+        self.__result_configurations += [config for (_, _, _, config) in meta_models]
+        results = {0: list(), 1: list(), 2: list(), 3: list(), 4: list()}
 
-        X_anova_f = SelectPercentile(f_classif, percentile=k).fit_transform(self.__og_X, self.__og_y)
-        X_mutual_info = SelectPercentile(mutual_info_classif, percentile=k).fit_transform(self.__og_X, self.__og_y)
-        k_number = len(X_anova_f[0])
+        folds = self.get_cross_validation_folds(self.__og_X, self.__og_y, k=5)
+        i = 0
+        for X_train, X_test, y_train, y_test in folds:
+            sc = StandardScaler()
 
-        cache = {}
+            X_train = DataFrame(data=sc.fit_transform(X_train), columns=self.__og_X.columns)
+            X_test = DataFrame(data=sc.fit_transform(X_test), columns=self.__og_X.columns)
+            whole_train = DataFrame(data=sc.transform(X_train), columns=self.__og_X.columns)
+            whole_train["target"] = y_train
+            X_meta, y_meta = self.get_meta(whole_train, "target", targets)
 
-        for (model, features, config) in self.__meta_models:
-            if config[0] in models and config[1] in targets and config[2] in subsets:
-                X_test = X[features]
-                y_test = self.__test_data[config[1]]
-                y_pred = model.predict(X_test)
-                og_model = self.getOriginalModel(config[1])
+            selector_anova = SelectPercentile(f_classif, percentile=k)
+            selector_anova.fit(X_train, y_train)
+            selector_mi = SelectPercentile(mutual_info_classif, percentile=k)
+            selector_mi.fit(X_train, y_train)
 
-                a, p = self.getRankings(self.__test_data.index, y_pred, y_test)
+            X_anova_train = selector_anova.transform(X_train)
+            X_mi_train = selector_mi.transform(X_train)
 
+            X_anova_test = selector_anova.transform(X_test)
+            X_mi_test = selector_mi.transform(X_test)
+            k_number = len(X_anova_test[0])
+
+            for model, features, target, config in meta_models:
+                X_temp = X_meta[features]
+                y_temp = y_meta[target]
+                y_pred = model.predict(X_temp)
+                og_model = self.getOriginalModel(target)
                 columns = self.__og_X.columns
+
+                a, p = self.getRankings(self.__test_data.index, y_pred, y_temp)
                 predicted = [columns[i] for i in p]
                 actual = [columns[i] for i in a]
 
-                X_fi = self.__og_X[actual[:k_number]]
-                X_meta_lfi = self.__og_X[predicted[:k_number]]
+                X_fi_train = X_train[actual[:k_number]]
+                X_metalfi_train = X_train[predicted[:k_number]]
 
-                key = config[0] + " " + config[1]
-                if key in cache:
-                    anova_f, mutual_info, fi = cache[key]
-                else:
-                    anova_f = mean(cross_val_score(og_model, X_anova_f, self.__og_y, cv=5))
-                    mutual_info = mean(cross_val_score(og_model, X_mutual_info, self.__og_y, cv=5))
-                    fi = mean(cross_val_score(og_model, X_fi, self.__og_y, cv=5))
-                    cache[key] = (anova_f, mutual_info, fi)
+                X_fi_test = X_test[actual[:k_number]]
+                X_metalfi_test = X_test[predicted[:k_number]]
 
-                meta_lfi = mean(cross_val_score(og_model, X_meta_lfi, self.__og_y, cv=5))
+                og_model.fit(X_fi_train, y_train)
+                fi = og_model.score(X_fi_test, y_test)
 
-                self.__result_configurations.append(config)
-                self.__results.append([anova_f, mutual_info, fi, meta_lfi])
+                og_model.fit(X_metalfi_train, y_train)
+                metalfi = og_model.score(X_metalfi_test, y_test)
+
+                og_model.fit(X_anova_train, y_train)
+                anova = og_model.score(X_anova_test, y_test)
+
+                og_model.fit(X_mi_train, y_train)
+                mi = og_model.score(X_mi_test, y_test)
+
+                results[i].append([anova, mi, fi, metalfi])
+
+            i += 1
+
+        for i in results:
+            self.__results = Evaluation.vectorAddition(self.__results, results[i])
+
+        self.__results = [list(map(lambda x: x / 4, result)) for result in self.__results]
 
         return ["ANOVA", "MI", "FI", "MetaLFI"]
+
+    def get_meta(self, data_frame, target, targets):
+        new_targets = [x[-4:] for x in targets]
+        dataset = Dataset(data_frame, target)
+        meta_features = MetaFeatures(dataset)
+        meta_features.calculateMetaFeatures()
+
+        if "SHAP" in new_targets:
+            meta_features.addTarget(ShapImportance(dataset))
+
+        if "PIMP" in new_targets:
+            meta_features.addTarget(PermutationImportance(dataset))
+
+        if "LOFO" in new_targets:
+            meta_features.addTarget(DropColumnImportance(dataset))
+
+        if "LIME" in new_targets:
+            meta_features.addTarget(LimeImportance(dataset))
+
+        meta_data = meta_features.getMetaData()
+
+        return meta_data.drop(targets, axis=1), meta_data[targets]
+
+    def get_cross_validation_folds(self, X, y, k=5):
+        X_temp = X.values
+        y_temp = y.values
+
+        kf = KFold(n_splits=k, shuffle=True, random_state=115)
+        kf.get_n_splits(X)
+
+        folds = list()
+        for train_index, test_index in kf.split(X):
+            folds.append((X_temp[train_index], X_temp[test_index], y_temp[train_index], y_temp[test_index]))
+
+        return folds

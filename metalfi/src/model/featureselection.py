@@ -3,6 +3,7 @@ import time
 from statistics import mean
 
 import shap
+import numpy as np
 from sklearn.feature_selection import VarianceThreshold, SelectPercentile, SelectFromModel
 from sklearn.model_selection import cross_val_score
 
@@ -77,6 +78,11 @@ class MetaFeatureSelection:
                     imp = s.treeRegressionShap(model, X, y)
                 else:
                     imp = s.kernelShap(model, X, y, 5)
+
+                array = imp["Importances"].values
+                array = list(np.interp(array, (array.min(), array.max()), (0, 1)))
+                for i in range(len(imp.index)):
+                    imp.iloc[i, 0] = array[i]
 
                 this_target.append(imp)
 

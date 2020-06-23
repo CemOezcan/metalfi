@@ -1,3 +1,4 @@
+import math
 import sys
 import time
 
@@ -157,6 +158,7 @@ class MetaFeatures:
         chi2_values, chi2_p_values = chi2(X_sc, y)
         f_values, anova_p_values = f_classif(X, y)
         log_anova_p = list(map((lambda x: -500 if x == float("-inf") else x), [np.log(x) for x in anova_p_values]))
+        log_anova_p = list(map((lambda x: 1 if math.isnan(x) else x), log_anova_p))
         log_chi2_p = [np.log(x) for x in chi2_p_values]
 
         for feature in X.columns:
