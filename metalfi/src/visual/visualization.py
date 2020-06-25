@@ -252,8 +252,6 @@ class Visualization:
         frame = DataFrame.from_dict(new)
         corr = frame.corr("spearman")
 
-        print(corr)
-
         return data
 
     @staticmethod
