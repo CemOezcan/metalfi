@@ -54,7 +54,8 @@ class Main(object):
         Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["landmarking", "univariate", "data"], "fast")
         Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["multivariate", "total"], "multi")
         Visualization.runtime_boxplot(100000000, ["SHAP", "LIME"], ["total"], "slow")
-        Visualization.createHistogram()
+        Visualization.createHistograms()
+        Visualization.correlateTargets()
         Visualization.correlateMetrics()
         Visualization.performance()
 

@@ -256,7 +256,7 @@ class Visualization:
         return data
 
     @staticmethod
-    def createHistogram():
+    def correlateTargets():
         directory = "input"
         path = (Memory.getPath() / directory)
         sc = StandardScaler()
@@ -275,24 +275,55 @@ class Visualization:
         lime = [x for x in frame.columns if "LIME" in x]
         lm = [x for x in frame.columns if not x.startswith("target_")]
 
-        matrix = frame.corr()
+        matrix = frame.corr("spearman")
         matrix = matrix.drop([x for x in lofo + shap + pimp + lime + lm], axis=0)
         matrix = matrix.drop([x for x in list(frame.columns) if x not in lofo + shap + pimp + lime], axis=1)
 
-        def f(targets): return np.mean([np.mean(list([val for val in list(map(abs, matrix[x].values)) if val < 1])) for x in targets])
+        def f(targets): return np.round(np.mean([np.mean(list([val for val in list(map(abs, matrix[x].values)) if val < 1])) for x in targets]), 2)
+
+        def f_2(targets): return np.round(np.max([np.mean(list([val for val in list(map(abs, matrix[x].values)) if val < 1])) for x in targets]), 2)
 
         print(f(lofo))
         print(f(pimp))
         print(f(shap))
         print(f(lime))
 
-        values = [frame[column] for column in lofo]
+        print(f_2(lofo))
+        print(f_2(pimp))
+        print(f_2(shap))
+        print(f_2(lime))
 
-        n, _, _ = plt.hist(x=values, rwidth=1)
-        plt.grid(axis='y')
-        plt.xlabel('Value')
-        plt.ylabel('Frequency')
-        plt.title('LOFO')
+    @staticmethod
+    def createHistograms():
+        directory = "input"
+        path = (Memory.getPath() / directory)
+        data = list()
+
+        for name in os.listdir(path):
+            d = Memory.load(name, directory)
+            df = DataFrame(data=d, columns=d.columns)
+            data.append(df)
+
+        frame = pd.concat(data)
+
+        meta_targets = [([x for x in frame.columns if "LOFO" in x], "LOFO", 0, 0),
+                        ([x for x in frame.columns if "SHAP" in x], "SHAP", 0, 1),
+                        ([x for x in frame.columns if "LIME" in x], "LIME", 1, 0),
+                        ([x for x in frame.columns if "PIMP" in x], "PIMP", 1, 1)]
+
+        fig, axs = plt.subplots(2, 2)
+        for target, name, x, y in meta_targets:
+            values = list()
+            for value in [list(frame[column].values) for column in target]:
+                values += value
+
+            n, _, _ = axs[x, y].hist(x=values, rwidth=1, bins=len(values))
+            axs[x, y].set_title(name)
+            axs[x, y].set_xlim(np.quantile(values, 0.10), np.quantile(values, 0.75))
+
+            if name == "LIME":
+                axs[x, y].set_ylim(0, 30)
+
         plt.show()
         plt.close()
 
