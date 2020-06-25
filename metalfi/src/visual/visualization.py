@@ -229,7 +229,6 @@ class Visualization:
                 ax[0].axvspan(max(values), min(values), facecolor=colors[c % len(colors)], alpha=0.2)
                 c += 1
 
-        print(names)
         ax[1].boxplot(data, notch=True, showfliers=False)
         ax[1].set_xticks(list(range(1, len(data) + 1)))
         ax[1].set_xticklabels(names)
@@ -251,6 +250,7 @@ class Visualization:
 
         frame = DataFrame.from_dict(new)
         corr = frame.corr("spearman")
+        print(corr)
 
         return data
 
