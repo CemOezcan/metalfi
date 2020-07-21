@@ -37,10 +37,8 @@ class MetaFeatures:
 
         return data_time, uni_time, multi_time, lm_time
 
-    def run(self, X, y, summary, features):
-        mfe = MFE(summary=summary,
-                  groups=["general", "statistical", "info-theory", "model-based"],
-                  features=features)
+    def runPymfe(self, X, y, summary, features):
+        mfe = MFE(summary=summary, features=features)
         mfe.fit(X, y)
         vector = mfe.extract()
 
@@ -54,9 +52,9 @@ class MetaFeatures:
         X = data_frame.drop(target, axis=1)
         y = data_frame[target]
 
-        names_1, dmf_1 = self.run(X.values, y.values,
-                                  ["min", "median", "max", "sd", "kurtosis", "skewness", "mean"],
-                                  ["attr_to_inst", "freq_class", "inst_to_attr", "nr_attr", "nr_class", "nr_inst",
+        names_1, dmf_1 = self.runPymfe(X.values, y.values,
+                                       ["min", "median", "max", "sd", "kurtosis", "skewness", "mean"],
+                                       ["attr_to_inst", "freq_class", "inst_to_attr", "nr_attr", "nr_class", "nr_inst",
                                    "gravity", "cor", "cov", "nr_disc", "eigenvalues", "nr_cor_attr", "w_lambda",
                                    "class_ent", "eq_num_attr", "ns_ratio", "iq_range", "kurtosis", "mad",
                                    "max", "mean", "median", "min", "range", "sd", "skewness", "sparsity", "t_mean",
@@ -81,8 +79,8 @@ class MetaFeatures:
         for feature in X.columns:
             X_temp = data_frame[feature]
 
-            columns, values = self.run(X_temp.values, y.values, None,
-                                       ["iq_range", "kurtosis", "mad", "max", "mean", "median", "min",
+            columns, values = self.runPymfe(X_temp.values, y.values, None,
+                                            ["iq_range", "kurtosis", "mad", "max", "mean", "median", "min",
                                         "range", "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent", "nr_norm",
                                         "nr_outliers", "nr_cat", "nr_bin", "nr_num"])
 
@@ -109,7 +107,7 @@ class MetaFeatures:
         total_multi = end_multi - start_multi
 
         start_lm = time.time()
-        columns, values = self.run(X.values, y.values, None, ["joint_ent", "mut_inf", "var_importance"])
+        columns, values = self.runPymfe(X.values, y.values, None, ["joint_ent", "mut_inf", "var_importance"])
         for feature in X.columns:
             loc = X.columns.get_loc(feature)
             self.__feature_meta_features[loc].append(values[0][loc])
@@ -264,9 +262,9 @@ class MetaFeatures:
                 data[feature_1] = {}
                 for feature_2 in X.columns:
                     columns_1, values_1 = \
-                        self.run(X[feature_1].values, X[feature_2].values, None, ["attr_ent", "mut_inf"])
+                        self.runPymfe(X[feature_1].values, X[feature_2].values, None, ["attr_ent", "mut_inf"])
                     columns_2, values_2 = \
-                        self.run(X[feature_2].values, X[feature_1].values, None, ["attr_ent", "mut_inf"])
+                        self.runPymfe(X[feature_2].values, X[feature_1].values, None, ["attr_ent", "mut_inf"])
 
                     mut_inf = np.mean([values_1[1][0], values_2[1][0]])
                     h_1 = values_1[0][0]
@@ -278,7 +276,7 @@ class MetaFeatures:
 
             return DataFrame(data=data, columns=X.columns, index=X.columns)
 
-        columns, values = self.run(X.values, y.values, None, ["attr_ent", "class_ent", "mut_inf"])
+        columns, values = self.runPymfe(X.values, y.values, None, ["attr_ent", "class_ent", "mut_inf"])
         su = (2 * values[2][0]) / (values[0][0] + values[1])
 
         return su

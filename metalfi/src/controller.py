@@ -20,9 +20,9 @@ class Controller:
 
     def __init__(self):
         self.__train_data = None
-        self.__enum = None
+        self.__data_names = None
         self.__meta_data = list()
-        self.downloadData()
+        self.fetchData()
         self.storeMetaData()
         self.__targets = ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP",
                           "linSVC_LIME", "LOG_LIME", "RF_LIME", "NB_LIME", "SVC_LIME",
@@ -37,7 +37,7 @@ class Controller:
     def getTrainData(self):
         return self.__train_data
 
-    def downloadData(self):
+    def fetchData(self):
         data_frame, target = Memory.loadTitanic()
         data_1 = Dataset(data_frame, target)
 
@@ -58,17 +58,17 @@ class Controller:
         self.__train_data = [(data_1, "Titanic"), (data_2, "Cancer"), (data_3, "Iris"), (data_4, "Wine"),
                              (data_5, "Boston")] + open_ml
 
-        self.__enum = dict({})
+        self.__data_names = dict({})
         i = 0
         for data, name in self.__train_data:
-            self.__enum[name] = i
+            self.__data_names[name] = i
             i += 1
 
     def storeMetaData(self):
         for dataset, name in self.__train_data:
             if not (Memory.getPath() / ("input/" + name + "meta.csv")).is_file():
                 print("meta-data calc.: " + name)
-                meta = MetaDataset([dataset], True)
+                meta = MetaDataset(dataset, True)
                 data = meta.getMetaData()
                 d_times, t_times = meta.getTimes()
                 nr_feat, nr_inst = meta.getNrs()
@@ -132,7 +132,7 @@ class Controller:
             path = Memory.getPath() / ("model/" + test_name)
             if not path.is_file():
                 print("Train meta-model: " + test_name)
-                og_data, name = self.__train_data[self.__enum[test_name]]
+                og_data, name = self.__train_data[self.__data_names[test_name]]
                 model = MetaModel(pd.concat(train_data), test_name + "meta",
                                   test_data, og_data, self.selectMetaFeatures(test_name),
                                   self.__meta_models, self.__targets)

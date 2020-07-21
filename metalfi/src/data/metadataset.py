@@ -3,9 +3,9 @@ import pandas as pd
 
 class MetaDataset:
 
-    def __init__(self, datasets, train=False):
+    def __init__(self, dataset, train=False):
         self.__meta_data, self.__target_names, self.__times, self.nr_feat, self.nr_inst = \
-            self.calculateTrainingData(datasets) if train else self.calculateTestData(datasets)
+            self.calculateTrainingData(dataset) if train else self.calculateTestData(dataset)
 
     def getMetaData(self):
         return self.__meta_data
@@ -20,19 +20,16 @@ class MetaDataset:
         return self.nr_feat, self.nr_inst
 
     @staticmethod
-    def calculateTrainingData(datasets):
+    def calculateTrainingData(dataset):
         data_frames = list()
-        times = None
-        targets = None
         nr_feat = 0
         nr_inst = 0
 
-        for dataset in datasets:
-            data, targets, (data_time, target_time), x, y = dataset.trainMetaData()
-            nr_feat += x
-            nr_inst += y
-            times = (data_time, target_time)
-            data_frames.append(data)
+        data, targets, (data_time, target_time), x, y = dataset.trainMetaData()
+        nr_feat += x
+        nr_inst += y
+        times = (data_time, target_time)
+        data_frames.append(data)
 
         return pd.concat(data_frames), targets, times, nr_feat, nr_inst
 

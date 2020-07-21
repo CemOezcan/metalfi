@@ -20,7 +20,6 @@ class PermutationImportance(FeatureImportance):
             # self.eli5PermutationImportance(model, self._target)
 
     def cvPermutationImportance(self, model, target):
-        # TODO: Calc. importances on testset?
         X = self._data_frame.drop(target, axis=1)
         y = self._data_frame[target]
 

@@ -5,7 +5,7 @@ import pandas as pd
 
 from pathlib import Path
 from pandas import DataFrame
-from sklearn.datasets import load_wine, load_iris, load_boston, fetch_openml, load_diabetes
+from sklearn.datasets import load_wine, load_iris, load_boston, fetch_openml
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, LabelEncoder
 
 
