@@ -27,10 +27,10 @@ from metalfi.src.model.evaluation import Evaluation
 
 class MetaModel:
 
-    def __init__(self, train, name, test, og_data, selected, base_models, target_names):
+    def __init__(self, train, name, test, og_data, selected, untrained_meta_models, target_names):
         self.__og_y = og_data.getDataFrame()[og_data.getTarget()]
         self.__og_X = og_data.getDataFrame().drop(og_data.getTarget(), axis=1)
-        self.__base_models = base_models
+        self.__untrained_meta_models = untrained_meta_models
         self.__target_names = target_names
         self.__selected = selected
         self.__file_name = name
@@ -55,7 +55,7 @@ class MetaModel:
             [x for x in train.columns if (x in fmf) and (x not in multi) and (x not in lm)]
 
         self.__feature_sets = [["Auto"], train.columns, fmf, lm, multi, uni]
-        self.__enum = {0: "Auto", 1: "All", 2: "FMF", 3: "LM", 4: "Multi", 5: "Uni"}
+        self.__meta_feature_groups = {0: "Auto", 1: "All", 2: "FMF", 3: "LM", 4: "Multi", 5: "Uni"}
 
     def getName(self):
         return self.__file_name
@@ -67,13 +67,13 @@ class MetaModel:
         return self.__stats
 
     def getBaseModels(self):
-        return self.__base_models
+        return self.__untrained_meta_models
 
     def getMetaModels(self):
         return self.__meta_models
 
     def getEnum(self):
-        return self.__enum
+        return self.__meta_feature_groups
 
     def getResults(self):
         return self.__results
@@ -84,7 +84,7 @@ class MetaModel:
     def fit(self):
         X = self.__train_data.drop(self.__target_names, axis=1)
 
-        for base_model, base_model_name in self.__base_models:
+        for base_model, base_model_name in self.__untrained_meta_models:
             for target in self.__target_names:
                 i = 0
                 for feature_set in self.__feature_sets:
@@ -92,8 +92,8 @@ class MetaModel:
                     X_train, selected_features = self.featureSelection(base_model_name, X, target) \
                         if feature_set[0] == "Auto" else (X[feature_set], feature_set)
 
-                    model = self.hyperparameterOptimization(base_model, X_train, y)
-                    feature_set_name = self.__enum.get(i)
+                    model = self.trainModel(base_model, X_train, y)
+                    feature_set_name = self.__meta_feature_groups.get(i)
 
                     self.__meta_models.append((deepcopy(model), selected_features,
                                                [base_model_name, target, feature_set_name]))
@@ -105,8 +105,7 @@ class MetaModel:
 
         return X_train[features], features
 
-    def hyperparameterOptimization(self, model, X, y):
-        # TODO: Implement
+    def trainModel(self, model, X, y):
         model.fit(X, y)
         return model
 

@@ -43,6 +43,5 @@ class FeatureImportance(ABC):
 
     @abstractmethod
     def calculateScores(self):
-        #TODO: Parallelize
         pass
 

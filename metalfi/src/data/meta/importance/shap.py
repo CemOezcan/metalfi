@@ -42,13 +42,6 @@ class ShapImportance(FeatureImportance):
 
         return self.createDataFrame(imp, X)
 
-    def sampleShap(self, model, X, y):
-        model.fit(X, y)
-        imp = shap.SamplingExplainer(model.predict, X)
-        #shap.summary_plot(imp, X, plot_type="bar")
-
-        return self.createDataFrame(imp, X)
-
     def treeRegressionShap(self, model, X, y):
         model.fit(X, y)
         imp = shap.TreeExplainer(model).shap_values(X)

@@ -188,31 +188,27 @@ class Visualization:
             if len(names) < 10:
                 val, p_value = ss.friedmanchisquare(*d)
                 if p_value < 0.05:
-                    fig, ax = plt.subplots()
-                    ax.boxplot(d, notch=True, showfliers=False)
-                    plt.xticks(list(range(1, len(d) + 1)), names)
-                    Memory.storeVisual(plt, metric[:-4])
                     Visualization.createTimeline(names, ranks, metric,
-                                                 sp.sign_array(sp.posthoc_nemenyi_friedman(np.array(d).T)))
+                                                 sp.sign_array(sp.posthoc_nemenyi_friedman(np.array(d).T)), d)
 
     @staticmethod
-    def createTimeline(names, ranks, metric, sign_matrix):
-        fig, ax = plt.subplots()
+    def createTimeline(names, ranks, metric, sign_matrix, data):
+        fig, ax = plt.subplots(2)
 
         levels = np.tile([-5, 5, -3, 3, -1, 1], len(ranks))[:len(ranks)]
-        marker, _, _ = ax.stem(ranks, levels, linefmt="C3--", basefmt="k-", use_line_collection=True)
+        marker, _, _ = ax[0].stem(ranks, levels, linefmt="C3--", basefmt="k-", use_line_collection=True)
         marker.set_ydata(np.zeros(len(ranks)))
 
         plt.setp(marker, mec="k", mfc="k")
         vert = np.array(list(map(lambda x: "top" if x > 0 else "bottom", levels)))
 
         for i in range(len(ranks)):
-            ax.annotate(names[i], (ranks[i], levels[i]), va=vert[i], xytext=(3, 3), textcoords="offset points")
+            ax[0].annotate(names[i], (ranks[i], levels[i]), va=vert[i], xytext=(3, 3), textcoords="offset points")
 
-        ax.get_yaxis().set_visible(False)
-        ax.spines["left"].set_visible(False)
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
+        ax[0].get_yaxis().set_visible(False)
+        ax[0].spines["left"].set_visible(False)
+        ax[0].spines["top"].set_visible(False)
+        ax[0].spines["right"].set_visible(False)
 
         d = {name: [] for name in names}
         remove = list()
@@ -230,10 +226,14 @@ class Visualization:
 
             if len(indices) > 1:
                 values = [ranks[index] for index in indices]
-                plt.axvspan(max(values), min(values), facecolor=colors[c % len(colors)], alpha=0.2)
+                ax[0].axvspan(max(values), min(values), facecolor=colors[c % len(colors)], alpha=0.2)
                 c += 1
 
-        Memory.storeVisual(plt, metric[:-4] + "CD")
+        ax[1].boxplot(data, notch=True, showfliers=False)
+        ax[1].set_xticks(list(range(1, len(data) + 1)))
+        ax[1].set_xticklabels(names)
+
+        Memory.storeVisual(plt, metric[:-4])
 
     @staticmethod
     def correlateMetrics():
@@ -250,13 +250,12 @@ class Visualization:
 
         frame = DataFrame.from_dict(new)
         corr = frame.corr("spearman")
-
         print(corr)
 
         return data
 
     @staticmethod
-    def createHistogram():
+    def correlateTargets():
         directory = "input"
         path = (Memory.getPath() / directory)
         sc = StandardScaler()
@@ -275,24 +274,55 @@ class Visualization:
         lime = [x for x in frame.columns if "LIME" in x]
         lm = [x for x in frame.columns if not x.startswith("target_")]
 
-        matrix = frame.corr()
+        matrix = frame.corr("spearman")
         matrix = matrix.drop([x for x in lofo + shap + pimp + lime + lm], axis=0)
         matrix = matrix.drop([x for x in list(frame.columns) if x not in lofo + shap + pimp + lime], axis=1)
 
-        def f(targets): return np.mean([np.mean(list([val for val in list(map(abs, matrix[x].values)) if val < 1])) for x in targets])
+        def f(targets): return np.round(np.mean([np.mean(list([val for val in list(map(abs, matrix[x].values)) if val < 1])) for x in targets]), 2)
+
+        def f_2(targets): return np.round(np.max([np.mean(list([val for val in list(map(abs, matrix[x].values)) if val < 1])) for x in targets]), 2)
 
         print(f(lofo))
         print(f(pimp))
         print(f(shap))
         print(f(lime))
 
-        values = [frame[column] for column in lofo]
+        print(f_2(lofo))
+        print(f_2(pimp))
+        print(f_2(shap))
+        print(f_2(lime))
 
-        n, _, _ = plt.hist(x=values, rwidth=1)
-        plt.grid(axis='y')
-        plt.xlabel('Value')
-        plt.ylabel('Frequency')
-        plt.title('LOFO')
+    @staticmethod
+    def createHistograms():
+        directory = "input"
+        path = (Memory.getPath() / directory)
+        data = list()
+
+        for name in os.listdir(path):
+            d = Memory.load(name, directory)
+            df = DataFrame(data=d, columns=d.columns)
+            data.append(df)
+
+        frame = pd.concat(data)
+
+        meta_targets = [([x for x in frame.columns if "LOFO" in x], "LOFO", 0, 0),
+                        ([x for x in frame.columns if "SHAP" in x], "SHAP", 0, 1),
+                        ([x for x in frame.columns if "LIME" in x], "LIME", 1, 0),
+                        ([x for x in frame.columns if "PIMP" in x], "PIMP", 1, 1)]
+
+        fig, axs = plt.subplots(2, 2)
+        for target, name, x, y in meta_targets:
+            values = list()
+            for value in [list(frame[column].values) for column in target]:
+                values += value
+
+            n, _, _ = axs[x, y].hist(x=values, rwidth=1, bins=len(values))
+            axs[x, y].set_title(name)
+            axs[x, y].set_xlim(np.quantile(values, 0.10), np.quantile(values, 0.75))
+
+            if name == "LIME":
+                axs[x, y].set_ylim(0, 30)
+
         plt.show()
         plt.close()
 
