@@ -28,7 +28,6 @@ class MetaFeatureSelection:
         sets = {}
         for target in self.__target_names:
             y = self.__Y[target]
-            print("Select for target: " + target)
             if tree:
                 sel = SelectFromModel(estimator=meta_model).fit(self.__X, y)
                 support = sel.get_support(indices=True)
