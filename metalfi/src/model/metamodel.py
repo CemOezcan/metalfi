@@ -38,6 +38,7 @@ class MetaModel:
         self.__stats = list()
         self.__results = list()
         self.__result_configurations = list()
+        self.__was_compared = False
 
         sc1 = StandardScaler()
         sc1.fit(train)
@@ -56,6 +57,9 @@ class MetaModel:
 
         self.__feature_sets = [["Auto"], train.columns, fmf, lm, multi, uni]
         self.__meta_feature_groups = {0: "Auto", 1: "All", 2: "FMF", 3: "LM", 4: "Multi", 5: "Uni"}
+
+    def wasCompared(self):
+        return self.__was_compared
 
     def getName(self):
         return self.__file_name
@@ -163,12 +167,11 @@ class MetaModel:
         if renew:
             self.__results = list()
             self.__result_configurations = list()
+            self.__was_compared = False
 
-        if len(self.__results) == len(models) * len(targets) * len(subsets):
+        if self.__was_compared:
             return
 
-        self.__result_configurations = list()
-        self.__results = list()
         meta_models = [(model, features, config[1], config) for (model, features, config) in self.__meta_models
                        if ((config[0] in models) and (config[1] in targets) and (config[2] in subsets))]
         self.__result_configurations += [config for (_, _, _, config) in meta_models]
@@ -234,6 +237,7 @@ class MetaModel:
             self.__results = Evaluation.vectorAddition(self.__results, results[i])
 
         self.__results = [list(map(lambda x: x / 5, result)) for result in self.__results]
+        self.__was_compared = True
 
         return ["ANOVA", "MI", "FI", "MetaLFI"]
 

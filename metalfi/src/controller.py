@@ -142,14 +142,14 @@ class Controller:
         evaluation = Evaluation(names)
         evaluation.predictions()
 
-    def questions(self, names):
+    def questions(self, names, offset):
         evaluation = Evaluation(names)
-        evaluation.questions()
+        evaluation.questions(names[:offset])
 
     def compare(self, names):
         evaluation = Evaluation(names)
         evaluation.comparisons(["linSVR"],
-                               ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP"], ["Auto"], True)
+                               ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP"], ["Auto"], False)
 
     def metaFeatureImportances(self):
         data = [d for d, _ in self.__meta_data]

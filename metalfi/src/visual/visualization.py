@@ -154,8 +154,6 @@ class Visualization:
             frame = frame.sort_values(by="mean absolute SHAP")
             plt.barh(list(frame["meta-features"])[:15], list(frame["mean absolute SHAP"])[:15])
             plt.yticks(list(frame["meta-features"])[:15], list(frame["meta-features"])[:15])
-            if "RF_" in name[:-4]:
-                plt.show()
             Memory.storeVisual(plt, name[:-4])
 
     @staticmethod

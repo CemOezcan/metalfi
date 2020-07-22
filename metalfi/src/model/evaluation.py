@@ -24,7 +24,7 @@ class Evaluation:
 
         return result
 
-    def questions(self):
+    def questions(self, subset_names):
         model, _ = Memory.loadModel([self.__meta_models[0]])[0]
         config = [c for (a, b, c) in model.getMetaModels()]
 
@@ -60,6 +60,7 @@ class Evaluation:
                   "SVC_SHAP": {key: list() for key in selection_names}}
 
         rows = list()
+        rows_5 = list()
         for data_set in self.__meta_models:
             print("Questions, " + data_set)
             rows.append(data_set)
@@ -69,13 +70,16 @@ class Evaluation:
             data_2_non = self.createQuestionCsv(model, config, subset_names_non, data_2_non, 2, question=2, linear=False)
             data_3 = self.createQuestionCsv(model, config, target_names, data_3, 1, question=3)
             data_4 = self.createQuestionCsv(model, config, meta_model_names, data_4, 0, question=4)
-            data_5 = self.createQuestion5Csv(model, data_5, "linSVR", "Auto")
+
+            if data_set in subset_names:
+                rows_5.append(data_set)
+                data_5 = self.createQuestion5Csv(model, data_5, "linSVR", "Auto")
 
         self.q_2(data_2_lin, rows, "LIN")
         self.q_2(data_2_non, rows, "NON")
         self.q_3(data_3, rows)
         self.q_4(data_4, rows)
-        self.q_5(data_5, rows)
+        self.q_5(data_5, rows_5)
 
     def q_2(self, data, rows, end):
         for metric in data:

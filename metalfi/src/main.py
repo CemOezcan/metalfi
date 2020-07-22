@@ -32,11 +32,7 @@ class Main(object):
         end = time.time()
         print(end - start)
 
-        c.metaFeatureImportances()
-
-        data = ["Titanic", "Iris", "Cancer", "Wine", "Boston", "tic-tac-toe", "banknote-authentication",
-                "haberman", "servo", "cloud", "primary-tumor", "EgyptianSkulls", "SPECTF", "cpu", "bodyfat",
-                "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob", "ERA", "LEV", "cmc"]
+        #c.metaFeatureImportances()
 
         # Compare
         start = time.time()
@@ -46,18 +42,18 @@ class Main(object):
 
         # Tests
         Visualization.cleanUp()
-        c.questions(data)
+        c.questions(data, -4)
         Visualization.compareMeans("q2")
         Visualization.compareMeans("q3")
         Visualization.compareMeans("q4")
         Visualization.compareMeans("q5")
         Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["landmarking", "univariate", "data"], "fast")
-        Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["multivariate", "total"], "multi")
         Visualization.runtime_boxplot(100000000, ["SHAP", "LIME"], ["total"], "slow")
         Visualization.createHistograms()
         Visualization.correlateTargets()
         Visualization.correlateMetrics()
         Visualization.performance()
+        Visualization.metaFeatureImportance()
 
 
 if __name__ == '__main__':
