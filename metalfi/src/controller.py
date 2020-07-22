@@ -153,10 +153,10 @@ class Controller:
 
     def metaFeatureImportances(self):
         data = [d for d, _ in self.__meta_data]
-        models = [(RandomForestRegressor(n_estimators=100, n_jobs=4), "RF", "tree"),
+        models = [(RandomForestRegressor(n_estimators=50, n_jobs=4), "RF", "tree"),
                   (SVR(), "SVR", "kernel"),
                   (LinearRegression(n_jobs=4), "LIN", "linear"),
-                  (LinearSVR(dual=True, max_iter=10000), "linSVR", "linear")]
+                  (LinearSVR(dual=True, max_iter=1000), "linSVR", "linear")]
         targets = ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP"]
         importance = MetaFeatureSelection.metaFeatureImportance(pd.concat(data), self.__targets, models, targets,
                                                                 self.selectMetaFeatures(memory=True))

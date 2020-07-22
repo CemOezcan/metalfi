@@ -11,8 +11,8 @@ class Main(object):
     def main():
         data = ["Titanic", "Iris", "Cancer", "Wine", "Boston", "tic-tac-toe", "banknote-authentication",
                 "haberman", "servo", "cloud", "primary-tumor", "EgyptianSkulls", "SPECTF", "cpu", "bodyfat",
-                "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob", "ERA", "LEV", "credit-g",
-                "phoneme", "cmc", "wind", "bank8FM"]
+                "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob", "ERA", "LEV", "cmc", "credit-g",
+                "phoneme", "bank8FM", "wind"]
 
         # Calculate meta-datasets (if necessary)
         start = time.time()
@@ -32,11 +32,11 @@ class Main(object):
         end = time.time()
         print(end - start)
 
-        #c.metaFeatureImportances()
+        c.metaFeatureImportances()
 
         data = ["Titanic", "Iris", "Cancer", "Wine", "Boston", "tic-tac-toe", "banknote-authentication",
                 "haberman", "servo", "cloud", "primary-tumor", "EgyptianSkulls", "SPECTF", "cpu", "bodyfat",
-                "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob", "ERA", "LEV"]
+                "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob", "ERA", "LEV", "cmc"]
 
         # Compare
         start = time.time()
