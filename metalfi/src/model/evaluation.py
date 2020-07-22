@@ -52,7 +52,7 @@ class Evaluation:
                   "r": {key: list() for key in meta_model_names}}
 
         # Q_5
-        selection_names = ["ANOVA", "MI", "SHAP", "MetaLFI"]
+        selection_names = ["ANOVA", "MI", "FI", "MetaLFI"]
         data_5 = {"LOG_SHAP": {key: list() for key in selection_names},
                   "linSVC_SHAP": {key: list() for key in selection_names},
                   "NB_SHAP": {key: list() for key in selection_names},
@@ -167,7 +167,7 @@ class Evaluation:
             values = [value / avg for value in values]
             data[key]["ANOVA"].append(values[0])
             data[key]["MI"].append(values[1])
-            data[key]["SHAP"].append(values[2])
+            data[key]["FI"].append(values[2])
             data[key]["MetaLFI"].append(values[3])
 
         return data

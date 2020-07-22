@@ -86,7 +86,7 @@ class Visualization:
             data.append(meta_data[x][x].values)
 
         fig, ax = plt.subplots()
-        ax.boxplot(data, notch=True, showfliers=False)
+        ax.boxplot(data, showfliers=False)
         plt.xticks(list(range(1, len(data) + 1)), names)
         Memory.storeVisual(plt, name)
 
@@ -141,7 +141,7 @@ class Visualization:
             ax.set_xticklabels(list(frame.columns))
             ax.legend()
             plt.ylim([0.75, 0.85])
-            plt.show()
+
             Memory.storeVisual(plt, name[:-4])
 
     @staticmethod
@@ -229,7 +229,7 @@ class Visualization:
                 ax[0].axvspan(max(values), min(values), facecolor=colors[c % len(colors)], alpha=0.2)
                 c += 1
 
-        ax[1].boxplot(data, notch=True, showfliers=False)
+        ax[1].boxplot(data, showfliers=False)
         ax[1].set_xticks(list(range(1, len(data) + 1)))
         ax[1].set_xticklabels(names)
 

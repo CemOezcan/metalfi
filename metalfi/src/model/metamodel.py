@@ -233,7 +233,7 @@ class MetaModel:
         for i in results:
             self.__results = Evaluation.vectorAddition(self.__results, results[i])
 
-        self.__results = [list(map(lambda x: x / 4, result)) for result in self.__results]
+        self.__results = [list(map(lambda x: x / 5, result)) for result in self.__results]
 
         return ["ANOVA", "MI", "FI", "MetaLFI"]
 
