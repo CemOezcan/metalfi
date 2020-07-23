@@ -73,7 +73,7 @@ class Evaluation:
 
             if data_set in subset_names:
                 rows_5.append(data_set)
-                data_5 = self.createQuestion5Csv(model, data_5, "linSVR", "Auto")
+                data_5 = self.createQuestion5Csv(model, data_5, "linSVR", "LM")
 
         self.q_2(data_2_lin, rows, "LIN")
         self.q_2(data_2_non, rows, "NON")
@@ -133,11 +133,12 @@ class Evaluation:
                 tuples = [t for t in list(zip(config, model.getStats())) if not (t[0][0].lower().startswith("lin"))]
         elif question == 3:
             tuples = [t for t in list(zip(config, model.getStats()))
-                      if ((t[0][0] != "RF") and (t[0][2] == "Auto")) or ((t[0][0] == "RF") and(t[0][2] == "Auto"))]
+                      if (t[0][0].lower().startswith("lin") and (t[0][2] == "LM"))
+                      or (((t[0][0] == "RF") or (t[0][0] == "SVR")) and (t[0][2] == "Auto"))]
         elif question == 4:
             tuples = [t for t in list(zip(config, model.getStats()))
-                      if (t[0][1][:-4] != "LOFO") and
-                      (((t[0][0] != "RF") and (t[0][2] == "Auto")) or((t[0][0] == "RF") and (t[0][2] == "Auto")))]
+                      if (t[0][1][:-4] != "LOFO") and ((t[0][0].lower().startswith("lin") and (t[0][2] == "LM"))
+                      or (((t[0][0] == "RF") or (t[0][0] == "SVR")) and (t[0][2] == "Auto")))]
         else:
             tuples = list()
 

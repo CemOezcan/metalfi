@@ -36,7 +36,7 @@ class Main(object):
 
         # Compare
         start = time.time()
-        c.compare(data)
+        c.compare(data[:-4])
         end = time.time()
         print(end - start)
 
