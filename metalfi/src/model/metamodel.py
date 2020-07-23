@@ -150,14 +150,13 @@ class MetaModel:
         og_model = None
 
         if name.startswith("RF"):
-            og_model = RandomForestClassifier(n_estimators=10, random_state=0, n_jobs=4)
+            og_model = RandomForestClassifier(n_estimators=10, random_state=115, n_jobs=-1)
         elif name.startswith("SVC"):
-            og_model = SVC(kernel="rbf", gamma="scale", random_state=0)
+            og_model = SVC(random_state=115)
         elif name.startswith("LOG"):
-            og_model = LogisticRegression(dual=False, solver="lbfgs", multi_class="auto", max_iter=1000, random_state=0,
-                                          n_jobs=4)
+            og_model = LogisticRegression(dual=False, max_iter=1000, random_state=115, n_jobs=-1)
         elif name.startswith("linSVC"):
-            og_model = LinearSVC(max_iter=10000, dual=False, random_state=0)
+            og_model = LinearSVC(dual=False, max_iter=10000, random_state=115)
         elif name.startswith("NB"):
             og_model = GaussianNB()
 

@@ -105,10 +105,10 @@ class Controller:
             for meta_model, name in self.__meta_models:
                 print("Select meta-features: " + name)
                 tree = (name == "RF")
-                percentiles = (16, 18, 20, 22, 24, 26, 28, 30)
+                percentiles = [10]
                 if memory:
                     tree = False
-                    percentiles = [15]
+                    percentiles = [25]
 
                 sets[name] = fs.select(meta_model, f_regression, percentiles, k=5, tree=tree)
 

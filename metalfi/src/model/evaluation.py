@@ -133,11 +133,11 @@ class Evaluation:
                 tuples = [t for t in list(zip(config, model.getStats())) if not (t[0][0].lower().startswith("lin"))]
         elif question == 3:
             tuples = [t for t in list(zip(config, model.getStats()))
-                      if ((t[0][0] != "RF") and (t[0][2] == "Auto")) or ((t[0][0] == "RF") and(t[0][2] == "FMF"))]
+                      if ((t[0][0] != "RF") and (t[0][2] == "Auto")) or ((t[0][0] == "RF") and(t[0][2] == "Auto"))]
         elif question == 4:
             tuples = [t for t in list(zip(config, model.getStats()))
                       if (t[0][1][:-4] != "LOFO") and
-                      (((t[0][0] != "RF") and (t[0][2] == "Auto")) or((t[0][0] == "RF") and (t[0][2] == "FMF")))]
+                      (((t[0][0] != "RF") and (t[0][2] == "Auto")) or((t[0][0] == "RF") and (t[0][2] == "Auto")))]
         else:
             tuples = list()
 

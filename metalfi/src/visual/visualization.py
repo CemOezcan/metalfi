@@ -193,7 +193,7 @@ class Visualization:
     def createTimeline(names, ranks, metric, sign_matrix, data):
         fig, ax = plt.subplots(2)
 
-        levels = np.tile([-5, 5, -3, 3, -1, 1], len(ranks))[:len(ranks)]
+        levels = np.tile([-6, 6, -4, 4, -2, 2], len(ranks))[:len(ranks)]
         marker, _, _ = ax[0].stem(ranks, levels, linefmt="C3--", basefmt="k-", use_line_collection=True)
         marker.set_ydata(np.zeros(len(ranks)))
 
@@ -321,8 +321,7 @@ class Visualization:
             if name == "LIME":
                 axs[x, y].set_ylim(0, 30)
 
-        plt.show()
-        plt.close()
+        Memory.storeVisual(plt, "Multicollinearity")
 
     @staticmethod
     def cleanUp():
