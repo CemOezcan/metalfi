@@ -95,8 +95,9 @@ class Visualization:
         directory = "output/predictions"
 
         path = (Memory.getPath() / directory)
+        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
 
-        for name in os.listdir(path):
+        for name in file_names:
             frame = Memory.load(name, directory).set_index("Unnamed: 0")
             for column in frame.columns:
                 frame = frame.round({column: 3})
@@ -104,7 +105,7 @@ class Visualization:
             path = Memory.getPath() / (directory + "/" + name)
             frame.to_csv(path, header=True)
 
-        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in os.listdir(path)]
+        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
 
         return data
 
@@ -112,8 +113,9 @@ class Visualization:
     def performance():
         directory = "output/selection"
         path = (Memory.getPath() / directory)
+        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
 
-        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in os.listdir(path)]
+        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
         for frame, name in data:
             width = 0.2
             fig, ax = plt.subplots()
@@ -148,7 +150,8 @@ class Visualization:
     def metaFeatureImportance():
         directory = "output/importance"
         path = (Memory.getPath() / directory)
-        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in os.listdir(path)]
+        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
+        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
 
         for frame, name in data:
             frame = frame.sort_values(by="mean absolute SHAP")
@@ -160,13 +163,13 @@ class Visualization:
     def compareMeans(folder):
         directory = "output/questions/" + folder
         path = (Memory.getPath() / directory)
-
-        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in os.listdir(path)]
+        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
+        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
 
         for data_frame, metric in data:
             d = list()
             names = list()
-            ranks = [0] * len(data_frame.index)
+            ranks = [0] * len(data_frame.columns)
 
             for i in range(len(data_frame.index)):
                 copy = data_frame.iloc[i].values
@@ -238,7 +241,8 @@ class Visualization:
         new = {"r2": list(), "r": list(), "rmse": list()}
         directory = "output/predictions"
         path = (Memory.getPath() / directory)
-        data = [(Memory.load(name, directory), name) for name in os.listdir(path)]
+        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
+        data = [(Memory.load(name, directory), name) for name in file_names]
 
         columns = data[0][0].columns
 
@@ -248,7 +252,8 @@ class Visualization:
 
         frame = DataFrame.from_dict(new)
         corr = frame.corr("spearman")
-        print(corr)
+        path = Memory.getPath() / ("visual/metrics_corr.csv")
+        corr.to_csv(path, header=True)
 
         return data
 
@@ -258,8 +263,9 @@ class Visualization:
         path = (Memory.getPath() / directory)
         sc = StandardScaler()
         data = list()
+        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
 
-        for name in os.listdir(path):
+        for name in file_names:
             d = Memory.load(name, directory)
             df = DataFrame(data=sc.fit_transform(d), columns=d.columns)
             data.append(df)
@@ -280,23 +286,21 @@ class Visualization:
 
         def f_2(targets): return np.round(np.max([np.mean(list([val for val in list(map(abs, matrix[x].values)) if val < 1])) for x in targets]), 2)
 
-        print(f(lofo))
-        print(f(pimp))
-        print(f(shap))
-        print(f(lime))
+        d = {'lofo': [f(lofo), f_2(lofo)], 'shap': [f(shap), f_2(shap)], 'lime': [f(lime), f_2(lime)], 'pimp': [f(pimp), f_2(pimp)]}
 
-        print(f_2(lofo))
-        print(f_2(pimp))
-        print(f_2(shap))
-        print(f_2(lime))
+        data_frame = pd.DataFrame(data=d, index=["mean", "max"], columns=["lofo", "shap", "lime", "pimp"])
+
+        path = Memory.getPath() / ("visual/target_corr.csv")
+        data_frame.to_csv(path, header=True)
 
     @staticmethod
     def createHistograms():
         directory = "input"
         path = (Memory.getPath() / directory)
         data = list()
+        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
 
-        for name in os.listdir(path):
+        for name in file_names:
             d = Memory.load(name, directory)
             df = DataFrame(data=d, columns=d.columns)
             data.append(df)
@@ -321,7 +325,7 @@ class Visualization:
             if name == "LIME":
                 axs[x, y].set_ylim(0, 30)
 
-        Memory.storeVisual(plt, "Multicollinearity")
+        Memory.storeVisual(plt, "Histograms")
 
     @staticmethod
     def cleanUp():

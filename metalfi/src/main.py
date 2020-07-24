@@ -1,4 +1,3 @@
-import sys
 import time
 
 from metalfi.src.controller import Controller

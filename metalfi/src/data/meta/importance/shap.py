@@ -1,5 +1,4 @@
 import shap
-import numpy as np
 
 from pandas import DataFrame
 from sklearn.preprocessing import StandardScaler
