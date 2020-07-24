@@ -1,12 +1,8 @@
-import time
+import numpy as np
 
 from statistics import mean
-
-import shap
-import numpy as np
-from sklearn.feature_selection import VarianceThreshold, SelectPercentile, SelectFromModel
+from sklearn.feature_selection import VarianceThreshold, SelectPercentile
 from sklearn.model_selection import cross_val_score
-
 from metalfi.src.data.meta.importance.shap import ShapImportance
 
 

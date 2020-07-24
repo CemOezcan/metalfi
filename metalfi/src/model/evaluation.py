@@ -1,7 +1,4 @@
-import sys
-
 from pandas import DataFrame
-
 from metalfi.src.data.memory import Memory
 
 

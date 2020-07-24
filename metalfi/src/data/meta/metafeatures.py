@@ -1,13 +1,10 @@
 import math
-import sys
 import time
-
 import numpy as np
-import pandas as pd
 
 from pandas import DataFrame
 from pymfe.mfe import MFE
-from sklearn.feature_selection import f_classif, mutual_info_classif, chi2
+from sklearn.feature_selection import f_classif, chi2
 from sklearn.preprocessing import MinMaxScaler
 
 from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance

@@ -1,17 +1,11 @@
-import sys
-
 import numpy as np
-import pandas as pd
 
 from copy import deepcopy
-from statistics import mean
 from pandas import DataFrame
-from scipy.stats import spearmanr
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_selection import SelectKBest, f_classif, mutual_info_classif, SelectPercentile
-from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.model_selection import cross_val_score, train_test_split, KFold
+from sklearn.feature_selection import f_classif, mutual_info_classif, SelectPercentile
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import KFold
 from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, LinearSVC
