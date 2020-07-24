@@ -95,8 +95,9 @@ class Visualization:
         directory = "output/predictions"
 
         path = (Memory.getPath() / directory)
+        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
 
-        for name in os.listdir(path):
+        for name in file_names:
             frame = Memory.load(name, directory).set_index("Unnamed: 0")
             for column in frame.columns:
                 frame = frame.round({column: 3})
@@ -104,7 +105,7 @@ class Visualization:
             path = Memory.getPath() / (directory + "/" + name)
             frame.to_csv(path, header=True)
 
-        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in os.listdir(path)]
+        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
 
         return data
 
@@ -112,8 +113,9 @@ class Visualization:
     def performance():
         directory = "output/selection"
         path = (Memory.getPath() / directory)
+        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
 
-        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in os.listdir(path)]
+        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
         for frame, name in data:
             width = 0.2
             fig, ax = plt.subplots()
@@ -148,7 +150,8 @@ class Visualization:
     def metaFeatureImportance():
         directory = "output/importance"
         path = (Memory.getPath() / directory)
-        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in os.listdir(path)]
+        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
+        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
 
         for frame, name in data:
             frame = frame.sort_values(by="mean absolute SHAP")
@@ -160,8 +163,8 @@ class Visualization:
     def compareMeans(folder):
         directory = "output/questions/" + folder
         path = (Memory.getPath() / directory)
-
-        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in os.listdir(path)]
+        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
+        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
 
         for data_frame, metric in data:
             d = list()
@@ -238,7 +241,8 @@ class Visualization:
         new = {"r2": list(), "r": list(), "rmse": list()}
         directory = "output/predictions"
         path = (Memory.getPath() / directory)
-        data = [(Memory.load(name, directory), name) for name in os.listdir(path)]
+        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
+        data = [(Memory.load(name, directory), name) for name in file_names]
 
         columns = data[0][0].columns
 
@@ -258,8 +262,9 @@ class Visualization:
         path = (Memory.getPath() / directory)
         sc = StandardScaler()
         data = list()
+        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
 
-        for name in os.listdir(path):
+        for name in file_names:
             d = Memory.load(name, directory)
             df = DataFrame(data=sc.fit_transform(d), columns=d.columns)
             data.append(df)
@@ -295,8 +300,9 @@ class Visualization:
         directory = "input"
         path = (Memory.getPath() / directory)
         data = list()
+        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
 
-        for name in os.listdir(path):
+        for name in file_names:
             d = Memory.load(name, directory)
             df = DataFrame(data=d, columns=d.columns)
             data.append(df)

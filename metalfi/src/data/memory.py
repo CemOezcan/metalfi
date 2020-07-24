@@ -192,7 +192,7 @@ class Memory:
     @staticmethod
     def renewModel(model, name):
         path = Memory.getPath() / ("model/" + name)
-        file = open(path, "wb")
+        file = open(path, 'wb')
         pickle.dump(model, file)
         file.close()
 
