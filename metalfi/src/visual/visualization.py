@@ -169,7 +169,7 @@ class Visualization:
         for data_frame, metric in data:
             d = list()
             names = list()
-            ranks = [0] * len(data_frame.index)
+            ranks = [0] * len(data_frame.columns)
 
             for i in range(len(data_frame.index)):
                 copy = data_frame.iloc[i].values
