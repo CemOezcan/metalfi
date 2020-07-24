@@ -169,7 +169,7 @@ class MetaModel:
             self.__was_compared = False
 
         if self.__was_compared:
-            return
+            return ["ANOVA", "MI", "FI", "MetaLFI"]
 
         meta_models = [(model, features, config[1], config) for (model, features, config) in self.__meta_models
                        if ((config[0] in models) and (config[1] in targets) and (config[2] in subsets))]

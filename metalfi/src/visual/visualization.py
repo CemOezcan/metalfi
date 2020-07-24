@@ -48,22 +48,22 @@ class Visualization:
         return summary
 
     @staticmethod
-    def runtime_graph():
-        target_data = Visualization.fetch_runtime_data("XtargetX", 20000)
-        meta_data = Visualization.fetch_runtime_data("XmetaX", 20000)
+    def runtime_graph(name):
+        target_data = Visualization.fetch_runtime_data("XtargetX")
+        meta_data = Visualization.fetch_runtime_data("XmetaX")
         for x in target_data:
-            if x == "total":
+            if x == "LOFO" or x == "SHAP" or x == "LIME" or x == "total":
                 continue
             target_data[x][x] /= 5
             plt.plot(target_data[x].columns[0], x, data=target_data[x], linewidth=2)
 
         for x in meta_data:
-            if x == "univariate" or x == "landmarking" or x == "multivariate" or x == "data":
+            if x == "total" or x == "multivariate":
                 continue
             plt.plot(meta_data[x].columns[0], x, data=meta_data[x], linewidth=2)
 
         plt.legend()
-        plt.show()
+        Memory.storeVisual(plt, name)
 
     @staticmethod
     def runtime_boxplot(threshold, targets, meta, name):

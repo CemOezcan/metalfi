@@ -252,4 +252,4 @@ class Evaluation:
             for subset in subsets:
                 Memory.storeDataFrame(DataFrame(data=all_results[model], index=rows,
                                                 columns=[x for x in all_results[model]]),
-                                      model + " x " + subset, "selection")
+                                      model + " x " + subset, "selection", True)

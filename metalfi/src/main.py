@@ -32,7 +32,7 @@ class Main(object):
         end = time.time()
         print(end - start)
 
-        #c.metaFeatureImportances()
+        c.metaFeatureImportances()
 
         # Compare
         start = time.time()
@@ -41,6 +41,7 @@ class Main(object):
         print(end - start)
 
         # Tests
+        Visualization.performance()
         Visualization.cleanUp()
         c.questions(data, -4)
         Visualization.compareMeans("q2")
@@ -48,11 +49,12 @@ class Main(object):
         Visualization.compareMeans("q4")
         Visualization.compareMeans("q5")
         Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["landmarking", "univariate", "data"], "fast")
+        Visualization.runtime_boxplot(100000000, ["LOFO"], ["multivariate"], "fast_multi")
         Visualization.runtime_boxplot(100000000, ["SHAP", "LIME"], ["total"], "slow")
+        Visualization.runtime_graph("fast_graph")
         Visualization.createHistograms()
         Visualization.correlateTargets()
         Visualization.correlateMetrics()
-        Visualization.performance()
         Visualization.metaFeatureImportance()
 
 
