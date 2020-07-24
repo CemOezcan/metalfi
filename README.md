@@ -35,6 +35,7 @@ For instance, the table that contains the performances, measured with the R^2,
 of all meta-models predicting SHAP-based meta-targets is `predictions\r2xSHAP.csv`.
 
 #Folder Structure
+
     .
     ├── metalfi                 
         ├── data                        # Data sets and plots
