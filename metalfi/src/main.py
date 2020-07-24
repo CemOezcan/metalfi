@@ -11,8 +11,8 @@ class Main(object):
     def main():
         data = ["Titanic", "Iris", "Cancer", "Wine", "Boston", "tic-tac-toe", "banknote-authentication",
                 "haberman", "servo", "cloud", "primary-tumor", "EgyptianSkulls", "SPECTF", "cpu", "bodyfat",
-                "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob", "ERA", "LEV", "credit-g",
-                "phoneme", "cmc", "wind", "bank8FM"]
+                "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob", "ERA", "LEV", "cmc", "credit-g",
+                "phoneme", "bank8FM", "wind"]
 
         # Calculate meta-datasets (if necessary)
         start = time.time()
@@ -32,32 +32,30 @@ class Main(object):
         end = time.time()
         print(end - start)
 
-        #c.metaFeatureImportances()
-
-        data = ["Titanic", "Iris", "Cancer", "Wine", "Boston", "tic-tac-toe", "banknote-authentication",
-                "haberman", "servo", "cloud", "primary-tumor", "EgyptianSkulls", "SPECTF", "cpu", "bodyfat",
-                "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob", "ERA", "LEV"]
+        c.metaFeatureImportances()
 
         # Compare
         start = time.time()
-        c.compare(data)
+        c.compare(data[:-4])
         end = time.time()
         print(end - start)
 
         # Tests
+        Visualization.performance()
         Visualization.cleanUp()
-        c.questions(data)
+        c.questions(data, -4)
         Visualization.compareMeans("q2")
         Visualization.compareMeans("q3")
         Visualization.compareMeans("q4")
         Visualization.compareMeans("q5")
         Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["landmarking", "univariate", "data"], "fast")
-        Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["multivariate", "total"], "multi")
+        Visualization.runtime_boxplot(100000000, ["LOFO"], ["multivariate"], "fast_multi")
         Visualization.runtime_boxplot(100000000, ["SHAP", "LIME"], ["total"], "slow")
+        Visualization.runtime_graph("fast_graph")
         Visualization.createHistograms()
         Visualization.correlateTargets()
         Visualization.correlateMetrics()
-        Visualization.performance()
+        Visualization.metaFeatureImportance()
 
 
 if __name__ == '__main__':

@@ -16,10 +16,10 @@ class FeatureImportance(ABC):
         self._data_frame = dataset.getDataFrame()
         self._target = self._dataset.getTarget()
 
-        rf = RandomForestClassifier(n_estimators=100, n_jobs=4, random_state=115)
-        linSVC = LinearSVC(max_iter=10000, dual=False, random_state=115)
-        svc = SVC(kernel="rbf", gamma="scale", random_state=115)
-        log = LogisticRegression(dual=False, solver="lbfgs", multi_class="auto", max_iter=1000, n_jobs=4, random_state=115)
+        rf = RandomForestClassifier(n_estimators=100, n_jobs=-1, random_state=115)
+        linSVC = LinearSVC(dual=False, max_iter=10000, random_state=115)
+        svc = SVC(random_state=115)
+        log = LogisticRegression(dual=False, max_iter=1000, n_jobs=-1, random_state=115)
         nb = GaussianNB()
 
         self._linear_models = [linSVC, log]

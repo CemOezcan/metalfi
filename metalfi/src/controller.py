@@ -105,13 +105,12 @@ class Controller:
             for meta_model, name in self.__meta_models:
                 print("Select meta-features: " + name)
                 tree = (name == "RF")
-                percentiles = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30) if (name == "SVR") \
-                    else (2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+                percentiles = [10]
                 if memory:
                     tree = False
-                    percentiles = (15, 15)
+                    percentiles = [25]
 
-                sets[name] = fs.select(meta_model, f_regression, percentiles, k=10, tree=tree)
+                sets[name] = fs.select(meta_model, f_regression, percentiles, k=5, tree=tree)
 
         if memory:
             Memory.storeMetaFeatures(sets)
@@ -143,21 +142,21 @@ class Controller:
         evaluation = Evaluation(names)
         evaluation.predictions()
 
-    def questions(self, names):
+    def questions(self, names, offset):
         evaluation = Evaluation(names)
-        evaluation.questions()
+        evaluation.questions(names[:offset])
 
     def compare(self, names):
         evaluation = Evaluation(names)
         evaluation.comparisons(["linSVR"],
-                               ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP"], ["Auto"], True)
+                               ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP"], ["LM"], False)
 
     def metaFeatureImportances(self):
         data = [d for d, _ in self.__meta_data]
-        models = [(RandomForestRegressor(n_estimators=100, n_jobs=4), "RF", "tree"),
+        models = [(RandomForestRegressor(n_estimators=50, n_jobs=4), "RF", "tree"),
                   (SVR(), "SVR", "kernel"),
                   (LinearRegression(n_jobs=4), "LIN", "linear"),
-                  (LinearSVR(dual=True, max_iter=10000), "linSVR", "linear")]
+                  (LinearSVR(max_iter=1000), "linSVR", "linear")]
         targets = ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP"]
         importance = MetaFeatureSelection.metaFeatureImportance(pd.concat(data), self.__targets, models, targets,
                                                                 self.selectMetaFeatures(memory=True))

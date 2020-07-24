@@ -28,11 +28,8 @@ class MetaFeatureSelection:
         sets = {}
         for target in self.__target_names:
             y = self.__Y[target]
-            print("Select for target: " + target)
             if tree:
-                sel = SelectFromModel(estimator=meta_model).fit(self.__X, y)
-                support = sel.get_support(indices=True)
-                features = [x for x in list(self.__X.columns) if list(self.__X.columns).index(x) in support]
+                p, features = self.percentile_search(meta_model, scoring, y, [75], k, self.__X)
             else:
                 p, features = self.percentile_search(meta_model, scoring, y, percentiles, k, self.__X)
 
@@ -44,6 +41,16 @@ class MetaFeatureSelection:
     def percentile_search(meta_model, scoring, y, percentiles, k, new_X):
         results = []
         subsets = []
+
+        if len(percentiles) == 1:
+            support = SelectPercentile(score_func=scoring, percentile=percentiles[0]).fit(new_X, y).get_support(indices=True)
+            features = [x for x in list(new_X.columns) if list(new_X.columns).index(x) in support]
+
+            subsets.append(features)
+            p = percentiles[0]
+            f = subsets[0]
+
+            return p, f
 
         for p in percentiles:
             support = SelectPercentile(score_func=scoring, percentile=p).fit(new_X, y).get_support(indices=True)

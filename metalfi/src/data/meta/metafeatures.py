@@ -55,11 +55,11 @@ class MetaFeatures:
         names_1, dmf_1 = self.runPymfe(X.values, y.values,
                                        ["min", "median", "max", "sd", "kurtosis", "skewness", "mean"],
                                        ["attr_to_inst", "freq_class", "inst_to_attr", "nr_attr", "nr_class", "nr_inst",
-                                   "gravity", "cor", "cov", "nr_disc", "eigenvalues", "nr_cor_attr", "w_lambda",
-                                   "class_ent", "eq_num_attr", "ns_ratio", "iq_range", "kurtosis", "mad",
-                                   "max", "mean", "median", "min", "range", "sd", "skewness", "sparsity", "t_mean",
-                                   "var", "attr_ent", "class_conc", "joint_ent", "mut_inf", "nr_norm", "nr_outliers",
-                                   "nr_cat", "nr_bin", "nr_num"])
+                                        "gravity", "cor", "cov", "eigenvalues", "nr_cor_attr", "class_ent",
+                                        "eq_num_attr", "ns_ratio", "iq_range", "kurtosis", "mad", "max", "mean",
+                                        "median", "min", "range", "sd", "skewness", "sparsity", "t_mean", "var",
+                                        "attr_ent", "joint_ent", "mut_inf", "nr_norm", "nr_outliers", "nr_cat",
+                                        "nr_bin", "nr_num"])
 
         self.__data_meta_feature_names = names_1
         self.__data_meta_features = dmf_1
@@ -81,8 +81,8 @@ class MetaFeatures:
 
             columns, values = self.runPymfe(X_temp.values, y.values, None,
                                             ["iq_range", "kurtosis", "mad", "max", "mean", "median", "min",
-                                        "range", "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent", "nr_norm",
-                                        "nr_outliers", "nr_cat", "nr_bin", "nr_num"])
+                                             "range", "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent",
+                                             "nr_norm", "nr_outliers", "nr_cat", "nr_bin", "nr_num"])
 
             self.__feature_meta_features.append(self.toFeatureVector(values))
 
@@ -100,8 +100,8 @@ class MetaFeatures:
         self.correlationFeatureMetaFeatures(cov, "_cov")
         mean_p = self.correlationFeatureMetaFeatures(p_cor, "_p_corr")
         mean_s = self.correlationFeatureMetaFeatures(s_cor, "_s_corr")
-        mean_k = self.correlationFeatureMetaFeatures(k_cor, "_k_corr", threshold=0.7)
-        mean_su = self.correlationFeatureMetaFeatures(su_cor, "_su_corr", threshold=0.6)
+        mean_k = self.correlationFeatureMetaFeatures(k_cor, "_k_corr")
+        mean_su = self.correlationFeatureMetaFeatures(su_cor, "_su_corr")
 
         end_multi = time.time()
         total_multi = end_multi - start_multi
@@ -123,7 +123,7 @@ class MetaFeatures:
 
         return total_uni, total_multi, total_lm
 
-    def correlationFeatureMetaFeatures(self, matrix, name, threshold=0.8):
+    def correlationFeatureMetaFeatures(self, matrix, name, threshold=0.5):
         mean_correlation = {}
         for i in range(0, len(matrix.columns)):
             values = list()
@@ -133,8 +133,8 @@ class MetaFeatures:
 
             mean_correlation[matrix.columns[i]] = np.mean(values)
             percentile = np.percentile(values, 75)
-            th = map(lambda x: x > threshold, values)
-            th_list = list(map(lambda x: x if (x > threshold) else 0, values))
+            th = map(lambda x: x >= threshold, values)
+            th_list = list(map(lambda x: x if (x >= threshold) else 0, values))
             percentile_list = list(map(lambda x: x if (x >= percentile) else 0, values))
 
             self.__feature_meta_features[i] += [np.mean(values), np.median(values),
@@ -145,7 +145,7 @@ class MetaFeatures:
         self.__feature_meta_feature_names += ["multi_mean" + name, "multi_median" + name, "multi_sd" + name,
                                               "multi_var" + name, "multi_max" + name, "multi_min" + name,
                                               "multi_percentile_0,75" + name, "multi_mean_percentile_0,75" + name,
-                                              "multi_high_corr" + name, "multi_high_corr_norm" + name,
+                                              "multi_high_corr" + name, "multi_high_corr_ratio" + name,
                                               "multi_mean_high_corr" + name]
         return mean_correlation
 

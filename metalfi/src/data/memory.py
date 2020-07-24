@@ -94,12 +94,10 @@ class Memory:
     @staticmethod
     def loadOpenML():
         datasets = list()
-        ids = [("tic-tac-toe", 1), ("phoneme", 1),
-               ("banknote-authentication", 1), ("haberman", 1), ("servo", 1), ("cloud", 2),
-               ("primary-tumor", 2), ("EgyptianSkulls", 1), ("SPECTF", 2), ("cpu", 2),
-               ("bodyfat", 2), ("Engine1", 1), ("ESL", 2), ("ilpd-numeric", 2),
-               ("credit-approval", 1), ("vowel", 3), ("socmob", 2), ("ERA", 1), ("LEV", 1), ("credit-g", 1), ("cmc", 2),
-               ("bank8FM", 2), ("wind", 2)]
+        ids = [("tic-tac-toe", 1), ("banknote-authentication", 1), ("haberman", 1), ("servo", 1), ("cloud", 2),
+               ("primary-tumor", 2), ("EgyptianSkulls", 1), ("SPECTF", 2), ("cpu", 2), ("bodyfat", 2), ("Engine1", 1),
+               ("ESL", 2), ("ilpd-numeric", 2), ("credit-approval", 1), ("vowel", 3), ("socmob", 2), ("ERA", 1),
+               ("LEV", 1), ("credit-g", 1), ("cmc", 2), ("phoneme", 1), ("bank8FM", 2), ("wind", 2)]
 
         for name, version in ids:
             dataset = fetch_openml(name=name, version=version, as_frame=True)

@@ -48,22 +48,22 @@ class Visualization:
         return summary
 
     @staticmethod
-    def runtime_graph():
-        target_data = Visualization.fetch_runtime_data("XtargetX", 20000)
-        meta_data = Visualization.fetch_runtime_data("XmetaX", 20000)
+    def runtime_graph(name):
+        target_data = Visualization.fetch_runtime_data("XtargetX")
+        meta_data = Visualization.fetch_runtime_data("XmetaX")
         for x in target_data:
-            if x == "total":
+            if x == "LOFO" or x == "SHAP" or x == "LIME" or x == "total":
                 continue
             target_data[x][x] /= 5
             plt.plot(target_data[x].columns[0], x, data=target_data[x], linewidth=2)
 
         for x in meta_data:
-            if x == "univariate" or x == "landmarking" or x == "multivariate" or x == "data":
+            if x == "total" or x == "multivariate":
                 continue
             plt.plot(meta_data[x].columns[0], x, data=meta_data[x], linewidth=2)
 
         plt.legend()
-        plt.show()
+        Memory.storeVisual(plt, name)
 
     @staticmethod
     def runtime_boxplot(threshold, targets, meta, name):
@@ -86,7 +86,7 @@ class Visualization:
             data.append(meta_data[x][x].values)
 
         fig, ax = plt.subplots()
-        ax.boxplot(data, notch=True, showfliers=False)
+        ax.boxplot(data, showfliers=False)
         plt.xticks(list(range(1, len(data) + 1)), names)
         Memory.storeVisual(plt, name)
 
@@ -141,7 +141,7 @@ class Visualization:
             ax.set_xticklabels(list(frame.columns))
             ax.legend()
             plt.ylim([0.75, 0.85])
-            plt.show()
+
             Memory.storeVisual(plt, name[:-4])
 
     @staticmethod
@@ -154,8 +154,6 @@ class Visualization:
             frame = frame.sort_values(by="mean absolute SHAP")
             plt.barh(list(frame["meta-features"])[:15], list(frame["mean absolute SHAP"])[:15])
             plt.yticks(list(frame["meta-features"])[:15], list(frame["meta-features"])[:15])
-            if "RF_" in name[:-4]:
-                plt.show()
             Memory.storeVisual(plt, name[:-4])
 
     @staticmethod
@@ -195,7 +193,7 @@ class Visualization:
     def createTimeline(names, ranks, metric, sign_matrix, data):
         fig, ax = plt.subplots(2)
 
-        levels = np.tile([-5, 5, -3, 3, -1, 1], len(ranks))[:len(ranks)]
+        levels = np.tile([-6, 6, -4, 4, -2, 2], len(ranks))[:len(ranks)]
         marker, _, _ = ax[0].stem(ranks, levels, linefmt="C3--", basefmt="k-", use_line_collection=True)
         marker.set_ydata(np.zeros(len(ranks)))
 
@@ -323,8 +321,7 @@ class Visualization:
             if name == "LIME":
                 axs[x, y].set_ylim(0, 30)
 
-        plt.show()
-        plt.close()
+        Memory.storeVisual(plt, "Multicollinearity")
 
     @staticmethod
     def cleanUp():
