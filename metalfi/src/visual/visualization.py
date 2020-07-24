@@ -327,7 +327,7 @@ class Visualization:
             if name == "LIME":
                 axs[x, y].set_ylim(0, 30)
 
-        Memory.storeVisual(plt, "Multicollinearity")
+        Memory.storeVisual(plt, "Histograms")
 
     @staticmethod
     def cleanUp():
