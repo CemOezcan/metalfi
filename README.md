@@ -18,16 +18,21 @@ The meta-data as well as the experimental results will be generated and saved in
 
 ## Plots and Tables used in my Bachelor Thesis
 The generated plots and tables can be found in the folder `metalfi\metalfi\data\visual`. 
-The following Table maps figures in my bachelor thesis to the file names of their corresponding .png files in folder `visual`:  
+The following Table maps figures in my bachelor thesis to the file names of their corresponding `.png` files in folder `visual`:  
 
 | Figure number | 6.2 | 6.3 | 6.4 | 6.5 | 6.6 | 6.7 | 6.8 | 6.9 | 6.10 | 6.11 | 6.12 | 6.13 |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | File name | R^2NON | R^2LIN | RF_SHAP | Histograms | targets_R^2 | base_R^2 | r | linSVR x LM | fast | fast_multi | slow | fast_graph |
 
-The folder `visual` also contains .csv files that can be found as tables in my bachelor thesis. 
+The folder `visual` also contains `.csv` files that can be found as tables in my bachelor thesis: 
+`Table 6.1` in the thesis corresponds to `visual\target_corr.csv`. The claim that our evaluation metrics are correlated, 
+ is supported by `visual\metrics_corr.csv`.  
 
 
 The tables containing meta-model performances can be found in the folder `metalfi\metalfi\data\output\predictions`. 
+The `.csv` files in the `predictions` are named after their metric and their meta-target. 
+For instance, the table that contains the performances, measured with the R^2, 
+of all meta-models predicting SHAP-based meta-targets is `predictions\r2xSHAP.csv`.
 
 #Folder Structure
     .

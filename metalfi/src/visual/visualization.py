@@ -252,7 +252,8 @@ class Visualization:
 
         frame = DataFrame.from_dict(new)
         corr = frame.corr("spearman")
-        print(corr)
+        path = Memory.getPath() / ("visual/metrics_corr.csv")
+        corr.to_csv(path, header=True)
 
         return data
 
@@ -285,15 +286,12 @@ class Visualization:
 
         def f_2(targets): return np.round(np.max([np.mean(list([val for val in list(map(abs, matrix[x].values)) if val < 1])) for x in targets]), 2)
 
-        print(f(lofo))
-        print(f(pimp))
-        print(f(shap))
-        print(f(lime))
+        d = {'lofo': [f(lofo), f_2(lofo)], 'shap': [f(shap), f_2(shap)], 'lime': [f(lime), f_2(lime)], 'pimp': [f(pimp), f_2(pimp)]}
 
-        print(f_2(lofo))
-        print(f_2(pimp))
-        print(f_2(shap))
-        print(f_2(lime))
+        data_frame = pd.DataFrame(data=d, index=["mean", "max"], columns=["lofo", "shap", "lime", "pimp"])
+
+        path = Memory.getPath() / ("visual/target_corr.csv")
+        data_frame.to_csv(path, header=True)
 
     @staticmethod
     def createHistograms():
