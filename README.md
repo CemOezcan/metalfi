@@ -16,7 +16,7 @@ Open the terminal and navigate to the project's directory `\Path\to\metalfi`. In
 you will find a Python script `start.py`. Make sure that you are using the 
 virtual environment, on which the required packages have been installed, and enter the command `python start.py`. 
 This will start the meta-data calculations, the meta-model training as well as the generation of the experimental results. 
-The results will be saved in subdirectories of `metalfi\metalfi\data`.
+The results will be saved in subdirectories of `metalfi\metalfi\data`. On an average laptop, the calculations require approximately 20 hours to finish.
 
 ## Plots and Tables used in my Bachelor Thesis
 The generated plots and tables can be found in the folder `metalfi\metalfi\data\visual`. 
