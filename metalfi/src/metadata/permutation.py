@@ -36,6 +36,7 @@ class PermutationImportance(FeatureImportance):
 
         #print(cross_val_score(model, X, y, cv=5))
         model.fit(X, y)
+        np.random.seed(115)
         imp = importances(model, X, y)
         #plot_importances(imp).view()
         return imp
