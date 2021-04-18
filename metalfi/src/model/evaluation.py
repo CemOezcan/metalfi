@@ -1,5 +1,5 @@
 from pandas import DataFrame
-from metalfi.src.metadata.memory import Memory
+from metalfi.src.memory import Memory
 
 
 class Evaluation:

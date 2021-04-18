@@ -11,7 +11,7 @@ from decimal import Decimal
 import scipy.stats as ss
 from sklearn.preprocessing import StandardScaler
 
-from metalfi.src.metadata.memory import Memory
+from metalfi.src.memory import Memory
 
 
 class Visualization:

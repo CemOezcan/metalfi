@@ -7,7 +7,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR, LinearSVR
 from metalfi.src.metadata.dataset import Dataset
-from metalfi.src.metadata.memory import Memory
+from metalfi.src.memory import Memory
 from metalfi.src.metadata.metadataset import MetaDataset
 from metalfi.src.model.evaluation import Evaluation
 from metalfi.src.model.featureselection import MetaFeatureSelection
