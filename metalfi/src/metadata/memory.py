@@ -80,14 +80,14 @@ class Memory:
     @staticmethod
     def loadWine():
         wine = load_wine()
-        data_frame = DataFrame(data=np.c_[wine['metadata'], wine['target']], columns=wine['feature_names'] + ['target'])
+        data_frame = DataFrame(data=np.c_[wine['data'], wine['target']], columns=wine['feature_names'] + ['target'])
 
         return data_frame, "target"
 
     @staticmethod
     def loadIris():
         iris = load_iris()
-        data_frame = DataFrame(data=np.c_[iris['metadata'], iris['target']], columns=iris['feature_names'] + ['target'])
+        data_frame = DataFrame(data=np.c_[iris['data'], iris['target']], columns=iris['feature_names'] + ['target'])
 
         return data_frame, "target"
 
@@ -209,5 +209,5 @@ class Memory:
 
     @staticmethod
     def getPath():
-        path = Path(__file__).parents[2] / "metadata"
+        path = Path(__file__).parents[2] / "data"
         return path

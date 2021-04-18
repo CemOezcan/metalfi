@@ -65,7 +65,7 @@ class Controller:
     def storeMetaData(self):
         for dataset, name in self.__train_data:
             if not (Memory.getPath() / ("input/" + name + "meta.csv")).is_file():
-                print("meta-metadata calc.: " + name)
+                print("meta-data calc.: " + name)
                 meta = MetaDataset(dataset, True)
                 data = meta.getMetaData()
                 d_times, t_times = meta.getTimes()

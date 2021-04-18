@@ -30,7 +30,7 @@ class Dataset:
 
         data = mf.getMetaData()
 
-        data_time = {"metadata": d_time, "univariate": u_time, "multivariate": m_time, "landmarking": l_time,
+        data_time = {"data": d_time, "univariate": u_time, "multivariate": m_time, "landmarking": l_time,
                      "total": d_total}
         target_time = {"LOFO": d, "PIMP": p, "LIME": l, "SHAP": s, "total": t_total}
 
