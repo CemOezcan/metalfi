@@ -1,6 +1,6 @@
 import time
 
-from metalfi.src.data.meta.metafeatures import MetaFeatures
+from metalfi.src.metadata.metafeatures import MetaFeatures
 
 
 class Dataset:
@@ -30,7 +30,7 @@ class Dataset:
 
         data = mf.getMetaData()
 
-        data_time = {"data": d_time, "univariate": u_time, "multivariate": m_time, "landmarking": l_time,
+        data_time = {"metadata": d_time, "univariate": u_time, "multivariate": m_time, "landmarking": l_time,
                      "total": d_total}
         target_time = {"LOFO": d, "PIMP": p, "LIME": l, "SHAP": s, "total": t_total}
 

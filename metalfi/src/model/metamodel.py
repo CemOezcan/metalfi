@@ -10,12 +10,12 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, LinearSVC
 
-from metalfi.src.data.dataset import Dataset
-from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
-from metalfi.src.data.meta.importance.lime import LimeImportance
-from metalfi.src.data.meta.importance.permutation import PermutationImportance
-from metalfi.src.data.meta.importance.shap import ShapImportance
-from metalfi.src.data.meta.metafeatures import MetaFeatures
+from metalfi.src.metadata.dataset import Dataset
+from metalfi.src.metadata.dropcolumn import DropColumnImportance
+from metalfi.src.metadata.lime import LimeImportance
+from metalfi.src.metadata.permutation import PermutationImportance
+from metalfi.src.metadata.shap import ShapImportance
+from metalfi.src.metadata.metafeatures import MetaFeatures
 from metalfi.src.model.evaluation import Evaluation
 
 

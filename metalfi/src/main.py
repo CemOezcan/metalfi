@@ -1,7 +1,7 @@
 import time
 
 from metalfi.src.controller import Controller
-from metalfi.src.visual.visualization import Visualization
+from metalfi.src.visualization import Visualization
 
 
 class Main(object):
@@ -47,7 +47,7 @@ class Main(object):
         Visualization.compareMeans("q3")
         Visualization.compareMeans("q4")
         Visualization.compareMeans("q5")
-        Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["landmarking", "univariate", "data"], "fast")
+        Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["landmarking", "univariate", "metadata"], "fast")
         Visualization.runtime_boxplot(100000000, ["LOFO"], ["multivariate"], "fast_multi")
         Visualization.runtime_boxplot(100000000, ["SHAP", "LIME"], ["total"], "slow")
         Visualization.runtime_graph("fast_graph")

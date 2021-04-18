@@ -7,10 +7,10 @@ from pymfe.mfe import MFE
 from sklearn.feature_selection import f_classif, chi2
 from sklearn.preprocessing import MinMaxScaler
 
-from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
-from metalfi.src.data.meta.importance.lime import LimeImportance
-from metalfi.src.data.meta.importance.permutation import PermutationImportance
-from metalfi.src.data.meta.importance.shap import ShapImportance
+from metalfi.src.metadata.dropcolumn import DropColumnImportance
+from metalfi.src.metadata.lime import LimeImportance
+from metalfi.src.metadata.permutation import PermutationImportance
+from metalfi.src.metadata.shap import ShapImportance
 
 
 class MetaFeatures:

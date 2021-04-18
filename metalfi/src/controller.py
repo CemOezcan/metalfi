@@ -6,9 +6,9 @@ from sklearn.feature_selection import f_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR, LinearSVR
-from metalfi.src.data.dataset import Dataset
-from metalfi.src.data.memory import Memory
-from metalfi.src.data.metadataset import MetaDataset
+from metalfi.src.metadata.dataset import Dataset
+from metalfi.src.metadata.memory import Memory
+from metalfi.src.metadata.metadataset import MetaDataset
 from metalfi.src.model.evaluation import Evaluation
 from metalfi.src.model.featureselection import MetaFeatureSelection
 from metalfi.src.model.metamodel import MetaModel
@@ -65,7 +65,7 @@ class Controller:
     def storeMetaData(self):
         for dataset, name in self.__train_data:
             if not (Memory.getPath() / ("input/" + name + "meta.csv")).is_file():
-                print("meta-data calc.: " + name)
+                print("meta-metadata calc.: " + name)
                 meta = MetaDataset(dataset, True)
                 data = meta.getMetaData()
                 d_times, t_times = meta.getTimes()

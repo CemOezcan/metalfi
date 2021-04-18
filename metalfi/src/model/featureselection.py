@@ -3,7 +3,7 @@ import numpy as np
 from statistics import mean
 from sklearn.feature_selection import VarianceThreshold, SelectPercentile
 from sklearn.model_selection import cross_val_score
-from metalfi.src.data.meta.importance.shap import ShapImportance
+from metalfi.src.metadata.shap import ShapImportance
 
 
 class MetaFeatureSelection:

@@ -5,7 +5,7 @@ from pandas import DataFrame
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, LinearSVC
 
-from metalfi.src.data.meta.importance.featureimportance import FeatureImportance
+from metalfi.src.metadata.featureimportance import FeatureImportance
 
 
 class LimeImportance(FeatureImportance):
