@@ -1,9 +1,11 @@
 import lime
 import lime.lime_tabular
 
+from functools import partial
 from pandas import DataFrame
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, LinearSVC
+from multiprocessing.pool import ThreadPool
 
 from metalfi.src.metadata.featureimportance import FeatureImportance
 
@@ -13,8 +15,6 @@ class LimeImportance(FeatureImportance):
     def __init__(self, dataset):
         super(LimeImportance, self).__init__(dataset)
         self._name = "_LIME"
-        linSVC = LinearSVC(max_iter=10000, dual=False)
-        svc = SVC(kernel="rbf", gamma="scale")
 
     def calculateScores(self):
         models = self._linear_models + self._tree_models + self._kernel_models
@@ -46,11 +46,14 @@ class LimeImportance(FeatureImportance):
                                                            discretize_continuous=True,
                                                            mode="classification",
                                                            verbose=True)
+        # TODO: Processes (Look up, how SHAP parallelizes LIME)
         importances = [0] * len(X.columns)
+        with ThreadPool(processes=4) as pool:
+            results = pool.map(
+                partial(explainer.explain_instance, predict_fn=model.predict_proba, num_features=len(X.columns)),
+                [X.values[i, :] for i in range(len(X.values))])
 
-        for i in range(len(X.values)):
-            xp = explainer.explain_instance(X.values[i, :], model.predict_proba, num_features=len(X.columns))
-
+        for xp in results:
             for index, importance in xp.as_map()[1]:
                 importances[index] += abs(importance)
 

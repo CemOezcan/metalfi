@@ -1,3 +1,6 @@
+from functools import partial
+from multiprocessing import Pool
+
 import pandas as pd
 
 from pandas import DataFrame
@@ -63,18 +66,22 @@ class Controller:
             i += 1
 
     def storeMetaData(self):
-        for dataset, name in self.__train_data:
-            if not (Memory.getPath() / ("input/" + name + "meta.csv")).is_file():
-                print("meta-data calc.: " + name)
-                meta = MetaDataset(dataset, True)
-                data = meta.getMetaData()
-                d_times, t_times = meta.getTimes()
-                nr_feat, nr_inst = meta.getNrs()
-                Memory.storeInput(data, name)
-                Memory.storeDataFrame(DataFrame(data=d_times, index=["Time"], columns=[x for x in d_times]),
-                                      name + "XmetaX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
-                Memory.storeDataFrame(DataFrame(data=t_times, index=["Time"], columns=[x for x in t_times]),
-                                      name + "XtargetX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
+        with Pool(processes=4) as pool:
+            results = pool.map(partial(MetaDataset, train=True),
+                               [(dataset, name) for dataset, name in self.__train_data
+                                if not (Memory.getPath() / ("input/" + name + "meta.csv")).is_file()])
+
+        for result in results:
+            meta_data = result.getMetaData()
+            name = result.getName()
+            d_times, t_times = result.getTimes()
+            nr_feat, nr_inst = result.getNrs()
+
+            Memory.storeInput(meta_data, name)
+            Memory.storeDataFrame(DataFrame(data=d_times, index=["Time"], columns=[x for x in d_times]),
+                                  name + "XmetaX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
+            Memory.storeDataFrame(DataFrame(data=t_times, index=["Time"], columns=[x for x in t_times]),
+                                  name + "XtargetX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
 
     def loadMetaData(self):
         for dataset, name in self.__train_data:

@@ -209,5 +209,5 @@ class Memory:
 
     @staticmethod
     def getPath():
-        path = Path(__file__).parents[2] / "data"
+        path = Path(__file__).parents[1] / "data"
         return path
