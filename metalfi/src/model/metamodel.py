@@ -21,7 +21,8 @@ from metalfi.src.model.evaluation import Evaluation
 
 class MetaModel:
 
-    def __init__(self, train, name, test, og_data, selected, untrained_meta_models, target_names):
+    def __init__(self, iterable, untrained_meta_models, target_names):
+        train, name, test, og_data, selected = iterable
         self.__og_y = og_data.getDataFrame()[og_data.getTarget()]
         self.__og_X = og_data.getDataFrame().drop(og_data.getTarget(), axis=1)
         self.__untrained_meta_models = untrained_meta_models
@@ -107,7 +108,8 @@ class MetaModel:
         model.fit(X, y)
         return model
 
-    def test(self, k, renew=False):
+    def test(self, renew=False):
+        print("Test meta-model: " + self.__file_name)
         if renew:
             self.__stats = list()
 
@@ -144,11 +146,11 @@ class MetaModel:
         og_model = None
 
         if name.startswith("RF"):
-            og_model = RandomForestClassifier(n_estimators=10, random_state=115, n_jobs=-1)
+            og_model = RandomForestClassifier(n_estimators=10, random_state=115)
         elif name.startswith("SVC"):
             og_model = SVC(random_state=115)
         elif name.startswith("LOG"):
-            og_model = LogisticRegression(dual=False, max_iter=1000, random_state=115, n_jobs=-1)
+            og_model = LogisticRegression(dual=False, max_iter=1000, random_state=115)
         elif name.startswith("linSVC"):
             og_model = LinearSVC(dual=False, max_iter=10000, random_state=115)
         elif name.startswith("NB"):

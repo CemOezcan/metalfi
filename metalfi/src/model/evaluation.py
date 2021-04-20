@@ -1,3 +1,5 @@
+from multiprocessing import Pool
+
 from pandas import DataFrame
 from metalfi.src.memory import Memory
 
@@ -174,20 +176,27 @@ class Evaluation:
 
         return data
 
+    @staticmethod
+    def parallelize_predictions(name):
+        model, _ = Memory.loadModel([name])[0]
+        model.test()
+        stats = model.getStats()
+        Memory.renewModel(model, model.getName()[:-4])
+        config = [c for (a, b, c) in model.getMetaModels()]
+        targets = model.getTargets()
+        return stats, config, targets
+
     def predictions(self):
-        model = None
-        for name in self.__meta_models:
-            print("Test meta-model: " + name)
-            model, _ = Memory.loadModel([name])[0]
-            model.test(4)
-            stats = model.getStats()
-            Memory.renewModel(model, model.getName()[:-4])
+        with Pool(processes=4) as pool:
+            results = pool.map(self.parallelize_predictions, self.__meta_models)
+
+        for (stats, _, _) in results:
             self.__tests = self.vectorAddition(self.__tests, stats)
 
         self.__tests = [list(map(lambda x: x / len(self.__meta_models), stat)) for stat in self.__tests]
-        self.__config = [c for (a, b, c) in model.getMetaModels()]
+        self.__config = results[0][1]
 
-        targets = model.getTargets()
+        targets = results[0][2]
         algorithms = [x[:-5] for x in targets]
         metrics = {0: "r2", 1: "rmse", 2: "r"}
         rows = list()
