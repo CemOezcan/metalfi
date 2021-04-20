@@ -30,9 +30,9 @@ class Controller:
                           "linSVC_PIMP", "LOG_PIMP", "RF_PIMP", "NB_PIMP", "SVC_PIMP",
                           "linSVC_LOFO", "LOG_LOFO", "RF_LOFO", "NB_LOFO", "SVC_LOFO"]
 
-        self.__meta_models = [(RandomForestRegressor(n_estimators=100, n_jobs=4), "RF"),
+        self.__meta_models = [(RandomForestRegressor(n_estimators=100), "RF"),
                               (SVR(), "SVR"),
-                              (LinearRegression(n_jobs=4), "LIN"),
+                              (LinearRegression(), "LIN"),
                               (LinearSVR(dual=True, max_iter=10000), "linSVR")]
 
     def getTrainData(self):

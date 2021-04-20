@@ -232,7 +232,7 @@ class MetaFeatures:
         total_shap = end_shap - start_shap
 
         start_lime = time.time()
-        #self.addTarget(lime)
+        self.addTarget(lime)
         end_lime = time.time()
         total_lime = end_lime - start_lime
 
