@@ -1,5 +1,6 @@
 import os
 import sys
+import warnings
 
 import lime
 import lime.lime_tabular
@@ -20,8 +21,6 @@ class LimeImportance(FeatureImportance):
         self._name = "_LIME"
 
     def calculateScores(self):
-        sys.stdout = open(os.devnull, 'w')
-        sys.stdout.close()
         models = self._linear_models + self._tree_models + self._kernel_models
 
         for model in models:
@@ -38,8 +37,6 @@ class LimeImportance(FeatureImportance):
             else:
                 self._feature_importances.append(self.limeImportance(model, self._target))
 
-        sys.stdout = sys.__stdout__
-
     def limeImportance(self, model, target):
         sc = StandardScaler()
         X = DataFrame(data=sc.fit_transform(self._data_frame.drop(target, axis=1)),
@@ -55,12 +52,8 @@ class LimeImportance(FeatureImportance):
                                                            verbose=True)
         # TODO: Processes (Look up, how SHAP parallelizes LIME)
         importances = [0] * len(X.columns)
-        with ThreadPool(processes=4) as pool:
-            results = pool.map(
-                partial(explainer.explain_instance, predict_fn=model.predict_proba, num_features=len(X.columns)),
-                [X.values[i, :] for i in range(len(X.values))])
-
-        for xp in results:
+        for i in range(len(X.values)):
+            xp = explainer.explain_instance(X.values[i, :], model.predict_proba, num_features=len(X.columns))
             for index, importance in xp.as_map()[1]:
                 importances[index] += abs(importance)
 

@@ -17,9 +17,10 @@ class ShapImportance(FeatureImportance):
         self._name = "_SHAP"
 
     def calculateScores(self):
-        sys.stderr = open(os.devnull, 'w')
-        sys.stdout.close()
         warnings.simplefilter("ignore")
+        with open(os.devnull, 'w') as file:
+            sys.stderr = file
+
         sc = StandardScaler()
         X = DataFrame(data=sc.fit_transform(self._data_frame.drop(self._target, axis=1)),
                       columns=self._data_frame.drop(self._target, axis=1).columns)
@@ -33,8 +34,9 @@ class ShapImportance(FeatureImportance):
 
         for model in self._kernel_models:
             self._feature_importances.append(self.kernelShap(model, X, y))
-        warnings.simplefilter("default")
+
         sys.stderr = sys.__stderr__
+        warnings.simplefilter("default")
 
     def treeShap(self, model, X, y):
         model.fit(X, y)
