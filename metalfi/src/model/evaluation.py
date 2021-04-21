@@ -1,3 +1,4 @@
+from functools import partial
 from multiprocessing import Pool
 
 from pandas import DataFrame
@@ -227,16 +228,25 @@ class Evaluation:
                                        columns=[x for x in all_results[metric][importance]])
                 Memory.storeDataFrame(data_frame.round(3), metric + "x" + importance, "predictions")
 
+    @staticmethod
+    def parallel_comparisons(name, models, targets, subsets, renew):
+        print("Compare meta-model: " + name)
+        model, _ = Memory.loadModel([name])[0]
+        model.compare(models, targets, subsets, 33, renew)
+        results = model.getResults()
+        Memory.renewModel(model, model.getName()[:-4])
+        return results
+
     def comparisons(self, models, targets, subsets, renew=False):
-        rows = None
-        model = None
-        for name in self.__meta_models:
-            print("Compare meta-model: " + name)
-            model, _ = Memory.loadModel([name])[0]
-            rows = model.compare(models, targets, subsets, 33, renew)
-            results = model.getResults()
-            Memory.renewModel(model, model.getName()[:-4])
-            self.__comparisons = self.vectorAddition(self.__comparisons, results)
+        with Pool(processes=4) as pool:
+            results = pool.map(
+                partial(self.parallel_comparisons, models=models, targets=targets, subsets=subsets, renew=renew),
+                self.__meta_models)
+
+        model, _ = Memory.loadModel([self.__meta_models[0]])[0]
+        rows = model.compare(models, targets, subsets, 33, False)
+        for result in results:
+            self.__comparisons = self.vectorAddition(self.__comparisons, result)
 
         self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
         self.__parameters = model.getResultConfig()

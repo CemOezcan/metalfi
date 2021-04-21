@@ -81,6 +81,7 @@ class MetaModel:
         return self.__result_configurations
 
     def fit(self):
+        print("Train: " + self.__file_name)
         X = self.__train_data.drop(self.__target_names, axis=1)
 
         for base_model, base_model_name in self.__untrained_meta_models:
