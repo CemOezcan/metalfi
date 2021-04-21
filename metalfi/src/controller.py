@@ -1,6 +1,8 @@
-from functools import partial
-from multiprocessing import Pool
+import os
+import sys
 
+from multiprocessing import Pool
+import tqdm
 import pandas as pd
 
 from pandas import DataFrame
@@ -67,9 +69,17 @@ class Controller:
 
     def storeMetaData(self):
         with Pool(processes=4) as pool:
-            pool.map(self.parallel_meta_computation,
-                     [(dataset, name) for dataset, name in self.__train_data
-                      if not (Memory.getPath() / ("input/" + name + "meta.csv")).is_file()])
+            data = [(dataset, name) for dataset, name in self.__train_data
+                    if not (Memory.getPath() / ("input/" + name + "meta.csv")).is_file()]
+
+            progress_bar = tqdm.tqdm(total=len(data), desc="Computing meta-data")
+
+            def update(param):
+                progress_bar.update(n=1)
+
+            [pool.apply_async(self.parallel_meta_computation, (x, ), callback=update) for x in data]
+            pool.close()
+            pool.join()
 
     @staticmethod
     def parallel_meta_computation(data):
@@ -110,7 +120,6 @@ class Controller:
             sets = {}
 
             for meta_model, name in self.__meta_models:
-                print("Select meta-features: " + name)
                 tree = (name == "RF")
                 percentiles = [10]
                 if memory:
@@ -127,22 +136,33 @@ class Controller:
     def trainMetaModel(self):
         self.loadMetaData()
 
-        with Pool(processes=4) as pool:
-            parameters = [(
-                pd.concat([x[0] for x in self.__meta_data if x[1] != test_name]),
-                test_name + "meta",
-                test_data,
-                self.__train_data[self.__data_names[test_name]][0])
-                for test_data, test_name in self.__meta_data
-                if not (Memory.getPath() / ("model/" + test_name)).is_file()]
+        parameters = [(
+            pd.concat([x[0] for x in self.__meta_data if x[1] != test_name]),
+            test_name + "meta",
+            test_data,
+            self.__train_data[self.__data_names[test_name]][0])
+            for test_data, test_name in self.__meta_data
+            if not (Memory.getPath() / ("model/" + test_name)).is_file()]
 
-            selection_results = pool.map(self.selectMetaFeatures, [parameter[1][:-4] for parameter in parameters])
-            args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))
-            pool.map(self.parallel_training, args)
+        selection_results = [self.selectMetaFeatures(parameter[1][:-4]) for parameter in parameters]
+        args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))
+
+        with Pool(processes=4) as pool:
+            progress_bar = tqdm.tqdm(total=len(parameters), desc="Training meta-models")
+
+            def update(param):
+                progress_bar.update(n=1)
+
+            [pool.apply_async(self.parallel_training, (arg, ), callback=update) for arg in args]
+            pool.close()
+            pool.join()
 
     def parallel_training(self, iterable):
         model = MetaModel(iterable, self.__meta_models, self.__targets)
+        sys.stderr = open(os.devnull, 'w')
+        sys.stdout.close()
         model.fit()
+        sys.stderr = sys.__stderr__
         Memory.storeModel(model, iterable[1][:-4], None)
 
     def evaluate(self, names):

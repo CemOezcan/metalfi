@@ -2,6 +2,8 @@ from functools import partial
 from multiprocessing import Pool
 
 from pandas import DataFrame
+import tqdm
+
 from metalfi.src.memory import Memory
 
 
@@ -189,9 +191,18 @@ class Evaluation:
 
     def predictions(self):
         with Pool(processes=4) as pool:
-            results = pool.map(self.parallelize_predictions, self.__meta_models)
+            progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Evaluating meta-models")
 
-        for (stats, _, _) in results:
+            def update(param):
+                progress_bar.update(n=1)
+
+            results = [pool.map_async(self.parallelize_predictions, (meta_model, ), callback=update)
+                       for meta_model in self.__meta_models]
+            results = [x.get()[0] for x in results]
+            pool.close()
+            pool.join()
+
+        for stats, _, _ in results:
             self.__tests = self.vectorAddition(self.__tests, stats)
 
         self.__tests = [list(map(lambda x: x / len(self.__meta_models), stat)) for stat in self.__tests]
@@ -209,7 +220,6 @@ class Evaluation:
             perm = {a: [] for a in algorithms}
             dCol = {a: [] for a in algorithms}
             metric = {"SHAP": shap, "LIME": lime, "PIMP": perm, "LOFO": dCol}
-            print("Metric: " + metrics[i])
 
             index = 0
             for a, b, c in self.__config:
@@ -230,7 +240,6 @@ class Evaluation:
 
     @staticmethod
     def parallel_comparisons(name, models, targets, subsets, renew):
-        print("Compare meta-model: " + name)
         model, _ = Memory.loadModel([name])[0]
         model.compare(models, targets, subsets, 33, renew)
         results = model.getResults()
@@ -239,9 +248,17 @@ class Evaluation:
 
     def comparisons(self, models, targets, subsets, renew=False):
         with Pool(processes=4) as pool:
-            results = pool.map(
+            progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
+
+            def update(param):
+                progress_bar.update(n=1)
+
+            results = [pool.map_async(
                 partial(self.parallel_comparisons, models=models, targets=targets, subsets=subsets, renew=renew),
-                self.__meta_models)
+                (model, ), callback=update) for model in self.__meta_models]
+            results = [x.get()[0] for x in results]
+            pool.close()
+            pool.join()
 
         model, _ = Memory.loadModel([self.__meta_models[0]])[0]
         rows = model.compare(models, targets, subsets, 33, False)

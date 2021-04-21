@@ -1,3 +1,6 @@
+import os
+import sys
+
 import lime
 import lime.lime_tabular
 
@@ -17,6 +20,8 @@ class LimeImportance(FeatureImportance):
         self._name = "_LIME"
 
     def calculateScores(self):
+        sys.stdout = open(os.devnull, 'w')
+        sys.stdout.close()
         models = self._linear_models + self._tree_models + self._kernel_models
 
         for model in models:
@@ -32,6 +37,8 @@ class LimeImportance(FeatureImportance):
                                                                      self._target))
             else:
                 self._feature_importances.append(self.limeImportance(model, self._target))
+
+        sys.stdout = sys.__stdout__
 
     def limeImportance(self, model, target):
         sc = StandardScaler()

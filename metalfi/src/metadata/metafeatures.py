@@ -1,5 +1,6 @@
 import math
 import time
+import warnings
 import numpy as np
 
 from pandas import DataFrame
@@ -35,9 +36,11 @@ class MetaFeatures:
         return data_time, uni_time, multi_time, lm_time
 
     def runPymfe(self, X, y, summary, features):
+        warnings.simplefilter("ignore")
         mfe = MFE(summary=summary, features=features)
         mfe.fit(X, y)
         vector = mfe.extract()
+        warnings.simplefilter("default")
 
         return vector
 
