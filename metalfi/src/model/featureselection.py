@@ -77,24 +77,23 @@ class MetaFeatureSelection:
 
         iterable = list()
         for target in targets:
+            importance[target] = list()
             iterable += [(target, model, all_X[subsets[name][target]], Y[target], category)
                          for model, name, category in models]
 
         with Pool(processes=4) as pool:
             progress_bar = tqdm.tqdm(total=len(iterable), desc="Computing meta-feature importance")
+            results = [
+                pool.map_async(
+                    MetaFeatureSelection.parallel_meta_importance,
+                    (x,),
+                    callback=(lambda x: progress_bar.update(n=1)))
+                for x in iterable]
 
-            def update(param):
-                progress_bar.update(n=1)
-
-            results = [pool.map_async(MetaFeatureSelection.parallel_meta_importance, (x,), callback=update)
-                       for x in iterable]
             results = [x.get()[0] for x in results]
+            progress_bar.close()
             pool.close()
             pool.join()
-
-        progress_bar.close()
-        for target in targets:
-            importance[target] = list()
 
         for target, imp in results:
             importance[target].append(imp)
@@ -103,11 +102,12 @@ class MetaFeatureSelection:
 
     @staticmethod
     def parallel_meta_importance(iterable):
-        target, model, X, y, category = iterable
-        s = ShapImportance(None)
         warnings.simplefilter("ignore")
         with open(os.devnull, 'w') as file:
             sys.stderr = file
+
+        target, model, X, y, category = iterable
+        s = ShapImportance(None)
 
         if category == "linear":
             imp = s.linearShap(model, X, y)
@@ -118,10 +118,11 @@ class MetaFeatureSelection:
 
         array = imp["Importances"].values
         array = list(np.interp(array, (array.min(), array.max()), (0, 1)))
-        sys.stderr = sys.__stderr__
-        warnings.simplefilter("default")
 
         for i in range(len(imp.index)):
             imp.iloc[i, 0] = array[i]
+
+        sys.stderr = sys.__stderr__
+        warnings.simplefilter("default")
 
         return target, imp

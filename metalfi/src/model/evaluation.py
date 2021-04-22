@@ -192,17 +192,18 @@ class Evaluation:
     def predictions(self):
         with Pool(processes=4) as pool:
             progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Evaluating meta-models")
+            results = [
+                pool.map_async(
+                    self.parallelize_predictions,
+                    (meta_model, ),
+                    callback=(lambda x: progress_bar.update(n=1)))
+                for meta_model in self.__meta_models]
 
-            def update(param):
-                progress_bar.update(n=1)
-
-            results = [pool.map_async(self.parallelize_predictions, (meta_model, ), callback=update)
-                       for meta_model in self.__meta_models]
             results = [x.get()[0] for x in results]
+            progress_bar.close()
             pool.close()
             pool.join()
 
-        progress_bar.close()
         for stats, _, _ in results:
             self.__tests = self.vectorAddition(self.__tests, stats)
 
