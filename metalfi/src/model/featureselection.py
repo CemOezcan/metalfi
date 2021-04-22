@@ -1,8 +1,15 @@
+import os
+import sys
+import warnings
+from multiprocessing.pool import Pool
+
 import numpy as np
 
 from statistics import mean
 from sklearn.feature_selection import VarianceThreshold, SelectPercentile
 from sklearn.model_selection import cross_val_score
+import tqdm
+
 from metalfi.src.metadata.shap import ShapImportance
 
 
@@ -68,27 +75,53 @@ class MetaFeatureSelection:
         all_X = meta_data.drop(all_targets, axis=1)
         Y = meta_data[targets]
 
+        iterable = list()
         for target in targets:
-            this_target = list()
-            for model, name, category in models:
-                X = all_X[subsets[name][target]]
-                y = Y[target]
-                s = ShapImportance(None)
+            iterable += [(target, model, all_X[subsets[name][target]], Y[target], category)
+                         for model, name, category in models]
 
-                if category == "linear":
-                    imp = s.linearShap(model, X, y)
-                elif category == "tree":
-                    imp = s.treeRegressionShap(model, X, y)
-                else:
-                    imp = s.kernelShap(model, X, y, 5)
+        with Pool(processes=4) as pool:
+            progress_bar = tqdm.tqdm(total=len(iterable), desc="Computing meta-feature importance")
 
-                array = imp["Importances"].values
-                array = list(np.interp(array, (array.min(), array.max()), (0, 1)))
-                for i in range(len(imp.index)):
-                    imp.iloc[i, 0] = array[i]
+            def update(param):
+                progress_bar.update(n=1)
 
-                this_target.append(imp)
+            results = [pool.map_async(MetaFeatureSelection.parallel_meta_importance, (x,), callback=update)
+                       for x in iterable]
+            results = [x.get()[0] for x in results]
+            pool.close()
+            pool.join()
 
-            importance[target] = this_target
+        progress_bar.close()
+        for target in targets:
+            importance[target] = list()
+
+        for target, imp in results:
+            importance[target].append(imp)
 
         return importance
+
+    @staticmethod
+    def parallel_meta_importance(iterable):
+        target, model, X, y, category = iterable
+        s = ShapImportance(None)
+        warnings.simplefilter("ignore")
+        with open(os.devnull, 'w') as file:
+            sys.stderr = file
+
+        if category == "linear":
+            imp = s.linearShap(model, X, y)
+        elif category == "tree":
+            imp = s.treeRegressionShap(model, X, y)
+        else:
+            imp = s.kernelShap(model, X, y, 5)
+
+        array = imp["Importances"].values
+        array = list(np.interp(array, (array.min(), array.max()), (0, 1)))
+        sys.stderr = sys.__stderr__
+        warnings.simplefilter("default")
+
+        for i in range(len(imp.index)):
+            imp.iloc[i, 0] = array[i]
+
+        return target, imp

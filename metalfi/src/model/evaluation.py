@@ -202,6 +202,7 @@ class Evaluation:
             pool.close()
             pool.join()
 
+        progress_bar.close()
         for stats, _, _ in results:
             self.__tests = self.vectorAddition(self.__tests, stats)
 
@@ -260,6 +261,7 @@ class Evaluation:
             pool.close()
             pool.join()
 
+        progress_bar.close()
         model, _ = Memory.loadModel([self.__meta_models[0]])[0]
         rows = model.compare(models, targets, subsets, 33, False)
         for result in results:
