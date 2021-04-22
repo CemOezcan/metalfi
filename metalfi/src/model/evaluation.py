@@ -1,5 +1,10 @@
+from functools import partial
+from multiprocessing import Pool
+
 from pandas import DataFrame
-from metalfi.src.data.memory import Memory
+import tqdm
+
+from metalfi.src.memory import Memory
 
 
 class Evaluation:
@@ -174,20 +179,38 @@ class Evaluation:
 
         return data
 
+    @staticmethod
+    def parallelize_predictions(name):
+        model, _ = Memory.loadModel([name])[0]
+        model.test()
+        stats = model.getStats()
+        Memory.renewModel(model, model.getName()[:-4])
+        config = [c for (a, b, c) in model.getMetaModels()]
+        targets = model.getTargets()
+        return stats, config, targets
+
     def predictions(self):
-        model = None
-        for name in self.__meta_models:
-            print("Test meta-model: " + name)
-            model, _ = Memory.loadModel([name])[0]
-            model.test(4)
-            stats = model.getStats()
-            Memory.renewModel(model, model.getName()[:-4])
+        with Pool(processes=4) as pool:
+            progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Evaluating meta-models")
+            results = [
+                pool.map_async(
+                    self.parallelize_predictions,
+                    (meta_model, ),
+                    callback=(lambda x: progress_bar.update(n=1)))
+                for meta_model in self.__meta_models]
+
+            results = [x.get()[0] for x in results]
+            progress_bar.close()
+            pool.close()
+            pool.join()
+
+        for stats, _, _ in results:
             self.__tests = self.vectorAddition(self.__tests, stats)
 
         self.__tests = [list(map(lambda x: x / len(self.__meta_models), stat)) for stat in self.__tests]
-        self.__config = [c for (a, b, c) in model.getMetaModels()]
+        self.__config = results[0][1]
 
-        targets = model.getTargets()
+        targets = results[0][2]
         algorithms = [x[:-5] for x in targets]
         metrics = {0: "r2", 1: "rmse", 2: "r"}
         rows = list()
@@ -199,7 +222,6 @@ class Evaluation:
             perm = {a: [] for a in algorithms}
             dCol = {a: [] for a in algorithms}
             metric = {"SHAP": shap, "LIME": lime, "PIMP": perm, "LOFO": dCol}
-            print("Metric: " + metrics[i])
 
             index = 0
             for a, b, c in self.__config:
@@ -218,16 +240,33 @@ class Evaluation:
                                        columns=[x for x in all_results[metric][importance]])
                 Memory.storeDataFrame(data_frame.round(3), metric + "x" + importance, "predictions")
 
+    @staticmethod
+    def parallel_comparisons(name, models, targets, subsets, renew):
+        model, _ = Memory.loadModel([name])[0]
+        model.compare(models, targets, subsets, 33, renew)
+        results = model.getResults()
+        Memory.renewModel(model, model.getName()[:-4])
+        return results
+
     def comparisons(self, models, targets, subsets, renew=False):
-        rows = None
-        model = None
-        for name in self.__meta_models:
-            print("Compare meta-model: " + name)
-            model, _ = Memory.loadModel([name])[0]
-            rows = model.compare(models, targets, subsets, 33, renew)
-            results = model.getResults()
-            Memory.renewModel(model, model.getName()[:-4])
-            self.__comparisons = self.vectorAddition(self.__comparisons, results)
+        with Pool(processes=4) as pool:
+            progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
+
+            def update(param):
+                progress_bar.update(n=1)
+
+            results = [pool.map_async(
+                partial(self.parallel_comparisons, models=models, targets=targets, subsets=subsets, renew=renew),
+                (model, ), callback=update) for model in self.__meta_models]
+            results = [x.get()[0] for x in results]
+            pool.close()
+            pool.join()
+
+        progress_bar.close()
+        model, _ = Memory.loadModel([self.__meta_models[0]])[0]
+        rows = model.compare(models, targets, subsets, 33, False)
+        for result in results:
+            self.__comparisons = self.vectorAddition(self.__comparisons, result)
 
         self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
         self.__parameters = model.getResultConfig()

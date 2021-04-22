@@ -1,5 +1,6 @@
 import math
 import time
+import warnings
 import numpy as np
 
 from pandas import DataFrame
@@ -7,10 +8,10 @@ from pymfe.mfe import MFE
 from sklearn.feature_selection import f_classif, chi2
 from sklearn.preprocessing import MinMaxScaler
 
-from metalfi.src.data.meta.importance.dropcolumn import DropColumnImportance
-from metalfi.src.data.meta.importance.lime import LimeImportance
-from metalfi.src.data.meta.importance.permutation import PermutationImportance
-from metalfi.src.data.meta.importance.shap import ShapImportance
+from metalfi.src.metadata.dropcolumn import DropColumnImportance
+from metalfi.src.metadata.lime import LimeImportance
+from metalfi.src.metadata.permutation import PermutationImportance
+from metalfi.src.metadata.shap import ShapImportance
 
 
 class MetaFeatures:
@@ -35,9 +36,11 @@ class MetaFeatures:
         return data_time, uni_time, multi_time, lm_time
 
     def runPymfe(self, X, y, summary, features):
+        warnings.simplefilter("ignore")
         mfe = MFE(summary=summary, features=features)
         mfe.fit(X, y)
         vector = mfe.extract()
+        warnings.simplefilter("default")
 
         return vector
 

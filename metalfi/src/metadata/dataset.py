@@ -1,6 +1,6 @@
 import time
 
-from metalfi.src.data.meta.metafeatures import MetaFeatures
+from metalfi.src.metadata.metafeatures import MetaFeatures
 
 
 class Dataset:

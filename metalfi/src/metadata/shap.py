@@ -1,9 +1,13 @@
+import os
+import sys
+
 import shap
+import warnings
 
 from pandas import DataFrame
 from sklearn.preprocessing import StandardScaler
 
-from metalfi.src.data.meta.importance.featureimportance import FeatureImportance
+from metalfi.src.metadata.featureimportance import FeatureImportance
 
 
 class ShapImportance(FeatureImportance):
@@ -13,6 +17,10 @@ class ShapImportance(FeatureImportance):
         self._name = "_SHAP"
 
     def calculateScores(self):
+        warnings.simplefilter("ignore")
+        with open(os.devnull, 'w') as file:
+            sys.stderr = file
+
         sc = StandardScaler()
         X = DataFrame(data=sc.fit_transform(self._data_frame.drop(self._target, axis=1)),
                       columns=self._data_frame.drop(self._target, axis=1).columns)
@@ -26,6 +34,9 @@ class ShapImportance(FeatureImportance):
 
         for model in self._kernel_models:
             self._feature_importances.append(self.kernelShap(model, X, y))
+
+        sys.stderr = sys.__stderr__
+        warnings.simplefilter("default")
 
     def treeShap(self, model, X, y):
         model.fit(X, y)

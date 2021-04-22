@@ -1,11 +1,14 @@
+import math
+
 import lime
 import lime.lime_tabular
 
+import numpy as np
 from pandas import DataFrame
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, LinearSVC
 
-from metalfi.src.data.meta.importance.featureimportance import FeatureImportance
+from metalfi.src.metadata.featureimportance import FeatureImportance
 
 
 class LimeImportance(FeatureImportance):
@@ -13,8 +16,6 @@ class LimeImportance(FeatureImportance):
     def __init__(self, dataset):
         super(LimeImportance, self).__init__(dataset)
         self._name = "_LIME"
-        linSVC = LinearSVC(max_iter=10000, dual=False)
-        svc = SVC(kernel="rbf", gamma="scale")
 
     def calculateScores(self):
         models = self._linear_models + self._tree_models + self._kernel_models
@@ -40,21 +41,24 @@ class LimeImportance(FeatureImportance):
         y = self._data_frame[target]
 
         model.fit(X, y)
-
         explainer = lime.lime_tabular.LimeTabularExplainer(training_data=X.values,
                                                            feature_names=X.columns.values,
-                                                           discretize_continuous=True,
                                                            mode="classification",
-                                                           verbose=True)
-        importances = [0] * len(X.columns)
+                                                           random_state=115)
 
-        for i in range(len(X.values)):
-            xp = explainer.explain_instance(X.values[i, :], model.predict_proba, num_features=len(X.columns))
+        num_features = len(X.columns)
+        num_entries = len(X.values)
+        num_samples = int(max([0.1 * num_entries, min([num_features * 2 * math.log2(num_entries), 0.5 * num_entries])]))
+        np.random.seed(115)
+        samples = list(np.random.permutation(num_entries))[:num_samples]
 
+        importances = [0] * num_features
+        for i in samples:
+            xp = explainer.explain_instance(X.values[i, :], model.predict_proba, num_features=num_features)
             for index, importance in xp.as_map()[1]:
                 importances[index] += abs(importance)
 
-        importances = list(map(lambda x: x / len(X.values), importances))
+        importances = list(map(lambda x: x / num_samples, importances))
         data_frame = DataFrame(data=importances, index=X.columns, columns=["Importances"])
 
         return data_frame

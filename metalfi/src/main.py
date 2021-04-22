@@ -1,7 +1,7 @@
 import time
 
 from metalfi.src.controller import Controller
-from metalfi.src.visual.visualization import Visualization
+from metalfi.src.visualization import Visualization
 
 
 class Main(object):

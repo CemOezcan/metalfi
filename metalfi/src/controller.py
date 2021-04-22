@@ -1,3 +1,8 @@
+import os
+import sys
+
+from multiprocessing import Pool
+import tqdm
 import pandas as pd
 
 from pandas import DataFrame
@@ -6,9 +11,9 @@ from sklearn.feature_selection import f_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR, LinearSVR
-from metalfi.src.data.dataset import Dataset
-from metalfi.src.data.memory import Memory
-from metalfi.src.data.metadataset import MetaDataset
+from metalfi.src.metadata.dataset import Dataset
+from metalfi.src.memory import Memory
+from metalfi.src.metadata.metadataset import MetaDataset
 from metalfi.src.model.evaluation import Evaluation
 from metalfi.src.model.featureselection import MetaFeatureSelection
 from metalfi.src.model.metamodel import MetaModel
@@ -27,9 +32,9 @@ class Controller:
                           "linSVC_PIMP", "LOG_PIMP", "RF_PIMP", "NB_PIMP", "SVC_PIMP",
                           "linSVC_LOFO", "LOG_LOFO", "RF_LOFO", "NB_LOFO", "SVC_LOFO"]
 
-        self.__meta_models = [(RandomForestRegressor(n_estimators=100, n_jobs=4), "RF"),
+        self.__meta_models = [(RandomForestRegressor(n_estimators=100), "RF"),
                               (SVR(), "SVR"),
-                              (LinearRegression(n_jobs=4), "LIN"),
+                              (LinearRegression(), "LIN"),
                               (LinearSVR(dual=True, max_iter=10000), "linSVR")]
 
     def getTrainData(self):
@@ -63,18 +68,31 @@ class Controller:
             i += 1
 
     def storeMetaData(self):
-        for dataset, name in self.__train_data:
-            if not (Memory.getPath() / ("input/" + name + "meta.csv")).is_file():
-                print("meta-data calc.: " + name)
-                meta = MetaDataset(dataset, True)
-                data = meta.getMetaData()
-                d_times, t_times = meta.getTimes()
-                nr_feat, nr_inst = meta.getNrs()
-                Memory.storeInput(data, name)
-                Memory.storeDataFrame(DataFrame(data=d_times, index=["Time"], columns=[x for x in d_times]),
-                                      name + "XmetaX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
-                Memory.storeDataFrame(DataFrame(data=t_times, index=["Time"], columns=[x for x in t_times]),
-                                      name + "XtargetX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
+        with Pool(processes=4) as pool:
+            data = [(dataset, name) for dataset, name in self.__train_data
+                    if not (Memory.getPath() / ("input/" + name + "meta.csv")).is_file()]
+
+            progress_bar = tqdm.tqdm(total=len(data), desc="Computing meta-data")
+            [pool.apply_async(self.parallel_meta_computation, (x, ), callback=(lambda x: progress_bar.update(n=1)))
+             for x in data]
+
+            progress_bar.close()
+            pool.close()
+            pool.join()
+
+    @staticmethod
+    def parallel_meta_computation(data):
+        result = MetaDataset(data, train=True)
+        meta_data = result.getMetaData()
+        name = result.getName()
+        d_times, t_times = result.getTimes()
+        nr_feat, nr_inst = result.getNrs()
+
+        Memory.storeInput(meta_data, name)
+        Memory.storeDataFrame(DataFrame(data=d_times, index=["Time"], columns=[x for x in d_times]),
+                              name + "XmetaX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
+        Memory.storeDataFrame(DataFrame(data=t_times, index=["Time"], columns=[x for x in t_times]),
+                              name + "XtargetX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
 
     def loadMetaData(self):
         for dataset, name in self.__train_data:
@@ -101,7 +119,6 @@ class Controller:
             sets = {}
 
             for meta_model, name in self.__meta_models:
-                print("Select meta-features: " + name)
                 tree = (name == "RF")
                 percentiles = [10]
                 if memory:
@@ -118,23 +135,33 @@ class Controller:
     def trainMetaModel(self):
         self.loadMetaData()
 
-        for i in range(0, len(self.__meta_data)):
-            test_data, test_name = self.__meta_data[i]
-            train_data = list()
+        parameters = [(
+            pd.concat([x[0] for x in self.__meta_data if x[1] != test_name]),
+            test_name + "meta",
+            test_data,
+            self.__train_data[self.__data_names[test_name]][0])
+            for test_data, test_name in self.__meta_data
+            if not (Memory.getPath() / ("model/" + test_name)).is_file()]
 
-            for j in range(0, len(self.__meta_data)):
-                if not (i == j):
-                    train_data.append(self.__meta_data[j][0])
+        selection_results = [self.selectMetaFeatures(parameter[1][:-4]) for parameter in parameters]
+        args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))
 
-            path = Memory.getPath() / ("model/" + test_name)
-            if not path.is_file():
-                print("Train meta-model: " + test_name)
-                og_data, name = self.__train_data[self.__data_names[test_name]]
-                model = MetaModel(pd.concat(train_data), test_name + "meta",
-                                  test_data, og_data, self.selectMetaFeatures(test_name),
-                                  self.__meta_models, self.__targets)
-                model.fit()
-                Memory.storeModel(model, test_name, None)
+        with Pool(processes=4) as pool:
+            progress_bar = tqdm.tqdm(total=len(args), desc="Training meta-models")
+            [pool.apply_async(self.parallel_training, (arg, ), callback=(lambda x: progress_bar.update(n=1)))
+             for arg in args]
+
+            progress_bar.close()
+            pool.close()
+            pool.join()
+
+    def parallel_training(self, iterable):
+        model = MetaModel(iterable, self.__meta_models, self.__targets)
+        sys.stderr = open(os.devnull, 'w')
+        sys.stdout.close()
+        model.fit()
+        sys.stderr = sys.__stderr__
+        Memory.storeModel(model, iterable[1][:-4], None)
 
     def evaluate(self, names):
         evaluation = Evaluation(names)
@@ -151,9 +178,9 @@ class Controller:
 
     def metaFeatureImportances(self):
         data = [d for d, _ in self.__meta_data]
-        models = [(RandomForestRegressor(n_estimators=50, n_jobs=4), "RF", "tree"),
+        models = [(RandomForestRegressor(n_estimators=50), "RF", "tree"),
                   (SVR(), "SVR", "kernel"),
-                  (LinearRegression(n_jobs=4), "LIN", "linear"),
+                  (LinearRegression(), "LIN", "linear"),
                   (LinearSVR(max_iter=1000), "linSVR", "linear")]
         targets = ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP"]
         importance = MetaFeatureSelection.metaFeatureImportance(pd.concat(data), self.__targets, models, targets,

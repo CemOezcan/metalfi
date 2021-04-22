@@ -7,10 +7,12 @@ import pandas as pd
 class MetaDataset:
 
     def __init__(self, dataset, train=False):
-        sys.stdout = open(os.devnull, 'w')
+        self.__name = dataset[1]
         self.__meta_data, self.__target_names, self.__times, self.nr_feat, self.nr_inst = \
-            self.calculateTrainingData(dataset) if train else self.calculateTestData(dataset)
-        sys.stdout = sys.__stdout__
+            self.calculateTrainingData(dataset[0]) if train else self.calculateTestData(dataset[0])
+
+    def getName(self):
+        return self.__name
 
     def getMetaData(self):
         return self.__meta_data
