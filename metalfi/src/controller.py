@@ -68,8 +68,7 @@ class Controller:
             i += 1
 
     def storeMetaData(self):
-        sys.stdout = open(os.devnull, 'w')
-        with Pool(processes=1) as pool:
+        with Pool(processes=4) as pool:
             data = [(dataset, name) for dataset, name in self.__train_data
                     if not (Memory.getPath() / ("input/" + name + "meta.csv")).is_file()]
 
@@ -81,8 +80,6 @@ class Controller:
             [pool.apply_async(self.parallel_meta_computation, (x, ), callback=update) for x in data]
             pool.close()
             pool.join()
-
-        sys.stdout = sys.__stdout__
 
     @staticmethod
     def parallel_meta_computation(data):
