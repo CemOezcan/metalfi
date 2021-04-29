@@ -1,42 +1,13 @@
-# metaLFI
-Meta-Learning Feature Importance
+# Meta-Learning Feature Importance
 
-# Getting Started
-Clone this repository to your local computer and install the required packages on your virtual environment using the 
-`requirements.txt` file as follows: 
+This repository contains the code to reproduce the experiments of the paper
 
- `pip install -r \Path\to\requirements.txt`
- 
-Python version: 
- 
- `Python 3.8.1`
- 
-# How to Reproduce the Experimental Results
-Open the terminal and navigate to the project's directory `\Path\to\metalfi`. In this directory, 
-you will find a Python script `start.py`. Make sure that you are using the 
-virtual environment, on which the required packages have been installed, and enter the command `python start.py`. 
-This will start the meta-data calculations, the meta-model training as well as the generation of the experimental results. 
-The results will be saved in subdirectories of `metalfi\metalfi\data`. On an average laptop, the calculations require approximately 20 hours to finish.
+> Bach, Jakob, and Cem Özcan. "Meta-Learning Feature Importance"
 
-## Plots and Tables used in my Bachelor Thesis
-The generated plots and tables can be found in the folder `metalfi\metalfi\data\visual`. 
-The following Table maps figures in my bachelor thesis to the file names of their corresponding `.png` files in folder `visual`:  
+This document describes the repo structure and the steps to reproduce the experiments.
+Input data and results data of the experimental pipelines are also available [online](https://bwdatadiss.kit.edu/dataset/xxx).
 
-| Figure number | 6.2 | 6.3 | 6.4 | 6.5 | 6.6 | 6.7 | 6.8 | 6.9 | 6.10 | 6.11 | 6.12 | 6.13 |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| File name | R^2NON | R^2LIN | RF_SHAP | Histograms | targets_R^2 | base_R^2 | r | linSVR x LM | fast | fast_multi | slow | fast_graph |
-
-The folder `visual` also contains `.csv` files that can be found as tables in my bachelor thesis: 
-`Table 6.1` in the thesis corresponds to `visual\target_corr.csv`. The claim that our evaluation metrics are correlated, 
- is supported by `visual\metrics_corr.csv`.  
- 
-
-The tables containing meta-model performances can be found in the folder `metalfi\metalfi\data\output\predictions`. 
-The `.csv` files in the `predictions` are named after their metric and their meta-target. 
-For instance, the file that contains the performances, measured with R^2, 
-of all meta-models predicting SHAP-based meta-targets is `predictions\r2xSHAP.csv`.
-
-# Folder Structure
+## Repo Structure
 
     .
     ├── metalfi                 
@@ -70,3 +41,114 @@ of all meta-models predicting SHAP-based meta-targets is `predictions\r2xSHAP.cs
     ├── LICENSE
     └── README.md
 
+## Setup
+
+Before running scripts to reproduce the experiments, you need to set up an environment with all necessary dependencies.
+Our code is implemented in Python (version 3.7).
+
+### Option 1: `conda` Environment
+
+If you use `conda`, you can install the right Python version into a new `conda` environment
+and activate the environment as follows:
+
+```bash
+conda create --name <conda-env-name> python=3.7
+conda activate <conda-env-name>
+```
+
+### Option 2: `virtualenv` Environment
+
+We used [`virtualenv`](https://virtualenv.pypa.io/) (version 20.4.0) to create an environment for our experiments.
+First, make sure you have the right Python version available.
+Next, you can install `virtualenv` with
+
+```bash
+python -m pip install virtualenv==20.4.0
+```
+
+To set up an environment with `virtualenv`, run
+
+
+```bash
+python -m virtualenv -p <path/to/right/python/executable> <path/to/env/destination>
+```
+
+Activate the environment in Linux with
+
+```bash
+source <path/to/env/destination>/bin/activate
+```
+
+Activate the environment in Windows (note the back-slashes) with
+
+```cmd
+<path\to\env\destination>\Scripts\activate
+```
+
+### Dependency Management
+
+After activating the environment, you can use `python` and `pip` as usual.
+To install all necessary dependencies for this repo, simply run
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+If you make changes to the environment and you want to persist them, run
+
+```bash
+python -m pip freeze > requirements.txt
+```
+
+To leave the environment, run
+
+```bash
+deactivate
+```
+
+### Optional Dependencies
+
+To use the environment in the IDE `Spyder`, you need to install `spyder-kernels` into the environment.
+
+To run or create notebooks from the environment, you need to install `juypter` into the environment.
+Next, you need to install a kernel for the environment:
+
+```bash
+ipython kernel install --user --name=<kernel-name>
+```
+
+After that, you should see (and be able to select) the kernel when running `Juypter Notebook` with
+
+```bash
+jupyter notebook
+```
+
+## Reproducing the Experiments
+
+After setting up and activating an environment, you are ready to run the code.
+From the top-level of this repo, run
+
+```bash
+python start.py
+```
+
+This will start the meta-data calculations, the meta-model training as well as the generation of the experimental results. 
+The results will be saved in subdirectories of `metalfi/metalfi/data/`.
+On an average laptop, the calculations require approximately 20 hours to finish.
+
+### Plots and Tables
+
+The generated plots and tables can be found in the folder `metalfi/metalfi/data/visual/`. 
+The following table maps figures in the article to the file names of their corresponding `.png` files in folder `visual`:  
+
+| Figure number | 6.2 | 6.3 | 6.4 | 6.5 | 6.6 | 6.7 | 6.8 | 6.9 | 6.10 | 6.11 | 6.12 | 6.13 |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| File name | R^2NON | R^2LIN | RF_SHAP | Histograms | targets_R^2 | base_R^2 | r | linSVR x LM | fast | fast_multi | slow | fast_graph |
+
+The folder `visual` also contains `.csv` files that can be found as tables in the article: 
+`Table 6.1` in the article corresponds to `visual/target_corr.csv`.
+The claim that our evaluation metrics are correlated, is supported by `visual/metrics_corr.csv`.  
+
+The tables containing meta-model performances can be found in the folder `metalfi/metalfi/data/output/predictions/`. 
+The `.csv` files in the `predictions` are named after their metric and their meta-target. 
+For instance, the file that contains the performances, measured with R^2,  of all meta-models predicting SHAP-based meta-targets is `predictions/r2xSHAP.csv`.
