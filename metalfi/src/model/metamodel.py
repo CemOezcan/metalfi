@@ -2,14 +2,10 @@ import numpy as np
 
 from copy import deepcopy
 from pandas import DataFrame
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import f_classif, mutual_info_classif, SelectPercentile
-from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import KFold
-from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC, LinearSVC
-
+from metalfi.src.memory import Memory
 from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.metadata.dropcolumn import DropColumnImportance
 from metalfi.src.metadata.lime import LimeImportance
@@ -141,21 +137,11 @@ class MetaModel:
 
         return act, pred
 
-    def getOriginalModel(self, name):
-        og_model = None
-
-        if name.startswith("RF"):
-            og_model = RandomForestClassifier(n_estimators=10, random_state=115)
-        elif name.startswith("SVC"):
-            og_model = SVC(random_state=115)
-        elif name.startswith("LOG"):
-            og_model = LogisticRegression(dual=False, max_iter=1000, random_state=115)
-        elif name.startswith("linSVC"):
-            og_model = LinearSVC(dual=False, max_iter=10000, random_state=115)
-        elif name.startswith("NB"):
-            og_model = GaussianNB()
-
-        return og_model
+    @staticmethod
+    def getOriginalModel(name):
+        for model, model_name in Memory.base_models():
+            if name.startswith(model_name):
+                return model
 
     def compare(self, models, targets, subsets, k, renew=False):
         if renew:

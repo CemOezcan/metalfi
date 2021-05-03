@@ -6,11 +6,8 @@ import tqdm
 import pandas as pd
 
 from pandas import DataFrame
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.feature_selection import f_regression
-from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVR, LinearSVR
 from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.memory import Memory
 from metalfi.src.metadata.metadataset import MetaDataset
@@ -32,10 +29,7 @@ class Controller:
                           "linSVC_PIMP", "LOG_PIMP", "RF_PIMP", "NB_PIMP", "SVC_PIMP",
                           "linSVC_LOFO", "LOG_LOFO", "RF_LOFO", "NB_LOFO", "SVC_LOFO"]
 
-        self.__meta_models = [(RandomForestRegressor(n_estimators=100), "RF"),
-                              (SVR(), "SVR"),
-                              (LinearRegression(), "LIN"),
-                              (LinearSVR(dual=True, max_iter=10000), "linSVR")]
+        self.__meta_models = Memory.meta_models()
 
     def getTrainData(self):
         return self.__train_data
@@ -178,10 +172,7 @@ class Controller:
 
     def metaFeatureImportances(self):
         data = [d for d, _ in self.__meta_data]
-        models = [(RandomForestRegressor(n_estimators=50), "RF", "tree"),
-                  (SVR(), "SVR", "kernel"),
-                  (LinearRegression(), "LIN", "linear"),
-                  (LinearSVR(max_iter=1000), "linSVR", "linear")]
+        models = Memory.meta_models(True)
         targets = ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP"]
         importance = MetaFeatureSelection.metaFeatureImportance(pd.concat(data), self.__targets, models, targets,
                                                                 self.selectMetaFeatures(memory=True))

@@ -6,13 +6,43 @@ import pandas as pd
 from pathlib import Path
 from pandas import DataFrame
 from sklearn.datasets import load_wine, load_iris, load_boston, fetch_openml
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, LabelEncoder
+from sklearn.svm import SVC, LinearSVC, SVR, LinearSVR
 
 
 class Memory:
 
     def __init__(self):
         return
+
+    @staticmethod
+    def base_models(types=False):
+
+        models = [(RandomForestClassifier(n_estimators=100, random_state=115), "RF", "tree"),
+                  (SVC(random_state=115), "SVC", "kernel"),
+                  (LogisticRegression(dual=False, max_iter=1000, random_state=115), "LOG", "linear"),
+                  (LinearSVC(dual=False, max_iter=10000, random_state=115), "linSVC", "linear"),
+                  (GaussianNB(), "NB", "kernel")]
+
+        if types:
+            return models
+
+        return [(model, name) for model, name, _ in models]
+
+    @staticmethod
+    def meta_models(types=False):
+        models = [(RandomForestRegressor(n_estimators=100, random_state=115), "RF", "tree"),
+                  (SVR(), "SVR", "kernel"),
+                  (LinearRegression(), "LIN", "linear"),
+                  (LinearSVR(max_iter=10000, random_state=115), "linSVR", "linear")]
+
+        if types:
+            return models
+
+        return [(model, name) for model, name, _ in models]
 
     @staticmethod
     def load(name, dir=None):
