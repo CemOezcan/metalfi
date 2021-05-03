@@ -207,10 +207,9 @@ class Controller:
                 imp.append(this_meta_feature)
 
             this_target["mean absolute SHAP"] = imp
-            this_target["meta-features"] = index
-            # or index=index
-            Memory.storeDataFrame(DataFrame(data=this_target, columns=["meta-features", "mean absolute SHAP"]),
-                                  target, "importance")
+            data = DataFrame(data=this_target, index=index, columns=["mean absolute SHAP"])
+            data.index.name = "meta-features"
+            Memory.storeDataFrame(data, target, "importance")
 
     def loadModel(self, names):
         return Memory.loadModel(names)

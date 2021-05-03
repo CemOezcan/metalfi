@@ -151,12 +151,12 @@ class Visualization:
         directory = "output/importance"
         path = (Memory.getPath() / directory)
         file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
-        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
+        data = [(Memory.load(name, directory), name) for name in file_names]
 
         for frame, name in data:
             frame = frame.sort_values(by="mean absolute SHAP")
-            plt.barh(list(frame["meta-features"])[:15], list(frame["mean absolute SHAP"])[:15])
-            plt.yticks(list(frame["meta-features"])[:15], list(frame["meta-features"])[:15])
+            plt.barh(list(frame["meta-features"])[-15:], list(frame["mean absolute SHAP"])[-15:])
+            plt.yticks(list(frame["meta-features"])[-15:])
             Memory.storeVisual(plt, name[:-4])
 
     @staticmethod
