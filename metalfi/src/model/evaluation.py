@@ -252,12 +252,10 @@ class Evaluation:
         with Pool(processes=4) as pool:
             progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
 
-            def update(param):
-                progress_bar.update(n=1)
-
             results = [pool.map_async(
                 partial(self.parallel_comparisons, models=models, targets=targets, subsets=subsets, renew=renew),
-                (model, ), callback=update) for model in self.__meta_models]
+                (model, ), callback=(lambda x: progress_bar.update(n=1))) for model in self.__meta_models]
+
             results = [x.get()[0] for x in results]
             pool.close()
             pool.join()
