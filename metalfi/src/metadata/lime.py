@@ -27,10 +27,7 @@ class LimeImportance(FeatureImportance):
                                                                          probability=True),
                                                                      self._target))
             elif str(type(model).__name__) == "SVC":
-                self._feature_importances.append(self.limeImportance(SVC(kernel="rbf",
-                                                                         gamma="scale",
-                                                                         probability=True),
-                                                                     self._target))
+                self._feature_importances.append(self.limeImportance(SVC(probability=True), self._target))
             else:
                 self._feature_importances.append(self.limeImportance(model, self._target))
 

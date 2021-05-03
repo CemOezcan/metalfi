@@ -21,7 +21,7 @@ class Memory:
     @staticmethod
     def base_models(types=False):
 
-        models = [(RandomForestClassifier(n_estimators=100, random_state=115), "RF", "tree"),
+        models = [(RandomForestClassifier(random_state=115), "RF", "tree"),
                   (SVC(random_state=115), "SVC", "kernel"),
                   (LogisticRegression(dual=False, max_iter=1000, random_state=115), "LOG", "linear"),
                   (LinearSVC(dual=False, max_iter=10000, random_state=115), "linSVC", "linear"),
@@ -34,7 +34,7 @@ class Memory:
 
     @staticmethod
     def meta_models(types=False):
-        models = [(RandomForestRegressor(n_estimators=100, random_state=115), "RF", "tree"),
+        models = [(RandomForestRegressor(random_state=115), "RF", "tree"),
                   (SVR(), "SVR", "kernel"),
                   (LinearRegression(), "LIN", "linear"),
                   (LinearSVR(max_iter=10000, random_state=115), "linSVR", "linear")]
