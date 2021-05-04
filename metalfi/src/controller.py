@@ -67,12 +67,13 @@ class Controller:
 
         with Pool(processes=4) as pool:
             progress_bar = tqdm.tqdm(total=len(data), desc="Computing meta-data")
-            [pool.apply_async(self.parallel_meta_computation, (x, ), callback=(lambda arg: progress_bar.update(n=1)))
-             for x in data]
+            [pool.apply_async(self.parallel_meta_computation, (args, ), callback=(lambda x: progress_bar.update(n=1)))
+             for args in data]
 
-            progress_bar.close()
             pool.close()
             pool.join()
+
+        progress_bar.close()
 
     @staticmethod
     def parallel_meta_computation(data):
@@ -145,9 +146,10 @@ class Controller:
             [pool.apply_async(self.parallel_training, (arg, ), callback=(lambda x: progress_bar.update(n=1)))
              for arg in args]
 
-            progress_bar.close()
             pool.close()
             pool.join()
+
+        progress_bar.close()
 
     def parallel_training(self, iterable):
         model = MetaModel(iterable, self.__meta_models, self.__targets)

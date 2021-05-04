@@ -200,10 +200,10 @@ class Evaluation:
                 for meta_model in self.__meta_models]
 
             results = [x.get()[0] for x in results]
-            progress_bar.close()
             pool.close()
             pool.join()
 
+        progress_bar.close()
         for stats, _, _ in results:
             self.__tests = self.vectorAddition(self.__tests, stats)
 

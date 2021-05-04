@@ -91,10 +91,10 @@ class MetaFeatureSelection:
                 for x in iterable]
 
             results = [x.get()[0] for x in results]
-            progress_bar.close()
             pool.close()
             pool.join()
 
+        progress_bar.close()
         for target, imp in results:
             importance[target].append(imp)
 
