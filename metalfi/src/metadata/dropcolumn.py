@@ -15,7 +15,7 @@ class DropColumnImportance(FeatureImportance):
         for type in self._models.keys():
             for model in self._models[type].values():
                 if type == "tree":
-                    self._feature_importances.append(self.dropcolImportance(model, self._target))
+                    self._feature_importances.append(self.oobDropcolImportance(model, self._target))
                 else:
                     self._feature_importances.append(self.dropcolImportance(model, self._target))
 
@@ -30,7 +30,9 @@ class DropColumnImportance(FeatureImportance):
         return imp
 
     def oobDropcolImportance(self, model, target):
-        X = self._data_frame.drop(target, axis=1)
+        sc = StandardScaler()
+        X = DataFrame(data=sc.fit_transform(self._data_frame.drop(target, axis=1)),
+                      columns=self._data_frame.drop(target, axis=1).columns)
         y = self._data_frame[target]
 
         model.fit(X, y)

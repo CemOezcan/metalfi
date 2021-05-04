@@ -73,15 +73,15 @@ class Evaluation:
             data_3 = self.createQuestionCsv(model, config, target_names, data_3, 1, question=3)
             data_4 = self.createQuestionCsv(model, config, meta_model_names, data_4, 0, question=4)
 
-            """if data_set in subset_names:
+            if data_set in subset_names:
                 rows_5.append(data_set)
-                data_5 = self.createQuestion5Csv(model, data_5, "linSVR", "LM")"""
+                data_5 = self.createQuestion5Csv(model, data_5, "linSVR", "LM")
 
         self.q_2(data_2_lin, rows, "LIN")
         self.q_2(data_2_non, rows, "NON")
         self.q_3(data_3, rows)
         self.q_4(data_4, rows)
-        #self.q_5(data_5, rows_5)
+        self.q_5(data_5, rows_5)
 
     def q_2(self, data, rows, end):
         for metric in data:
