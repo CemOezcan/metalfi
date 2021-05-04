@@ -11,23 +11,18 @@ class FeatureImportance(ABC):
         self._dataset = dataset
         self._data_frame = dataset.getDataFrame()
         self._target = self._dataset.getTarget()
-
-        self._linear_models = []
-        self._tree_models = []
-        self._kernel_models = []
-
-        self.__model_names = []
+        self._models = dict()
 
         for model, name, type in Memory.base_models(True):
-            self.__model_names.append(name)
-            if type == "tree":
-                self._tree_models.append(model)
-            elif type == "linear":
-                self._linear_models.append(model)
-            elif type == "kernel":
-                self._kernel_models.append(model)
+            try:
+                self._models[type][name] = model
+            except KeyError:
+                self._models[type] = dict()
+                self._models[type][name] = model
 
-        self._vif = list()
+        self.__model_names = sum([list(d.keys()) for d in self._models.values()], [])
+        self._all_models = sum([list(d.values()) for d in self._models.values()], [])
+
         self._feature_importances = list()
         self._name = ""
 

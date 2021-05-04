@@ -18,18 +18,8 @@ class LimeImportance(FeatureImportance):
         self._name = "_LIME"
 
     def calculateScores(self):
-        models = self._linear_models + self._tree_models + self._kernel_models
-
-        for model in models:
-            if str(type(model).__name__) == "LinearSVC":
-                self._feature_importances.append(self.limeImportance(SVC(kernel="linear",
-                                                                         decision_function_shape="ovr",
-                                                                         probability=True),
-                                                                     self._target))
-            elif str(type(model).__name__) == "SVC":
-                self._feature_importances.append(self.limeImportance(SVC(probability=True), self._target))
-            else:
-                self._feature_importances.append(self.limeImportance(model, self._target))
+        for model in self._all_models:
+            self._feature_importances.append(self.limeImportance(model, self._target))
 
     def limeImportance(self, model, target):
         sc = StandardScaler()

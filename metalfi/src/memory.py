@@ -22,9 +22,9 @@ class Memory:
     def base_models(types=False):
 
         models = [(RandomForestClassifier(random_state=115), "RF", "tree"),
-                  (SVC(random_state=115), "SVC", "kernel"),
+                  (SVC(probability=True, random_state=115), "SVC", "kernel"),
                   (LogisticRegression(dual=False, max_iter=1000, random_state=115), "LOG", "linear"),
-                  (LinearSVC(dual=False, max_iter=10000, random_state=115), "linSVC", "linear"),
+                  (SVC(kernel="linear", probability=True, random_state=115), "linSVC", "linear"),
                   (GaussianNB(), "NB", "kernel")]
 
         if types:

@@ -62,12 +62,12 @@ class Controller:
             i += 1
 
     def storeMetaData(self):
-        with Pool(processes=4) as pool:
-            data = [(dataset, name) for dataset, name in self.__train_data
-                    if not (Memory.getPath() / ("input/" + name + "meta.csv")).is_file()]
+        data = [(dataset, name) for dataset, name in self.__train_data
+                if not (Memory.getPath() / ("input/" + name + "meta.csv")).is_file()]
 
+        with Pool(processes=4) as pool:
             progress_bar = tqdm.tqdm(total=len(data), desc="Computing meta-data")
-            [pool.apply_async(self.parallel_meta_computation, (x, ), callback=(lambda x: progress_bar.update(n=1)))
+            [pool.apply_async(self.parallel_meta_computation, (x, ), callback=(lambda arg: progress_bar.update(n=1)))
              for x in data]
 
             progress_bar.close()
