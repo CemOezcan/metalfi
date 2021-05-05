@@ -59,7 +59,8 @@ class Evaluation:
                   "linSVC_SHAP": {key: list() for key in selection_names},
                   "NB_SHAP": {key: list() for key in selection_names},
                   "RF_SHAP": {key: list() for key in selection_names},
-                  "SVC_SHAP": {key: list() for key in selection_names}}
+                  "SVC_SHAP": {key: list() for key in selection_names},
+                  "DT_SHAP": {key: list() for key in selection_names}}
 
         rows = list()
         rows_5 = list()
@@ -73,15 +74,15 @@ class Evaluation:
             data_3 = self.createQuestionCsv(model, config, target_names, data_3, 1, question=3)
             data_4 = self.createQuestionCsv(model, config, meta_model_names, data_4, 0, question=4)
 
-            if data_set in subset_names:
+            """if data_set in subset_names:
                 rows_5.append(data_set)
-                data_5 = self.createQuestion5Csv(model, data_5, "linSVR", "LM")
+                data_5 = self.createQuestion5Csv(model, data_5, "linSVR", "LM")"""
 
         self.q_2(data_2_lin, rows, "LIN")
         self.q_2(data_2_non, rows, "NON")
         self.q_3(data_3, rows)
         self.q_4(data_4, rows)
-        self.q_5(data_5, rows_5)
+        #self.q_5(data_5, rows_5)
 
     def q_2(self, data, rows, end):
         for metric in data:
@@ -98,7 +99,7 @@ class Evaluation:
             self.helper_q_3(dictionary, data_frame, rows, metric, "targets_", targets=True)
 
             dictionary = {"linSVC": [0] * len(rows), "LOG": [0] * len(rows), "RF": [0] * len(rows),
-                          "NB": [0] * len(rows), "SVC": [0] * len(rows)}
+                          "NB": [0] * len(rows), "SVC": [0] * len(rows), "DT": [0] * len(rows)}
             self.helper_q_3(dictionary, data_frame, rows, metric, "base_")
 
     def q_4(self, data, rows):
@@ -136,11 +137,11 @@ class Evaluation:
         elif question == 3:
             tuples = [t for t in list(zip(config, model.getStats()))
                       if (t[0][0].lower().startswith("lin") and (t[0][2] == "LM"))
-                      or (((t[0][0] == "RF") or (t[0][0] == "SVR")) and (t[0][2] == "Auto"))]
+                      or (((t[0][0] == "RF") or (t[0][0] == "DT") or (t[0][0] == "SVR")) and (t[0][2] == "Auto"))]
         elif question == 4:
             tuples = [t for t in list(zip(config, model.getStats()))
                       if (t[0][1][:-4] != "LOFO") and ((t[0][0].lower().startswith("lin") and (t[0][2] == "LM"))
-                      or (((t[0][0] == "RF") or (t[0][0] == "SVR")) and (t[0][2] == "Auto")))]
+                      or (((t[0][0] == "RF") or (t[0][0] == "DT") or (t[0][0] == "SVR")) and (t[0][2] == "Auto")))]
         else:
             tuples = list()
 

@@ -10,7 +10,8 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, LabelEncoder
-from sklearn.svm import SVC, LinearSVC, SVR, LinearSVR
+from sklearn.svm import SVC, SVR, LinearSVR
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 
 class Memory:
@@ -22,6 +23,7 @@ class Memory:
     def base_models(types=False):
 
         models = [(RandomForestClassifier(oob_score=True, random_state=115), "RF", "tree"),
+                  (DecisionTreeClassifier(random_state=115), "DT", "tree"),
                   (SVC(probability=True, random_state=115), "SVC", "kernel"),
                   (LogisticRegression(max_iter=1000, random_state=115), "LOG", "linear"),
                   (SVC(kernel="linear", probability=True, random_state=115), "linSVC", "linear"),
@@ -35,6 +37,7 @@ class Memory:
     @staticmethod
     def meta_models(types=False):
         models = [(RandomForestRegressor(random_state=115), "RF", "tree"),
+                  (DecisionTreeRegressor(random_state=115), "DT", "tree"),
                   (SVR(), "SVR", "kernel"),
                   (LinearRegression(), "LIN", "linear"),
                   (LinearSVR(max_iter=10000, random_state=115), "linSVR", "linear")]

@@ -24,10 +24,10 @@ class Controller:
         self.__meta_data = list()
         self.fetchData()
         self.storeMetaData()
-        self.__targets = ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP",
-                          "linSVC_LIME", "LOG_LIME", "RF_LIME", "NB_LIME", "SVC_LIME",
-                          "linSVC_PIMP", "LOG_PIMP", "RF_PIMP", "NB_PIMP", "SVC_PIMP",
-                          "linSVC_LOFO", "LOG_LOFO", "RF_LOFO", "NB_LOFO", "SVC_LOFO"]
+        self.__targets = ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP", "DT_SHAP",
+                          "linSVC_LIME", "LOG_LIME", "RF_LIME", "NB_LIME", "SVC_LIME", "DT_LIME",
+                          "linSVC_PIMP", "LOG_PIMP", "RF_PIMP", "NB_PIMP", "SVC_PIMP", "DT_PIMP",
+                          "linSVC_LOFO", "LOG_LOFO", "RF_LOFO", "NB_LOFO", "SVC_LOFO", "DT_LOFO"]
 
         self.__meta_models = Memory.meta_models()
 

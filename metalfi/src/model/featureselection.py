@@ -114,7 +114,7 @@ class MetaFeatureSelection:
         elif category == "tree":
             imp = s.treeRegressionShap(model, X, y)
         else:
-            imp = s.kernelShap(model, X, y, 5)
+            imp = s.kernelShap(model, X, y)
 
         array = imp["Importances"].values
         array = list(np.interp(array, (array.min(), array.max()), (0, 1)))

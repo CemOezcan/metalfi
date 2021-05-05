@@ -1,3 +1,6 @@
+import math
+
+import numpy
 import numpy as np
 
 from copy import deepcopy
@@ -118,16 +121,16 @@ class MetaModel:
             y_train = self.__train_data[config[1]]
             y_pred = model.predict(X_test)
 
-            r_2 = 1 - (sum([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))]) /
-                       sum([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))]))
-            rmse = np.sqrt(np.mean(([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))])))
-            base = np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))])))
-            r = np.corrcoef(y_pred, y_test)[0][1]
+            if numpy.std(y_test) <= 0.001 or numpy.std(y_pred) <= 0.001:
+                self.__stats.append([0, 1, 0])
+            else:
+                r_2 = 1 - (sum([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))]) /
+                           sum([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))]))
+                rmse = np.sqrt(np.mean(([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))])))
+                base = np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))])))
+                r = np.corrcoef(y_pred, y_test)[0][1]
 
-            if np.math.isnan(r):
-                r_2, rmse, base, r = 0, 1, 1, 0
-
-            self.__stats.append([r_2, rmse / base, r])
+                self.__stats.append([r_2, rmse / base, r])
 
     def getRankings(self, columns, prediction, actual):
         pred_data = {"target": prediction, "names": columns}

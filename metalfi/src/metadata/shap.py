@@ -1,6 +1,7 @@
 import os
 import sys
 
+import numpy as np
 import shap
 import warnings
 
@@ -58,6 +59,7 @@ class ShapImportance(FeatureImportance):
 
     def kernelShap(self, model, X, y, k=10):
         model.fit(X, y)
+        np.random.seed(115)
         X_summary = shap.kmeans(X, k)
         imp = shap.KernelExplainer(model.predict, X_summary).shap_values(X)
 

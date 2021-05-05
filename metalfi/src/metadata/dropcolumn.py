@@ -13,8 +13,9 @@ class DropColumnImportance(FeatureImportance):
 
     def calculateScores(self):
         for type in self._models.keys():
-            for model in self._models[type].values():
-                if type == "tree":
+            for name in self._models[type].keys():
+                model = self._models[type][name]
+                if type == "tree" and name != "DT":
                     self._feature_importances.append(self.oobDropcolImportance(model, self._target))
                 else:
                     self._feature_importances.append(self.dropcolImportance(model, self._target))
