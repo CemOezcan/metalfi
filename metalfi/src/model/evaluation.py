@@ -241,6 +241,8 @@ class Evaluation:
                                        columns=[x for x in all_results[metric][importance]])
                 Memory.storeDataFrame(data_frame.round(3), metric + "x" + importance, "predictions")
 
+        self.storeAllRsults(results, metrics)
+
     @staticmethod
     def parallel_comparisons(name, models, targets, subsets, renew):
         model, _ = Memory.loadModel([name])[0]
@@ -248,6 +250,14 @@ class Evaluation:
         results = model.getResults()
         Memory.renewModel(model, model.getName()[:-4])
         return results
+
+    def storeAllRsults(self, results, metrics):
+        columns = ["$" + meta + "_{" + features + "}(" + target + ")$" for meta, target, features in self.__config]
+        index = self.__meta_models
+
+        for key in metrics.keys():
+            data = [tuple(map((lambda x: x[key]), results[i][0])) for i in range(len(index))]
+            Memory.storeDataFrame(DataFrame(data, columns=columns, index=index), metrics[key], "predictions")
 
     def comparisons(self, models, targets, subsets, renew=False):
         with Pool(processes=4) as pool:
