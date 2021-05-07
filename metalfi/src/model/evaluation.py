@@ -1,3 +1,5 @@
+import os
+import re
 from functools import partial
 from multiprocessing import Pool
 
@@ -16,6 +18,7 @@ class Evaluation:
 
         self.__comparisons = list()
         self.__parameters = list()
+        self.__metrics = {0: "R^2", 1: "RMSE", 2: "r"}
 
     @staticmethod
     def vectorAddition(x, y):
@@ -27,31 +30,32 @@ class Evaluation:
         return result
 
     def questions(self, subset_names):
-        model, _ = Memory.loadModel([self.__meta_models[0]])[0]
-        config = [c for (a, b, c) in model.getMetaModels()]
+        directory = "output/predictions"
+        path = (Memory.getPath() / directory)
+
+        file_names = [name for name in os.listdir(path) if "x" not in name and name.endswith(".csv")]
+
+        data = {name[:-4]: Memory.load(name, directory) for name in file_names}
+        pattern = re.compile(r"\$(?P<meta>.+)\_\{(?P<features>.+)\}\((?P<target>.+)\)\$")
+
+        config = [[pattern.match(column).group("meta"),
+                   pattern.match(column).group("target"),
+                   pattern.match(column).group("features")]
+                  for column in data[file_names[0][:-4]].columns if "Unnamed" not in column]
 
         # Q_2
         subset_names_lin = list(dict.fromkeys([c[2] for c in config if c[2] != "All"]))
         subset_names_non = list(dict.fromkeys([c[2] for c in config]))
-        data_2_lin = {"R^2": {key: list() for key in subset_names_lin},
-                      "RMSE": {key: list() for key in subset_names_lin},
-                      "r": {key: list() for key in subset_names_lin}}
-
-        data_2_non = {"R^2": {key: list() for key in subset_names_non},
-                      "RMSE": {key: list() for key in subset_names_non},
-                      "r": {key: list() for key in subset_names_non}}
+        data_2_lin = {metric: {key: list() for key in subset_names_lin} for metric in self.__metrics.values()}
+        data_2_non = {metric: {key: list() for key in subset_names_non} for metric in self.__metrics.values()}
 
         # Q_3
         target_names = list(dict.fromkeys([c[1] for c in config]))
-        data_3 = {"R^2": {key: list() for key in target_names},
-                  "RMSE": {key: list() for key in target_names},
-                  "r": {key: list() for key in target_names}}
+        data_3 = {metric: {key: list() for key in target_names} for metric in self.__metrics.values()}
 
         # Q_4
         meta_model_names = list(dict.fromkeys([c[0] for c in config]))
-        data_4 = {"R^2": {key: list() for key in meta_model_names},
-                  "RMSE": {key: list() for key in meta_model_names},
-                  "r": {key: list() for key in meta_model_names}}
+        data_4 = {metric: {key: list() for key in meta_model_names} for metric in self.__metrics.values()}
 
         # Q_5
         selection_names = ["ANOVA", "MI", "FI", "MetaLFI"]
@@ -64,15 +68,16 @@ class Evaluation:
 
         rows = list()
         rows_5 = list()
-        for data_set in self.__meta_models:
-            print("Questions, " + data_set)
-            rows.append(data_set)
-            model, _ = Memory.loadModel([data_set])[0]
+        for i in list(data.values())[0].index:
+            stats = list(map(lambda x: list(x), zip(*[data_set.iloc[i][1:] for data_set in data.values()])))
 
-            data_2_lin = self.createQuestionCsv(model, config, subset_names_lin, data_2_lin, 2, question=2, linear=True)
-            data_2_non = self.createQuestionCsv(model, config, subset_names_non, data_2_non, 2, question=2, linear=False)
-            data_3 = self.createQuestionCsv(model, config, target_names, data_3, 1, question=3)
-            data_4 = self.createQuestionCsv(model, config, meta_model_names, data_4, 0, question=4)
+            performances = list(zip(config, stats))
+            rows.append(list(data.values())[0]["Unnamed: 0"].iloc[0])
+
+            data_2_lin = self.createQuestionCsv(performances, subset_names_lin, data_2_lin, 2, question=2, linear=True)
+            data_2_non = self.createQuestionCsv(performances, subset_names_non, data_2_non, 2, question=2, linear=False)
+            data_3 = self.createQuestionCsv(performances, target_names, data_3, 1, question=3)
+            data_4 = self.createQuestionCsv(performances, meta_model_names, data_4, 0, question=4)
 
             """if data_set in subset_names:
                 rows_5.append(data_set)
@@ -128,18 +133,18 @@ class Evaluation:
         Memory.storeDataFrame(DataFrame(data=dictionary, index=rows, columns=[x for x in dictionary]),
                               name + metric, "questions/q3")
 
-    def createQuestionCsv(self, model, config, names, data, index, question, linear=False):
+    def createQuestionCsv(self, performances, names, data, index, question, linear=False):
         if question == 2:
             if linear:
-                tuples = [t for t in list(zip(config, model.getStats())) if (t[0][0].lower().startswith("lin"))]
+                tuples = [t for t in performances if (t[0][0].lower().startswith("lin"))]
             else:
-                tuples = [t for t in list(zip(config, model.getStats())) if not (t[0][0].lower().startswith("lin"))]
+                tuples = [t for t in performances if not (t[0][0].lower().startswith("lin"))]
         elif question == 3:
-            tuples = [t for t in list(zip(config, model.getStats()))
+            tuples = [t for t in performances
                       if (t[0][0].lower().startswith("lin") and (t[0][2] == "LM"))
                       or (((t[0][0] == "RF") or (t[0][0] == "DT") or (t[0][0] == "SVR")) and (t[0][2] == "Auto"))]
         elif question == 4:
-            tuples = [t for t in list(zip(config, model.getStats()))
+            tuples = [t for t in performances
                       if (t[0][1][:-4] != "LOFO") and ((t[0][0].lower().startswith("lin") and (t[0][2] == "LM"))
                       or (((t[0][0] == "RF") or (t[0][0] == "DT") or (t[0][0] == "SVR")) and (t[0][2] == "Auto")))]
         else:
@@ -213,11 +218,10 @@ class Evaluation:
 
         targets = results[0][2]
         algorithms = [x[:-5] for x in targets]
-        metrics = {0: "r2", 1: "rmse", 2: "r"}
         rows = list()
 
         all_results = {}
-        for i in metrics:
+        for i in self.__metrics:
             shap = {a: [] for a in algorithms}
             lime = {a: [] for a in algorithms}
             perm = {a: [] for a in algorithms}
@@ -233,7 +237,7 @@ class Evaluation:
                 metric[b[-4:]][b[:-5]].append(self.__tests[index][i])
                 index -= -1
 
-            all_results[metrics[i]] = metric
+            all_results[self.__metrics[i]] = metric
 
         for metric in all_results:
             for importance in all_results[metric]:
@@ -241,7 +245,7 @@ class Evaluation:
                                        columns=[x for x in all_results[metric][importance]])
                 Memory.storeDataFrame(data_frame.round(3), metric + "x" + importance, "predictions")
 
-        self.storeAllRsults(results, metrics)
+        self.storeAllRsults(results)
 
     @staticmethod
     def parallel_comparisons(name, models, targets, subsets, renew):
@@ -251,13 +255,13 @@ class Evaluation:
         Memory.renewModel(model, model.getName()[:-4])
         return results
 
-    def storeAllRsults(self, results, metrics):
+    def storeAllRsults(self, results):
         columns = ["$" + meta + "_{" + features + "}(" + target + ")$" for meta, target, features in self.__config]
         index = self.__meta_models
 
-        for key in metrics.keys():
+        for key in self.__metrics.keys():
             data = [tuple(map((lambda x: x[key]), results[i][0])) for i in range(len(index))]
-            Memory.storeDataFrame(DataFrame(data, columns=columns, index=index), metrics[key], "predictions")
+            Memory.storeDataFrame(DataFrame(data, columns=columns, index=index), self.__metrics[key], "predictions")
 
     def comparisons(self, models, targets, subsets, renew=False):
         with Pool(processes=4) as pool:

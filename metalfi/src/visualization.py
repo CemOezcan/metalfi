@@ -332,7 +332,7 @@ class Visualization:
         directory = "output/predictions"
         path = (Memory.getPath() / directory)
 
-        file_names = [name for name in os.listdir(path) if name.endswith('.csv')]
+        file_names = [name for name in os.listdir(path) if name.endswith('.csv') and "x" in name]
 
         data = list()
         for name in file_names:
