@@ -1,5 +1,6 @@
 import os
 import re
+import Orange
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -189,12 +190,13 @@ class Visualization:
             if len(names) < 10:
                 val, p_value = ss.friedmanchisquare(*d)
                 if p_value < 0.05:
+                    #Visualization.createCriticalDifferencesPlot(names, ranks)
                     Visualization.createTimeline(names, ranks, metric,
                                                  sp.sign_array(sp.posthoc_nemenyi_friedman(np.array(d).T)), d)
 
     @staticmethod
     def createTimeline(names, ranks, metric, sign_matrix, data):
-        fig, ax = plt.subplots(2)
+        """fig, ax = plt.subplots(2)
 
         levels = np.tile([-6, 6, -4, 4, -2, 2], len(ranks))[:len(ranks)]
         marker, _, _ = ax[0].stem(ranks, levels, linefmt="C3--", basefmt="k-", use_line_collection=True)
@@ -232,9 +234,19 @@ class Visualization:
 
         ax[1].boxplot(data, notch=True, showfliers=False)
         ax[1].set_xticks(list(range(1, len(data) + 1)))
-        ax[1].set_xticklabels(names)
+        ax[1].set_xticklabels(names)"""
 
-        Memory.storeVisual(plt, metric[:-4])
+        cd = Orange.evaluation.compute_CD(ranks, 28)
+        Orange.evaluation.graph_ranks(ranks, names, cd=cd)
+        Memory.storeVisual(plt, metric[:-4] + "_cd")
+        plt.close()
+
+        fig, ax = plt.subplots()
+        ax.boxplot(data, notch=True, showfliers=False)
+        ax.set_xticks(list(range(1, len(data) + 1)))
+        ax.set_xticklabels(names)
+        Memory.storeVisual(plt, metric[:-4] + "_means")
+        plt.close()
 
     @staticmethod
     def correlateMetrics():
