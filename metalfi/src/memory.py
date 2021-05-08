@@ -16,37 +16,6 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 class Memory:
 
-    def __init__(self):
-        return
-
-    @staticmethod
-    def base_models(types=False):
-
-        models = [(RandomForestClassifier(oob_score=True, random_state=115), "RF", "tree"),
-                  (DecisionTreeClassifier(random_state=115), "DT", "tree"),
-                  (SVC(probability=True, random_state=115), "SVC", "kernel"),
-                  (LogisticRegression(max_iter=1000, random_state=115), "LOG", "linear"),
-                  (SVC(kernel="linear", probability=True, random_state=115), "linSVC", "linear"),
-                  (GaussianNB(), "NB", "kernel")]
-
-        if types:
-            return models
-
-        return [(model, name) for model, name, _ in models]
-
-    @staticmethod
-    def meta_models(types=False):
-        models = [(RandomForestRegressor(random_state=115), "RF", "tree"),
-                  (DecisionTreeRegressor(random_state=115), "DT", "tree"),
-                  (SVR(), "SVR", "kernel"),
-                  (LinearRegression(), "LIN", "linear"),
-                  (LinearSVR(max_iter=10000, random_state=115), "linSVR", "linear")]
-
-        if types:
-            return models
-
-        return [(model, name) for model, name, _ in models]
-
     @staticmethod
     def load(name, dir=None):
         path = Memory.getPath()

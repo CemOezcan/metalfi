@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from metalfi.src.memory import Memory
+from metalfi.src.parameters import Parameters
 
 
 class FeatureImportance(ABC):
@@ -13,7 +14,7 @@ class FeatureImportance(ABC):
         self._target = self._dataset.getTarget()
         self._models = dict()
 
-        for model, name, type in Memory.base_models(True):
+        for model, name, type in Parameters.base_models:
             try:
                 self._models[type][name] = model
             except KeyError:

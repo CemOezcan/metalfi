@@ -14,6 +14,7 @@ from metalfi.src.metadata.metadataset import MetaDataset
 from metalfi.src.model.evaluation import Evaluation
 from metalfi.src.model.featureselection import MetaFeatureSelection
 from metalfi.src.model.metamodel import MetaModel
+from metalfi.src.parameters import Parameters
 
 
 class Controller:
@@ -24,12 +25,6 @@ class Controller:
         self.__meta_data = list()
         self.fetchData()
         self.storeMetaData()
-        self.__targets = ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP", "DT_SHAP",
-                          "linSVC_LIME", "LOG_LIME", "RF_LIME", "NB_LIME", "SVC_LIME", "DT_LIME",
-                          "linSVC_PIMP", "LOG_PIMP", "RF_PIMP", "NB_PIMP", "SVC_PIMP", "DT_PIMP",
-                          "linSVC_LOFO", "LOG_LOFO", "RF_LOFO", "NB_LOFO", "SVC_LOFO", "DT_LOFO"]
-
-        self.__meta_models = Memory.meta_models()
 
     def getTrainData(self):
         return self.__train_data
@@ -100,26 +95,25 @@ class Controller:
             X_d = DataFrame(data=data[dmf], columns=dmf)
 
             data_frame = pd.concat([X_d, X_f], axis=1)
-
             self.__meta_data.append((data_frame, name))
 
     def selectMetaFeatures(self, meta_model_name="", memory=False):
+        # TODO: ??
         sets = None
         if memory:
             sets = Memory.loadMetaFeatures()
 
         if sets is None:
             data = [d for d, n in self.__meta_data if n != meta_model_name]
-            fs = MetaFeatureSelection(pd.concat(data), self.__targets)
+            fs = MetaFeatureSelection(pd.concat(data))
             sets = {}
 
-            for meta_model, name in self.__meta_models:
+            for meta_model, name, _ in Parameters.meta_models:
                 tree = (name == "RF")
                 percentiles = [10]
                 if memory:
                     tree = False
                     percentiles = [25]
-
                 sets[name] = fs.select(meta_model, f_regression, percentiles, k=5, tree=tree)
 
         if memory:
@@ -152,7 +146,7 @@ class Controller:
         progress_bar.close()
 
     def parallel_training(self, iterable):
-        model = MetaModel(iterable, self.__meta_models, self.__targets)
+        model = MetaModel(iterable)
         sys.stderr = open(os.devnull, 'w')
         sys.stdout.close()
         model.fit()
@@ -169,14 +163,14 @@ class Controller:
 
     def compare(self, names):
         evaluation = Evaluation(names)
-        evaluation.comparisons(["linSVR"],
-                               ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP"], ["LM"], False)
+        meta_model, meta_targets, meta_features = Parameters.question_5_parameters()
+        evaluation.comparisons(meta_model, meta_targets, meta_features, False)
 
     def metaFeatureImportances(self):
         data = [d for d, _ in self.__meta_data]
-        models = Memory.meta_models(True)
-        targets = ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP"]
-        importance = MetaFeatureSelection.metaFeatureImportance(pd.concat(data), self.__targets, models, targets,
+        models = Parameters.meta_models
+        targets = list(filter(lambda x: x.endswith("_SHAP"), Parameters.targets))
+        importance = MetaFeatureSelection.metaFeatureImportance(pd.concat(data), models, targets,
                                                                 self.selectMetaFeatures(memory=True))
 
         meta_features = {}

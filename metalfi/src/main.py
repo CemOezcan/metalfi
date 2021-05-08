@@ -27,33 +27,33 @@ class Main(object):
 
         # Load trained meta-models from storage and get evaluation results
         start = time.time()
-        c.evaluate(data)
+        #c.evaluate(data)
         end = time.time()
         print(end - start)
 
-        c.metaFeatureImportances()
+        #c.metaFeatureImportances()
 
         # Compare
         start = time.time()
-        c.compare(data[:-4])
+        #c.compare(data[:-4])
         end = time.time()
         print(end - start)
 
         # Tests
-        Visualization.performance()
-        Visualization.cleanUp()
+        #Visualization.performance()
+        #Visualization.cleanUp()
         c.questions(data, -4)
-        Visualization.compareMeans("q2")
+        #Visualization.compareMeans("q2")
         Visualization.compareMeans("q3")
-        Visualization.compareMeans("q4")
-        Visualization.compareMeans("q5")
+        #Visualization.compareMeans("q4")
+        """Visualization.compareMeans("q5")
         Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["landmarking", "univariate", "data"], "fast")
         Visualization.runtime_boxplot(100000000, ["LOFO"], ["multivariate"], "fast_multi")
         Visualization.runtime_boxplot(100000000, ["SHAP", "LIME"], ["total"], "slow")
         Visualization.runtime_graph("fast_graph")
         Visualization.createHistograms()
         Visualization.correlateTargets()
-        Visualization.correlateMetrics()
+        Visualization.correlateMetrics()"""
         Visualization.metaFeatureImportance()
 
 
