@@ -8,6 +8,7 @@ import tqdm
 
 from metalfi.src.memory import Memory
 from metalfi.src.parameters import Parameters
+from metalfi.src.visualization import Visualization
 
 
 class Evaluation:
@@ -85,15 +86,20 @@ class Evaluation:
         self.q_4(data_4, rows)
         #self.q_5(data_5, rows_5)
 
+        Visualization.compareMeans("groups")
+        Visualization.compareMeans("targets")
+        Visualization.compareMeans("models")
+        #Visualization.compareMeans("q5")
+
     def q_2(self, data, rows, end):
         for metric in data:
             Memory.storeDataFrame(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]),
-                                  metric + end, "questions/q2", renew=True)
+                                  metric + end, "groups", renew=True)
 
     def q_3(self, data, rows):
         for metric in data:
             data_frame = DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]])
-            Memory.storeDataFrame(data_frame, metric, "questions/q3", renew=True)
+            Memory.storeDataFrame(data_frame, metric, "targets", renew=True)
 
             fi_measures = {fi_measure: [0] * len(rows) for fi_measure in Parameters.fi_measures()}
             self.helper_q_3(fi_measures, data_frame, rows, metric, "targets_", targets=True)
@@ -104,12 +110,12 @@ class Evaluation:
     def q_4(self, data, rows):
         for metric in data:
             Memory.storeDataFrame(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]),
-                                  metric, "questions/q4", renew=True)
+                                  metric, "models", renew=True)
 
     def q_5(self, data, rows):
         for target in data:
             Memory.storeDataFrame(DataFrame(data=data[target], index=rows, columns=[x for x in data[target]]),
-                                  target, "questions/q5", renew=True)
+                                  target, "comparison", renew=True)
 
     @staticmethod
     def helper_q_3(dictionary, data_frame, rows, metric, name, targets=False):
@@ -125,7 +131,7 @@ class Evaluation:
             dictionary[key] = [element / len(subset) for element in dictionary[key]]
 
         Memory.storeDataFrame(DataFrame(data=dictionary, index=rows, columns=[x for x in dictionary]),
-                              name + metric, "questions/q3", renew=True)
+                              name + metric, "targets", renew=True)
 
     def createQuestionCsv(self, performances, names, data, index, question, linear=False):
         linear_meta_models = [name for _, name, _ in filter(lambda x: x[2] == "linear", Parameters.meta_models)]

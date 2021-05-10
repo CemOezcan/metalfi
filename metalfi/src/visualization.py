@@ -64,7 +64,7 @@ class Visualization:
             plt.plot(meta_data[x].columns[0], x, data=meta_data[x], linewidth=2)
 
         plt.legend()
-        Memory.storeVisual(plt, name)
+        Memory.storeVisual(plt, name, "runtime")
 
     @staticmethod
     def runtime_boxplot(threshold, targets, meta, name):
@@ -89,7 +89,7 @@ class Visualization:
         fig, ax = plt.subplots()
         ax.boxplot(data, showfliers=False)
         plt.xticks(list(range(1, len(data) + 1)), names)
-        Memory.storeVisual(plt, name)
+        Memory.storeVisual(plt, name + "_box", "runtime")
 
     @staticmethod
     def fetch_predictions():
@@ -145,27 +145,27 @@ class Visualization:
             ax.legend()
             plt.ylim([0.75, 0.85])
 
-            Memory.storeVisual(plt, name[:-4])
+            Memory.storeVisual(plt, name[:-4], "selection")
 
     @staticmethod
     def metaFeatureImportance():
         directory = "output/importance"
         path = (Memory.getPath() / directory)
         file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
-        data = [(Memory.load(name, directory), name) for name in file_names]
+        data = [(Memory.load(name, directory), name) for name in file_names if ".csv" in name]
 
         for frame, name in data:
             frame = frame.sort_values(by="mean absolute SHAP")
             plt.barh(list(frame["meta-features"])[-15:], list(frame["mean absolute SHAP"])[-15:])
             plt.yticks(list(frame["meta-features"])[-15:])
-            Memory.storeVisual(plt, name[:-4])
+            Memory.storeVisual(plt, name[:-4], "importance")
 
     @staticmethod
     def compareMeans(folder):
-        directory = "output/questions/" + folder
+        directory = "output/" + folder
         path = (Memory.getPath() / directory)
         file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
-        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
+        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names if ".csv" in name]
 
         for data_frame, metric in data:
             d = list()
@@ -187,15 +187,15 @@ class Visualization:
                 names.append(column)
                 d.append(data_frame[column].values)
 
-            if len(names) < 10:
+            if len(names) <= 24:
                 val, p_value = ss.friedmanchisquare(*d)
                 if p_value < 0.05:
                     #Visualization.createCriticalDifferencesPlot(names, ranks)
                     Visualization.createTimeline(names, ranks, metric,
-                                                 sp.sign_array(sp.posthoc_nemenyi_friedman(np.array(d).T)), d)
+                                                 sp.sign_array(sp.posthoc_nemenyi_friedman(np.array(d).T)), d, folder)
 
     @staticmethod
-    def createTimeline(names, ranks, metric, sign_matrix, data):
+    def createTimeline(names, ranks, metric, sign_matrix, data, folder):
         """fig, ax = plt.subplots(2)
 
         levels = np.tile([-6, 6, -4, 4, -2, 2], len(ranks))[:len(ranks)]
@@ -236,25 +236,25 @@ class Visualization:
         ax[1].set_xticks(list(range(1, len(data) + 1)))
         ax[1].set_xticklabels(names)"""
 
-        cd = Orange.evaluation.compute_CD(ranks, 28)
+        cd = Orange.evaluation.compute_CD(ranks, 28) if len(ranks) != 24 else 3.616
         Orange.evaluation.graph_ranks(ranks, names, cd=cd)
-        Memory.storeVisual(plt, metric[:-4] + "_cd")
+        Memory.storeVisual(plt, metric[:-4] + "_cd", folder)
         plt.close()
 
         fig, ax = plt.subplots()
         ax.boxplot(data, notch=True, showfliers=False)
         ax.set_xticks(list(range(1, len(data) + 1)))
         ax.set_xticklabels(names)
-        Memory.storeVisual(plt, metric[:-4] + "_means")
+        Memory.storeVisual(plt, metric[:-4] + "_means", folder)
         plt.close()
 
     @staticmethod
     def correlateMetrics():
-        new = {"r2": list(), "r": list(), "rmse": list()}
+        new = {"R^2": list(), "r": list(), "RMSE": list()}
         directory = "output/predictions"
         path = (Memory.getPath() / directory)
         file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
-        data = [(Memory.load(name, directory), name) for name in file_names]
+        data = [(Memory.load(name, directory), name) for name in file_names if "x" in name]
 
         columns = data[0][0].columns
 
@@ -264,8 +264,7 @@ class Visualization:
 
         frame = DataFrame.from_dict(new)
         corr = frame.corr("spearman")
-        path = Memory.getPath() / ("visual/metrics_corr.csv")
-        corr.to_csv(path, header=True)
+        Memory.storeDataFrame(corr, "metrics_corr", "", True)
 
         return data
 
@@ -302,8 +301,7 @@ class Visualization:
 
         data_frame = pd.DataFrame(data=d, index=["mean", "max"], columns=["lofo", "shap", "lime", "pimp"])
 
-        path = Memory.getPath() / ("visual/target_corr.csv")
-        data_frame.to_csv(path, header=True)
+        Memory.storeDataFrame(data_frame, "target_corr", "", True)
 
     @staticmethod
     def createHistograms():
@@ -337,7 +335,7 @@ class Visualization:
             if name == "LIME":
                 axs[x, y].set_ylim(0, 30)
 
-        Memory.storeVisual(plt, "Histograms")
+        Memory.storeVisual(plt, "Histograms", "")
 
     @staticmethod
     def cleanUp():

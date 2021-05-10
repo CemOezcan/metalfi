@@ -205,8 +205,8 @@ class Memory:
             data.to_csv(path, header=True)
 
     @staticmethod
-    def storeVisual(plt, name):
-        plt.savefig(Memory.getPath() / ("visual/" + name + ".png"))
+    def storeVisual(plt, name, directory):
+        plt.savefig(Memory.getPath() / ("output/" + directory + "/" + name + ".png"))
         plt.close()
 
     @staticmethod
