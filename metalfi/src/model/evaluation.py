@@ -32,9 +32,7 @@ class Evaluation:
 
     def questions(self, subset_names):
         directory = "output/predictions"
-        path = (Memory.getPath() / directory)
-
-        file_names = [name for name in os.listdir(path) if "x" not in name and name.endswith(".csv")]
+        file_names = list(filter(lambda x: "x" not in x and x.endswith(".csv"), Memory.getContents(directory)))
 
         data = {name[:-4]: Memory.load(name, directory) for name in file_names}
         pattern = re.compile(r"\$(?P<meta>.+)\_\{(?P<features>.+)\}\((?P<target>.+)\)\$")

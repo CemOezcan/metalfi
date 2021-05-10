@@ -21,11 +21,9 @@ class Visualization:
     @staticmethod
     def fetch_runtime_data(substring, threshold=1000000):
         directory = "output/runtime"
-
-        path = (Memory.getPath() / directory)
-        file_names = [name for name in os.listdir(path) if (name.endswith('.csv') and substring in name)]
-
+        file_names = list(filter(lambda x: x.endswith('.csv') and substring in x, Memory.getContents(directory)))
         data = list()
+
         for name in file_names:
             file = Memory.load(name, directory)
             data.append((file, name))
@@ -95,9 +93,7 @@ class Visualization:
     @staticmethod
     def fetch_predictions():
         directory = "output/predictions"
-
-        path = (Memory.getPath() / directory)
-        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
+        file_names = Memory.getContents(directory)
 
         for name in file_names:
             frame = Memory.load(name, directory).set_index("Unnamed: 0")
@@ -114,10 +110,9 @@ class Visualization:
     @staticmethod
     def performance():
         directory = "output/selection"
-        path = (Memory.getPath() / directory)
-        file_names = [name for name in os.listdir(path) if name.endswith(".csv")]
-
+        file_names = list(filter(lambda x: x.endswith(".csv"), Memory.getContents(directory)))
         data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
+
         for frame, name in data:
             width = 0.2
             fig, ax = plt.subplots()
@@ -146,8 +141,7 @@ class Visualization:
     @staticmethod
     def metaFeatureImportance():
         directory = "output/importance"
-        path = (Memory.getPath() / directory)
-        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
+        file_names = Memory.getContents(directory)
         data = [(Memory.load(name, directory), name) for name in file_names if ".csv" in name]
 
         for frame, name in data:
@@ -202,8 +196,7 @@ class Visualization:
     def correlateMetrics():
         new = {metric: list() for metric in Parameters.metrics.values()}
         directory = "output/predictions"
-        path = (Memory.getPath() / directory)
-        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
+        file_names = Memory.getContents(directory)
         data = [(Memory.load(name, directory), name) for name in file_names if "x" not in name]
 
         columns = data[0][0].columns
@@ -221,10 +214,9 @@ class Visualization:
     @staticmethod
     def correlateTargets():
         directory = "input"
-        path = (Memory.getPath() / directory)
+        file_names = Memory.getContents(directory)
         sc = StandardScaler()
         data = list()
-        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
 
         for name in file_names:
             d = Memory.load(name, directory)
@@ -256,9 +248,8 @@ class Visualization:
     @staticmethod
     def createHistograms():
         directory = "input"
-        path = (Memory.getPath() / directory)
+        file_names = Memory.getContents(directory)
         data = list()
-        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
 
         for name in file_names:
             d = Memory.load(name, directory)
@@ -287,11 +278,9 @@ class Visualization:
     @staticmethod
     def cleanUp():
         directory = "output/predictions"
-        path = (Memory.getPath() / directory)
-
-        file_names = [name for name in os.listdir(path) if name.endswith('.csv') and "x" in name]
-
+        file_names = list(filter(lambda x: "x" in x and x.endswith(".csv"), Memory.getContents(directory)))
         data = list()
+
         for name in file_names:
             file = Memory.load(name, directory)
             data.append((file, name))
