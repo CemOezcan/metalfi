@@ -114,10 +114,7 @@ class MetaModel:
             y_train = self.__train_data[config[1]]
             y_pred = model.predict(X_test)
 
-            if numpy.std(y_test) <= 0.001 or numpy.std(y_pred) <= 0.001:
-                self.__stats.append([0, 1, 0])
-            else:
-                self.__stats.append(Parameters.calculate_metrics(y_train, y_test, y_pred))
+            self.__stats.append(Parameters.calculate_metrics(y_train, y_test, y_pred))
 
     def getRankings(self, columns, prediction, actual):
         pred_data = {"target": prediction, "names": columns}

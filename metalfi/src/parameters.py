@@ -29,13 +29,11 @@ class Parameters:
 
     @staticmethod
     def calculate_metrics(y_train, y_test, y_pred):
-        r_2 = 1 - (sum([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))]) /
-                   sum([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))]))
-        rmse = np.sqrt(np.mean(([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))])))
-        base = np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))])))
-        r = np.corrcoef(y_pred, y_test)[0][1]
+        r_2 = 0 if np.std(y_test) <= 0.001 or np.std(y_pred) <= 0.001 else \
+            1 - (sum([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))])
+                 / sum([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))]))
 
-        return [r_2, rmse / base, r]
+        return [r_2]
 
     @staticmethod
     def fi_measures():
