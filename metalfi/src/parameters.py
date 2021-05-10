@@ -8,7 +8,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 class Parameters:
 
-    metrics = {0: "R^2", 1: "RMSE", 2: "r"}
+    metrics = {0: "R^2"}
     targets = ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP", "DT_SHAP",
                "linSVC_LIME", "LOG_LIME", "RF_LIME", "NB_LIME", "SVC_LIME", "DT_LIME",
                "linSVC_PIMP", "LOG_PIMP", "RF_PIMP", "NB_PIMP", "SVC_PIMP", "DT_PIMP",
@@ -43,4 +43,4 @@ class Parameters:
 
     @staticmethod
     def question_5_parameters():
-        return ["linSVR"], list(filter(lambda x: x.endswith("_SHAP"), Parameters.targets)), ["LM"]
+        return ["linSVR"], list(filter(lambda x: x.endswith("_PIMP"), Parameters.targets)), ["LM"]

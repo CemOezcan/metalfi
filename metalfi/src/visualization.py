@@ -115,7 +115,7 @@ class Visualization:
     def performance():
         directory = "output/selection"
         path = (Memory.getPath() / directory)
-        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
+        file_names = [name for name in os.listdir(path) if name.endswith(".csv")]
 
         data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
         for frame, name in data:
@@ -129,15 +129,10 @@ class Visualization:
 
             x = np.arange(len(anova))
 
-            pos_anova = ax.bar(x - 1.5 * width, anova, width, label="ANOVA")
-            pos_mi = ax.bar(x - width / 2, mi, width, label="MI")
-            pos_fi = ax.bar(x + width / 2, fi, width, label="FI")
-            pos_meta = ax.bar(x + 1.5 * width, meta, width, label="MetaLFI")
-
-            """plt.bar(pos_anova, anova, label="ANOVA")
-            plt.bar(pos_mi, mi, label="MI")"""
-            """plt.bar(pos_fi, fi, label="FI")
-            plt.bar(pos_meta, meta, label="MetaLFI")"""
+            ax.bar(x - 1.5 * width, anova, width, label="ANOVA")
+            ax.bar(x - width / 2, mi, width, label="MI")
+            ax.bar(x + width / 2, fi, width, label="FI")
+            ax.bar(x + 1.5 * width, meta, width, label="MetaLFI")
 
             ax.set_ylabel("Acc. Scores")
             ax.set_yticks([0.775, 0.8, 0.825, 0.85])

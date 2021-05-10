@@ -157,9 +157,9 @@ class Controller:
         evaluation = Evaluation(names)
         evaluation.predictions()
 
-    def questions(self, names, offset):
+    def questions(self, names):
         evaluation = Evaluation(names)
-        evaluation.questions(names[:offset])
+        evaluation.questions(names)
 
     def compare(self, names):
         evaluation = Evaluation(names)
