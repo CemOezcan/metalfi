@@ -13,6 +13,7 @@ import scipy.stats as ss
 from sklearn.preprocessing import StandardScaler
 
 from metalfi.src.memory import Memory
+from metalfi.src.parameters import Parameters
 
 
 class Visualization:
@@ -161,12 +162,7 @@ class Visualization:
             Memory.storeVisual(plt, name[:-4], "importance")
 
     @staticmethod
-    def compareMeans(folder):
-        directory = "output/" + folder
-        path = (Memory.getPath() / directory)
-        file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
-        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names if ".csv" in name]
-
+    def compareMeans(data, folder):
         for data_frame, metric in data:
             d = list()
             names = list()
@@ -190,77 +186,36 @@ class Visualization:
             if len(names) <= 24:
                 val, p_value = ss.friedmanchisquare(*d)
                 if p_value < 0.05:
-                    #Visualization.createCriticalDifferencesPlot(names, ranks)
-                    Visualization.createTimeline(names, ranks, metric,
-                                                 sp.sign_array(sp.posthoc_nemenyi_friedman(np.array(d).T)), d, folder)
+                    #sp.sign_array(sp.posthoc_nemenyi_friedman(np.array(d).T))
+                    Visualization.createTimeline(names, ranks, metric, d, folder)
 
     @staticmethod
-    def createTimeline(names, ranks, metric, sign_matrix, data, folder):
-        """fig, ax = plt.subplots(2)
-
-        levels = np.tile([-6, 6, -4, 4, -2, 2], len(ranks))[:len(ranks)]
-        marker, _, _ = ax[0].stem(ranks, levels, linefmt="C3--", basefmt="k-", use_line_collection=True)
-        marker.set_ydata(np.zeros(len(ranks)))
-
-        plt.setp(marker, mec="k", mfc="k")
-        vert = np.array(list(map(lambda x: "top" if x > 0 else "bottom", levels)))
-
-        for i in range(len(ranks)):
-            ax[0].annotate(names[i], (ranks[i], levels[i]), va=vert[i], xytext=(3, 3), textcoords="offset points")
-
-        ax[0].get_yaxis().set_visible(False)
-        ax[0].spines["left"].set_visible(False)
-        ax[0].spines["top"].set_visible(False)
-        ax[0].spines["right"].set_visible(False)
-
-        d = {name: [] for name in names}
-        remove = list()
-        for i in range(len(sign_matrix) - 1):
-            for j in range(i + 1, len(sign_matrix[0])):
-                if (sign_matrix[i][j] == 0) and (j not in remove):
-                    d[names[i]].append(j)
-                    remove.append(j)
-
-        colors = ["forestgreen", "royalblue", "gold"]
-        c = 0
-        for i in range(len(d.keys())):
-            indices = d[names[i]]
-            indices.append(i)
-
-            if len(indices) > 1:
-                values = [ranks[index] for index in indices]
-                ax[0].axvspan(max(values), min(values), facecolor=colors[c % len(colors)], alpha=0.2)
-                c += 1
-
-        ax[1].boxplot(data, notch=True, showfliers=False)
-        ax[1].set_xticks(list(range(1, len(data) + 1)))
-        ax[1].set_xticklabels(names)"""
-
-        cd = Orange.evaluation.compute_CD(ranks, 28) if len(ranks) != 24 else 3.616
+    def createTimeline(names, ranks, metric, data, folder):
+        cd = Orange.evaluation.compute_CD(ranks, 28) if len(ranks) < 21 else 3.616
         Orange.evaluation.graph_ranks(ranks, names, cd=cd)
-        Memory.storeVisual(plt, metric[:-4] + "_cd", folder)
+        Memory.storeVisual(plt, metric + "_cd", folder)
         plt.close()
 
         fig, ax = plt.subplots()
         ax.boxplot(data, notch=True, showfliers=False)
         ax.set_xticks(list(range(1, len(data) + 1)))
         ax.set_xticklabels(names)
-        Memory.storeVisual(plt, metric[:-4] + "_means", folder)
+        Memory.storeVisual(plt, metric + "_means", folder)
         plt.close()
 
     @staticmethod
     def correlateMetrics():
-        new = {"R^2": list(), "r": list(), "RMSE": list()}
+        new = {metric: list() for metric in Parameters.metrics.values()}
         directory = "output/predictions"
         path = (Memory.getPath() / directory)
         file_names = [name for name in os.listdir(path) if not name.endswith(".gitignore")]
-        data = [(Memory.load(name, directory), name) for name in file_names if "x" in name]
+        data = [(Memory.load(name, directory), name) for name in file_names if "x" not in name]
 
         columns = data[0][0].columns
 
         for d, n in data:
             for column in columns[1:]:
-                new[n[:-9]] += list(d[column].values)
+                new[n[:-4]] += list(d[column].values)
 
         frame = DataFrame.from_dict(new)
         corr = frame.corr("spearman")
@@ -330,10 +285,7 @@ class Visualization:
 
             n, _, _ = axs[x, y].hist(x=values, rwidth=1, bins=len(values))
             axs[x, y].set_title(name)
-            axs[x, y].set_xlim(np.quantile(values, 0.10), np.quantile(values, 0.75))
-
-            if name == "LIME":
-                axs[x, y].set_ylim(0, 30)
+            axs[x, y].set_xlim(np.quantile(values, 0.05), np.quantile(values, 0.75))
 
         Memory.storeVisual(plt, "Histograms", "")
 

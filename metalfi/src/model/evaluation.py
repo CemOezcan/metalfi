@@ -80,42 +80,33 @@ class Evaluation:
                 rows_5.append(data_set)
                 data_5 = self.createQuestion5Csv(model, data_5, "linSVR", "LM")"""
 
-        self.q_2(data_2_lin, rows, "LIN")
-        self.q_2(data_2_non, rows, "NON")
-        self.q_3(data_3, rows)
-        self.q_4(data_4, rows)
-        #self.q_5(data_5, rows_5)
+        def question_data(data, rows, suffix):
+            return [(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]), metric + suffix)
+                    for metric in data]
 
-        Visualization.compareMeans("groups")
-        Visualization.compareMeans("targets")
-        Visualization.compareMeans("models")
-        #Visualization.compareMeans("q5")
+        q_2_lin = question_data(data_2_lin, rows, "_LIN")
+        q_2_non = question_data(data_2_non, rows, "_NON")
+        q_3 = self.q_3(data_3, rows)
+        q_4 = question_data(data_4, rows, "")
+        #q_5 = question_data(data_5, rows_5, "")
 
-    def q_2(self, data, rows, end):
-        for metric in data:
-            Memory.storeDataFrame(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]),
-                                  metric + end, "groups", renew=True)
+        Visualization.compareMeans(q_2_lin + q_2_non, "groups")
+        Visualization.compareMeans(q_3, "targets")
+        Visualization.compareMeans(q_4, "models")
+        #Visualization.compareMeans(q_5, "comparison")
 
     def q_3(self, data, rows):
+        data_frames = list()
         for metric in data:
             data_frame = DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]])
-            Memory.storeDataFrame(data_frame, metric, "targets", renew=True)
-
             fi_measures = {fi_measure: [0] * len(rows) for fi_measure in Parameters.fi_measures()}
-            self.helper_q_3(fi_measures, data_frame, rows, metric, "targets_", targets=True)
-
             base_models = {name: [0] * len(rows) for _, name, _ in Parameters.base_models}
-            self.helper_q_3(base_models, data_frame, rows, metric, "base_")
 
-    def q_4(self, data, rows):
-        for metric in data:
-            Memory.storeDataFrame(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]),
-                                  metric, "models", renew=True)
+            data_frames.append((data_frame, metric))
+            data_frames.append(self.helper_q_3(fi_measures, data_frame, rows, metric, "targets_", targets=True))
+            data_frames.append(self.helper_q_3(base_models, data_frame, rows, metric, "base_"))
 
-    def q_5(self, data, rows):
-        for target in data:
-            Memory.storeDataFrame(DataFrame(data=data[target], index=rows, columns=[x for x in data[target]]),
-                                  target, "comparison", renew=True)
+        return data_frames
 
     @staticmethod
     def helper_q_3(dictionary, data_frame, rows, metric, name, targets=False):
@@ -130,8 +121,7 @@ class Evaluation:
 
             dictionary[key] = [element / len(subset) for element in dictionary[key]]
 
-        Memory.storeDataFrame(DataFrame(data=dictionary, index=rows, columns=[x for x in dictionary]),
-                              name + metric, "targets", renew=True)
+        return DataFrame(data=dictionary, index=rows, columns=[x for x in dictionary]), name + metric
 
     def createQuestionCsv(self, performances, names, data, index, question, linear=False):
         linear_meta_models = [name for _, name, _ in filter(lambda x: x[2] == "linear", Parameters.meta_models)]
