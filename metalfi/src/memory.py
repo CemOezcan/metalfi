@@ -1,3 +1,4 @@
+import os
 import pickle
 
 import numpy as np
@@ -208,6 +209,12 @@ class Memory:
     def storeVisual(plt, name, directory):
         plt.savefig(Memory.getPath() / ("output/" + directory + "/" + name + ".png"))
         plt.close()
+
+    @staticmethod
+    def getContents(directory):
+        path = Memory.getPath() / directory
+        file_names = list(filter(lambda x: not x.endswith(".gitignore"), os.listdir(path)))
+        return file_names
 
     @staticmethod
     def getPath():

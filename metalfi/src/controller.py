@@ -169,7 +169,10 @@ class Controller:
     def metaFeatureImportances(self):
         data = [d for d, _ in self.__meta_data]
         models = Parameters.meta_models
-        targets = list(filter(lambda x: x.endswith("_SHAP"), Parameters.targets))
+        computed = list(map(lambda x: x[:-4], filter(lambda x: x.endswith(".csv"),
+                                                     Memory.getContents("output/importance"))))
+
+        targets = list(filter(lambda x: x.endswith("_SHAP") and x not in computed, Parameters.targets))
         importance = MetaFeatureSelection.metaFeatureImportance(pd.concat(data), models, targets,
                                                                 self.selectMetaFeatures(memory=True))
 
