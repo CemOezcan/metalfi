@@ -98,7 +98,6 @@ class Controller:
             self.__meta_data.append((data_frame, name))
 
     def selectMetaFeatures(self, meta_model_name="", memory=False):
-        # TODO: ??
         sets = None
         if memory:
             sets = Memory.loadMetaFeatures()
@@ -159,7 +158,7 @@ class Controller:
 
     def questions(self, names):
         evaluation = Evaluation(names)
-        evaluation.questions(names)
+        evaluation.questions()
 
     def compare(self, names):
         evaluation = Evaluation(names)

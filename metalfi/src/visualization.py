@@ -110,7 +110,7 @@ class Visualization:
     @staticmethod
     def performance():
         directory = "output/selection"
-        file_names = list(filter(lambda x: x.endswith(".csv"), Memory.getContents(directory)))
+        file_names = list(filter(lambda x: x.endswith(".csv") and "_" not in x, Memory.getContents(directory)))
         data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
 
         for frame, name in data:
