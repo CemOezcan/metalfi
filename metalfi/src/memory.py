@@ -1,3 +1,4 @@
+import os
 import pickle
 
 import numpy as np
@@ -6,13 +7,15 @@ import pandas as pd
 from pathlib import Path
 from pandas import DataFrame
 from sklearn.datasets import load_wine, load_iris, load_boston, fetch_openml
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, LabelEncoder
+from sklearn.svm import SVC, SVR, LinearSVR
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 
 class Memory:
-
-    def __init__(self):
-        return
 
     @staticmethod
     def load(name, dir=None):
@@ -203,9 +206,15 @@ class Memory:
             data.to_csv(path, header=True)
 
     @staticmethod
-    def storeVisual(plt, name):
-        plt.savefig(Memory.getPath() / ("visual/" + name + ".png"))
+    def storeVisual(plt, name, directory):
+        plt.savefig(Memory.getPath() / ("output/" + directory + "/" + name + ".png"))
         plt.close()
+
+    @staticmethod
+    def getContents(directory):
+        path = Memory.getPath() / directory
+        file_names = list(filter(lambda x: not x.endswith(".gitignore"), os.listdir(path)))
+        return file_names
 
     @staticmethod
     def getPath():

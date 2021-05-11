@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.naive_bayes import GaussianNB
-from sklearn.svm import SVC, LinearSVC
+from metalfi.src.memory import Memory
+from metalfi.src.parameters import Parameters
 
 
 class FeatureImportance(ABC):
@@ -14,21 +12,19 @@ class FeatureImportance(ABC):
         self._dataset = dataset
         self._data_frame = dataset.getDataFrame()
         self._target = self._dataset.getTarget()
+        self._models = dict()
 
-        rf = RandomForestClassifier(n_estimators=100, random_state=115)
-        linSVC = LinearSVC(dual=False, max_iter=10000, random_state=115)
-        svc = SVC(random_state=115)
-        log = LogisticRegression(dual=False, max_iter=1000, random_state=115)
-        nb = GaussianNB()
+        for model, name, type in Parameters.base_models:
+            try:
+                self._models[type][name] = model
+            except KeyError:
+                self._models[type] = dict()
+                self._models[type][name] = model
 
-        self._linear_models = [linSVC, log]
-        self._tree_models = [rf]
-        self._kernel_models = [nb, svc]
+        self.__model_names = sum([list(d.keys()) for d in self._models.values()], [])
+        self._all_models = sum([list(d.values()) for d in self._models.values()], [])
 
-        self._vif = list()
         self._feature_importances = list()
-
-        self.__model_names = ["linSVC", "LOG", "RF", "NB", "SVC"]
         self._name = ""
 
     def getModelNames(self):

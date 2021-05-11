@@ -1,15 +1,14 @@
+import math
+
+import numpy
 import numpy as np
 
 from copy import deepcopy
 from pandas import DataFrame
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import f_classif, mutual_info_classif, SelectPercentile
-from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import KFold
-from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC, LinearSVC
-
+from metalfi.src.memory import Memory
 from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.metadata.dropcolumn import DropColumnImportance
 from metalfi.src.metadata.lime import LimeImportance
@@ -17,16 +16,15 @@ from metalfi.src.metadata.permutation import PermutationImportance
 from metalfi.src.metadata.shap import ShapImportance
 from metalfi.src.metadata.metafeatures import MetaFeatures
 from metalfi.src.model.evaluation import Evaluation
+from metalfi.src.parameters import Parameters
 
 
 class MetaModel:
 
-    def __init__(self, iterable, untrained_meta_models, target_names):
+    def __init__(self, iterable):
         train, name, test, og_data, selected = iterable
         self.__og_y = og_data.getDataFrame()[og_data.getTarget()]
         self.__og_X = og_data.getDataFrame().drop(og_data.getTarget(), axis=1)
-        self.__untrained_meta_models = untrained_meta_models
-        self.__target_names = target_names
         self.__selected = selected
         self.__file_name = name
         self.__meta_models = list()
@@ -40,7 +38,7 @@ class MetaModel:
         self.__train_data = DataFrame(data=sc1.transform(train), columns=train.columns)
         self.__test_data = DataFrame(data=sc1.transform(test), columns=test.columns)
 
-        train = train.drop(self.__target_names, axis=1)
+        train = train.drop(Parameters.targets, axis=1)
         fmf = \
             [x for x in train.columns if "." not in x]
         lm = \
@@ -59,14 +57,8 @@ class MetaModel:
     def getName(self):
         return self.__file_name
 
-    def getTargets(self):
-        return self.__target_names
-
     def getStats(self):
         return self.__stats
-
-    def getBaseModels(self):
-        return self.__untrained_meta_models
 
     def getMetaModels(self):
         return self.__meta_models
@@ -81,10 +73,10 @@ class MetaModel:
         return self.__result_configurations
 
     def fit(self):
-        X = self.__train_data.drop(self.__target_names, axis=1)
+        X = self.__train_data.drop(Parameters.targets, axis=1)
 
-        for base_model, base_model_name in self.__untrained_meta_models:
-            for target in self.__target_names:
+        for base_model, base_model_name, _ in Parameters.meta_models:
+            for target in Parameters.targets:
                 i = 0
                 for feature_set in self.__feature_sets:
                     y = self.__train_data[target]
@@ -115,23 +107,14 @@ class MetaModel:
         if len(self.__stats) == len(self.__meta_models):
             return
 
-        X = self.__test_data.drop(self.__target_names, axis=1)
+        X = self.__test_data.drop(Parameters.targets, axis=1)
         for (model, features, config) in self.__meta_models:
             X_test = X[features]
             y_test = self.__test_data[config[1]]
             y_train = self.__train_data[config[1]]
             y_pred = model.predict(X_test)
 
-            r_2 = 1 - (sum([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))]) /
-                       sum([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))]))
-            rmse = np.sqrt(np.mean(([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))])))
-            base = np.sqrt(np.mean(([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))])))
-            r = np.corrcoef(y_pred, y_test)[0][1]
-
-            if np.math.isnan(r):
-                r_2, rmse, base, r = 0, 1, 1, 0
-
-            self.__stats.append([r_2, rmse / base, r])
+            self.__stats.append(Parameters.calculate_metrics(y_train, y_test, y_pred))
 
     def getRankings(self, columns, prediction, actual):
         pred_data = {"target": prediction, "names": columns}
@@ -141,21 +124,11 @@ class MetaModel:
 
         return act, pred
 
-    def getOriginalModel(self, name):
-        og_model = None
-
-        if name.startswith("RF"):
-            og_model = RandomForestClassifier(n_estimators=10, random_state=115)
-        elif name.startswith("SVC"):
-            og_model = SVC(random_state=115)
-        elif name.startswith("LOG"):
-            og_model = LogisticRegression(dual=False, max_iter=1000, random_state=115)
-        elif name.startswith("linSVC"):
-            og_model = LinearSVC(dual=False, max_iter=10000, random_state=115)
-        elif name.startswith("NB"):
-            og_model = GaussianNB()
-
-        return og_model
+    @staticmethod
+    def getOriginalModel(name):
+        for model, model_name, _ in Parameters.base_models:
+            if name.startswith(model_name):
+                return model
 
     def compare(self, models, targets, subsets, k, renew=False):
         if renew:

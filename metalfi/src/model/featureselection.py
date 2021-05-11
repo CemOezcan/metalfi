@@ -11,16 +11,16 @@ from sklearn.model_selection import cross_val_score
 import tqdm
 
 from metalfi.src.metadata.shap import ShapImportance
+from metalfi.src.parameters import Parameters
 
 
 class MetaFeatureSelection:
 
-    def __init__(self, meta_data, target_names):
-        self.__X = meta_data.drop(target_names, axis=1)
+    def __init__(self, meta_data):
+        self.__X = meta_data.drop(Parameters.targets, axis=1)
         fmf = [x for x in self.__X.columns if "." not in x]
         self.__X = self.__X[fmf]
-        self.__Y = meta_data[target_names]
-        self.__target_names = target_names
+        self.__Y = meta_data[Parameters.targets]
 
         support = VarianceThreshold(threshold=0.2).fit(self.__X).get_support(indices=True)
         features = [x for x in list(self.__X.columns) if list(self.__X.columns).index(x) in support]
@@ -29,7 +29,7 @@ class MetaFeatureSelection:
 
     def select(self, meta_model, scoring, percentiles=(5, 10, 15, 20, 25, 30), k=10, tree=False):
         sets = {}
-        for target in self.__target_names:
+        for target in Parameters.targets:
             y = self.__Y[target]
             if tree:
                 p, features = self.percentile_search(meta_model, scoring, y, [75], k, self.__X)
@@ -70,8 +70,9 @@ class MetaFeatureSelection:
         return p, f
 
     @staticmethod
-    def metaFeatureImportance(meta_data, all_targets, models, targets, subsets):
+    def metaFeatureImportance(meta_data, models, targets, subsets):
         importance = {}
+        all_targets = Parameters.targets
         all_X = meta_data.drop(all_targets, axis=1)
         Y = meta_data[targets]
 
@@ -91,10 +92,10 @@ class MetaFeatureSelection:
                 for x in iterable]
 
             results = [x.get()[0] for x in results]
-            progress_bar.close()
             pool.close()
             pool.join()
 
+        progress_bar.close()
         for target, imp in results:
             importance[target].append(imp)
 
@@ -114,7 +115,7 @@ class MetaFeatureSelection:
         elif category == "tree":
             imp = s.treeRegressionShap(model, X, y)
         else:
-            imp = s.kernelShap(model, X, y, 5)
+            imp = s.kernelShap(model, X, y)
 
         array = imp["Importances"].values
         array = list(np.interp(array, (array.min(), array.max()), (0, 1)))

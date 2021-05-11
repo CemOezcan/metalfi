@@ -1,6 +1,7 @@
 import os
 import sys
 
+import numpy as np
 import shap
 import warnings
 
@@ -26,14 +27,14 @@ class ShapImportance(FeatureImportance):
                       columns=self._data_frame.drop(self._target, axis=1).columns)
         y = self._data_frame[self._target]
 
-        for model in self._linear_models:
-            self._feature_importances.append(self.linearShap(model, X, y))
-
-        for model in self._tree_models:
-            self._feature_importances.append(self.treeShap(model, X, y))
-
-        for model in self._kernel_models:
-            self._feature_importances.append(self.kernelShap(model, X, y))
+        for type in self._models.keys():
+            for model in self._models[type].values():
+                if type == "tree":
+                    self._feature_importances.append(self.treeShap(model, X, y))
+                elif type == "linear":
+                    self._feature_importances.append(self.linearShap(model, X, y))
+                else:
+                    self._feature_importances.append(self.kernelShap(model, X, y))
 
         sys.stderr = sys.__stderr__
         warnings.simplefilter("default")
@@ -41,29 +42,26 @@ class ShapImportance(FeatureImportance):
     def treeShap(self, model, X, y):
         model.fit(X, y)
         imp = shap.TreeExplainer(model).shap_values(X)
-        #shap.summary_plot(imp[1], X, plot_type="bar")
 
         return self.createDataFrame(imp[1], X)
 
     def linearShap(self, model, X, y):
         model.fit(X, y)
         imp = shap.LinearExplainer(model, X).shap_values(X)
-        #shap.summary_plot(imp, X, plot_type="bar")
 
         return self.createDataFrame(imp, X)
 
     def treeRegressionShap(self, model, X, y):
         model.fit(X, y)
         imp = shap.TreeExplainer(model).shap_values(X)
-        #shap.summary_plot(imp, X, plot_type="bar")
 
         return self.createDataFrame(imp, X)
 
     def kernelShap(self, model, X, y, k=10):
         model.fit(X, y)
+        np.random.seed(115)
         X_summary = shap.kmeans(X, k)
         imp = shap.KernelExplainer(model.predict, X_summary).shap_values(X)
-        #shap.summary_plot(imp, X, plot_type="bar")
 
         return self.createDataFrame(imp, X)
 
