@@ -32,7 +32,7 @@ class Evaluation:
 
     def questions(self):
         directory = "output/predictions"
-        file_names = list(filter(lambda x: "x" not in x and x.endswith(".csv"), Memory.getContents(directory)))
+        file_names = list(filter(lambda x: "x" not in x and x.endswith(".csv"), Memory.get_contents(directory)))
 
         data = {name[:-4]: Memory.load(name, directory) for name in file_names}
         pattern = re.compile(r"\$(?P<meta>.+)\_\{(?P<features>.+)\}\((?P<target>.+)\)\$")
@@ -44,7 +44,7 @@ class Evaluation:
 
         # Q_5
         directory = "output/selection"
-        file_name = list(filter(lambda x: x.endswith(".csv") and "_" in x, Memory.getContents(directory)))[0]
+        file_name = list(filter(lambda x: x.endswith(".csv") and "_" in x, Memory.get_contents(directory)))[0]
         comparison_data = {file_name[:-4]: Memory.load(file_name, directory)}
         pattern = re.compile(r"\$(?P<meta>.+)\_\{(?P<features>.+) \\times (?P<selection>.+)\}\((?P<target>.+)\)\$")
 
@@ -97,10 +97,10 @@ class Evaluation:
         q_4 = question_data(data_4, rows, "")
         q_5 = question_data(data_5, rows, "")
 
-        Visualization.compareMeans(q_2_lin + q_2_non, "groups")
-        Visualization.compareMeans(q_3, "targets")
-        Visualization.compareMeans(q_4, "models")
-        Visualization.compareMeans(q_5, "selection")
+        Visualization.compare_means(q_2_lin + q_2_non, "groups")
+        Visualization.compare_means(q_3, "targets")
+        Visualization.compare_means(q_4, "models")
+        Visualization.compare_means(q_5, "selection")
 
     def q_3(self, data, rows):
         data_frames = list()
@@ -179,10 +179,10 @@ class Evaluation:
 
     @staticmethod
     def parallelize_predictions(name):
-        model, _ = Memory.loadModel([name])[0]
+        model, _ = Memory.load_model([name])[0]
         model.test()
         stats = model.getStats()
-        Memory.renewModel(model, model.getName()[:-4])
+        Memory.renew_model(model, model.getName()[:-4])
         config = [c for (a, b, c) in model.getMetaModels()]
         targets = Parameters.targets
         return stats, config, targets
@@ -230,16 +230,16 @@ class Evaluation:
             for importance in all_results[metric]:
                 data_frame = DataFrame(data=all_results[metric][importance], index=rows,
                                        columns=[x for x in all_results[metric][importance]])
-                Memory.storeDataFrame(data_frame.round(3), metric + "x" + importance, "predictions")
+                Memory.store_data_frame(data_frame.round(3), metric + "x" + importance, "predictions")
 
         self.storeAllRsults(results)
 
     @staticmethod
     def parallel_comparisons(name, models, targets, subsets, renew):
-        model, _ = Memory.loadModel([name])[0]
+        model, _ = Memory.load_model([name])[0]
         model.compare(models, targets, subsets, 33, renew)
         results = model.getResults()
-        Memory.renewModel(model, model.getName()[:-4])
+        Memory.renew_model(model, model.getName()[:-4])
         return results
 
     def storeAllRsults(self, results):
@@ -248,7 +248,7 @@ class Evaluation:
 
         for key in Parameters.metrics.keys():
             data = [tuple(map((lambda x: x[key]), results[i][0])) for i in range(len(index))]
-            Memory.storeDataFrame(DataFrame(data, columns=columns, index=index), Parameters.metrics[key], "predictions")
+            Memory.store_data_frame(DataFrame(data, columns=columns, index=index), Parameters.metrics[key], "predictions")
 
     def comparisons(self, models, targets, subsets, renew=False):
         with Pool(processes=4) as pool:
@@ -263,7 +263,7 @@ class Evaluation:
             pool.join()
 
         progress_bar.close()
-        model, _ = Memory.loadModel([self.__meta_models[0]])[0]
+        model, _ = Memory.load_model([self.__meta_models[0]])[0]
         rows = model.compare(models, targets, subsets, 33, False)
         for result in results:
             self.__comparisons = self.vectorAddition(self.__comparisons, result)
@@ -286,9 +286,9 @@ class Evaluation:
 
         for model in all_results:
             for subset in subsets:
-                Memory.storeDataFrame(DataFrame(data=all_results[model], index=rows,
-                                                columns=[x for x in all_results[model]]),
-                                      model + " x " + subset, "selection", True)
+                Memory.store_data_frame(DataFrame(data=all_results[model], index=rows,
+                                                  columns=[x for x in all_results[model]]),
+                                        model + " x " + subset, "selection", True)
 
         self.store_all_comparisons(results, rows, "all_comparisons")
 
@@ -297,4 +297,4 @@ class Evaluation:
                 + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": list(map(lambda x: x[i][j], results))
                 for i in range(len(self.__parameters)) for j in range(len(rows))}
 
-        Memory.storeDataFrame(DataFrame(data, index=self.__meta_models), name, "selection")
+        Memory.store_data_frame(DataFrame(data, index=self.__meta_models), name, "selection")

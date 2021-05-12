@@ -8,8 +8,6 @@ from pandas import DataFrame
 from sklearn.feature_selection import f_classif, mutual_info_classif, SelectPercentile
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
-from metalfi.src.memory import Memory
-from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.metadata.dropcolumn import DropColumnImportance
 from metalfi.src.metadata.lime import LimeImportance
 from metalfi.src.metadata.permutation import PermutationImportance
