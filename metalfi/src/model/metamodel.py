@@ -8,6 +8,8 @@ from pandas import DataFrame
 from sklearn.feature_selection import f_classif, mutual_info_classif, SelectPercentile
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
+
+from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.metadata.dropcolumn import DropColumnImportance
 from metalfi.src.metadata.lime import LimeImportance
 from metalfi.src.metadata.permutation import PermutationImportance
@@ -18,7 +20,9 @@ from metalfi.src.parameters import Parameters
 
 
 class MetaModel:
+    """
 
+    """
     def __init__(self, iterable):
         train, name, test, og_data, selected = iterable
         self.__og_y = og_data.getDataFrame()[og_data.getTarget()]
@@ -71,6 +75,9 @@ class MetaModel:
         return self.__result_configurations
 
     def fit(self):
+        """
+
+        """
         X = self.__train_data.drop(Parameters.targets, axis=1)
 
         for base_model, base_model_name, _ in Parameters.meta_models:
@@ -78,7 +85,7 @@ class MetaModel:
                 i = 0
                 for feature_set in self.__feature_sets:
                     y = self.__train_data[target]
-                    X_train, selected_features = self.featureSelection(base_model_name, X, target) \
+                    X_train, selected_features = self.__featureSelection(base_model_name, X, target) \
                         if feature_set[0] == "Auto" else (X[feature_set], feature_set)
 
                     model = self.trainModel(base_model, X_train, y)
@@ -89,12 +96,23 @@ class MetaModel:
 
                     i -= -1
 
-    def featureSelection(self, name, X_train, target_name):
+    def __featureSelection(self, name, X_train, target_name):
         features = self.__selected[name][target_name]
-
         return X_train[features], features
 
     def trainModel(self, model, X, y):
+        """
+
+        Parameters
+        ----------
+            model :
+            X :
+            y :
+
+        Returns
+        -------
+
+        """
         model.fit(X, y)
         return model
 
@@ -114,7 +132,7 @@ class MetaModel:
 
             self.__stats.append(Parameters.calculate_metrics(y_train, y_test, y_pred))
 
-    def getRankings(self, columns, prediction, actual):
+    def __getRankings(self, columns, prediction, actual):
         pred_data = {"target": prediction, "names": columns}
         act_data = {"target": actual, "names": columns}
         pred = DataFrame(pred_data).sort_values(by=["target"], ascending=False)["names"].values
@@ -123,12 +141,36 @@ class MetaModel:
         return act, pred
 
     @staticmethod
-    def getOriginalModel(name):
+    def __getOriginalModel(name):
+        """
+
+        Parameters
+        ----------
+            name :
+
+        Returns
+        -------
+
+        """
         for model, model_name, _ in Parameters.base_models:
             if name.startswith(model_name):
                 return model
 
     def compare(self, models, targets, subsets, k, renew=False):
+        """
+
+        Parameters
+        ----------
+            models :
+            targets :
+            subsets :
+            k :
+            renew :
+
+        Returns
+        -------
+
+        """
         if renew:
             self.__results = list()
             self.__result_configurations = list()
@@ -142,7 +184,7 @@ class MetaModel:
         self.__result_configurations += [config for (_, _, _, config) in meta_models]
         results = {0: list(), 1: list(), 2: list(), 3: list(), 4: list()}
 
-        folds = self.get_cross_validation_folds(self.__og_X, self.__og_y, k=5)
+        folds = self.__get_cross_validation_folds(self.__og_X, self.__og_y, k=5)
         i = 0
         for X_train, X_test, y_train, y_test in folds:
             sc = StandardScaler()
@@ -169,10 +211,10 @@ class MetaModel:
                 X_temp = X_meta[features]
                 y_temp = y_meta[target]
                 y_pred = model.predict(X_temp)
-                og_model = self.getOriginalModel(target)
+                og_model = self.__getOriginalModel(target)
                 columns = self.__og_X.columns
 
-                a, p = self.getRankings(self.__test_data.index, y_pred, y_temp)
+                a, p = self.__getRankings(self.__test_data.index, y_pred, y_temp)
                 predicted = [columns[i] for i in p]
                 actual = [columns[i] for i in a]
 
@@ -199,14 +241,14 @@ class MetaModel:
             i += 1
 
         for i in results:
-            self.__results = Evaluation.vectorAddition(self.__results, results[i])
+            self.__results = Evaluation.matrix_addition(self.__results, results[i])
 
         self.__results = [list(map(lambda x: x / 5, result)) for result in self.__results]
         self.__was_compared = True
 
         return ["ANOVA", "MI", "FI", "MetaLFI"]
 
-    def get_meta(self, data_frame, target, targets):
+    def __get_meta(self, data_frame, target, targets):
         new_targets = [x[-4:] for x in targets]
         dataset = Dataset(data_frame, target)
         meta_features = MetaFeatures(dataset)
@@ -228,7 +270,19 @@ class MetaModel:
 
         return meta_data.drop(targets, axis=1), meta_data[targets]
 
-    def get_cross_validation_folds(self, X, y, k=5):
+    def __get_cross_validation_folds(self, X, y, k=5):
+        """
+
+        Parameters
+        ----------
+            X :
+            y :
+            k :
+
+        Returns
+        -------
+
+        """
         X_temp = X.values
         y_temp = y.values
 

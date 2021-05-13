@@ -1,6 +1,7 @@
 import re
 from functools import partial
 from multiprocessing import Pool
+from typing import List, Union, Dict, Tuple
 
 import numpy as np
 from pandas import DataFrame
@@ -12,8 +13,18 @@ from metalfi.src.visualization import Visualization
 
 
 class Evaluation:
+    """
+    Train and test meta-models. Evaluate
 
-    def __init__(self, meta_models):
+    Attributes
+    ----------
+        __meta_models : File names of :py:class:`MetaModel` instances, saved in `metalfi/data/model`.
+        __tests (List[List[float]]) : Meta-model performance estimates for different metrics.
+        __config (List[List[str]]) : Meta-model configurations.
+        __comparisons : Base-model performance estimates for different feature selection approaches.
+        __parameters : Meta-model configurations for MetaLFI feature selection.
+    """
+    def __init__(self, meta_models: List[str]):
         self.__meta_models = meta_models
         self.__tests = list()
         self.__config = list()
@@ -22,7 +33,19 @@ class Evaluation:
         self.__parameters = list()
 
     @staticmethod
-    def vectorAddition(x, y):
+    def matrix_addition(x: List[List[float]], y: List[List[float]]) -> List[List[float]]:
+        """
+        Given two matrices, computes their sum.
+
+        Parameters
+        ----------
+            x : First matrix.
+            y : Second matrix.
+
+        Returns
+        -------
+            Sum of `x` and `y`.
+        """
         if len(x) == 0:
             return y
 
@@ -31,6 +54,28 @@ class Evaluation:
         return result
 
     def questions(self):
+        """
+        Provides answers to our research questions:
+        (Q_1, Q_2, Q_3, Q_4):
+            Fetch the performance estimates of all meta-models from `metalfi/data/output/predictions`.
+            (Q_1 & Q_2):
+                Group performance estimates by meta-feature subsets and differentiate
+                between linear and non-linear meta-models. Examine the differences between meta-models,
+                trained on different meta-feature subsets, for linear and non-linear meta-models respectively.
+            (Q_3):
+                Group performance estimates by meta-targets. Examine the differences between meta-models,
+                trained to predict different meta-targets, based on their respective performances.
+            (Q_4):
+                Group performance estimates by meta-models. Examine the differences between meta-model performances.
+        (Q_5):
+            Fetch the performance estimates of all base-models, trained on different base-feature subsets,
+            from `metalfi/data/output/selection`. The base-feature subsets are the results of different
+            feature selection approaches, including metaLFI. Group performance estimates by feature selection approaches
+            and examine the differences between base-model performances.
+
+        Use statistical hypothesis testing to determine, whether the differences between the groups
+        (across cross validation splits) are significant. Visualize the results.
+        """
         directory = "output/predictions"
         file_names = list(filter(lambda x: "x" not in x and x.endswith(".csv"), Memory.get_contents(directory)))
 
@@ -81,28 +126,29 @@ class Evaluation:
             comparisons = list(zip(config_5, comps))
             rows.append(base_data_sets.iloc[i])
 
-            data_2_lin = self.createQuestionCsv(performances, subset_names_lin, data_2_lin, 2, question=2, linear=True)
-            data_2_non = self.createQuestionCsv(performances, subset_names_non, data_2_non, 2, question=2, linear=False)
-            data_3 = self.createQuestionCsv(performances, target_names, data_3, 1, question=3)
-            data_4 = self.createQuestionCsv(performances, meta_model_names, data_4, 0, question=4)
-            data_5 = self.createQuestion5Csv(comparisons, data_5)
+            data_2_lin = self.__create_question_csv(performances, subset_names_lin, data_2_lin, 2, question=2, linear=True)
+            data_2_non = self.__create_question_csv(performances, subset_names_non, data_2_non, 2, question=2, linear=False)
+            data_3 = self.__create_question_csv(performances, target_names, data_3, 1, question=3)
+            data_4 = self.__create_question_csv(performances, meta_model_names, data_4, 0, question=4)
+            data_5 = self.__create_question_5_csv(comparisons, data_5)
 
-        def question_data(data, rows, suffix):
+        def __question_data(data: Dict[str, Dict[str, List[float]]], rows: List[str], suffix: str) \
+                -> List[Tuple[DataFrame, str]]:
             return [(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]), metric + suffix)
                     for metric in data]
 
-        q_2_lin = question_data(data_2_lin, rows, "_LIN")
-        q_2_non = question_data(data_2_non, rows, "_NON")
-        q_3 = self.q_3(data_3, rows)
-        q_4 = question_data(data_4, rows, "")
-        q_5 = question_data(data_5, rows, "")
+        q_2_lin = __question_data(data_2_lin, rows, "_LIN")
+        q_2_non = __question_data(data_2_non, rows, "_NON")
+        q_3 = self.__q_3(data_3, rows)
+        q_4 = __question_data(data_4, rows, "")
+        q_5 = __question_data(data_5, rows, "")
 
         Visualization.compare_means(q_2_lin + q_2_non, "groups")
         Visualization.compare_means(q_3, "targets")
         Visualization.compare_means(q_4, "models")
         Visualization.compare_means(q_5, "selection")
 
-    def q_3(self, data, rows):
+    def __q_3(self, data: Dict[str, Dict[str, List[float]]], rows: List[str]) -> List[Tuple[DataFrame, str]]:
         data_frames = list()
         for metric in data:
             data_frame = DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]])
@@ -110,13 +156,14 @@ class Evaluation:
             base_models = {name: [0] * len(rows) for _, name, _ in Parameters.base_models}
 
             data_frames.append((data_frame, metric))
-            data_frames.append(self.helper_q_3(fi_measures, data_frame, rows, metric, "targets_", targets=True))
-            data_frames.append(self.helper_q_3(base_models, data_frame, rows, metric, "base_"))
+            data_frames.append(self.__helper_q_3(fi_measures, data_frame, rows, metric, "targets_", targets=True))
+            data_frames.append(self.__helper_q_3(base_models, data_frame, rows, metric, "base_"))
 
         return data_frames
 
     @staticmethod
-    def helper_q_3(dictionary, data_frame, rows, metric, name, targets=False):
+    def __helper_q_3(dictionary: Dict[str, List[float]], data_frame: DataFrame, rows: List[str],
+                     metric: str, name: str, targets=False) -> Tuple[DataFrame, str]:
         for key in dictionary:
             if targets:
                 subset = [column for column in data_frame.columns if (key == column[-4:])]
@@ -130,7 +177,10 @@ class Evaluation:
 
         return DataFrame(data=dictionary, index=rows, columns=[x for x in dictionary]), name + metric
 
-    def createQuestionCsv(self, performances, names, data, index, question, linear=False):
+    @staticmethod
+    def __create_question_csv(performances: List[Tuple[List[str], List[float]]], names: List[str],
+                              data: Dict[str, Dict[str, List[float]]], index: int, question: int, linear=False) \
+            -> Dict[str, Dict[str, List[float]]]:
         linear_meta_models = [name for _, name, _ in filter(lambda x: x[2] == "linear", Parameters.meta_models)]
         non_linear_meta_models = [name for _, name, _ in filter(lambda x: x[2] != "linear", Parameters.meta_models)]
 
@@ -164,7 +214,9 @@ class Evaluation:
 
         return data
 
-    def createQuestion5Csv(self, comparisons, data):
+    @staticmethod
+    def __create_question_5_csv(comparisons: List[Tuple[List[str], List[float]]],
+                                data: Dict[str, Dict[str, List[float]]]) -> Dict[str, Dict[str, List[float]]]:
         for key in data:
             tuples = list(filter(lambda x: x[0][1] == key, comparisons))
             selection_methods = {method: list() for method in list(set(map(lambda x: x[0][3], comparisons)))}
@@ -178,7 +230,19 @@ class Evaluation:
         return data
 
     @staticmethod
-    def parallelize_predictions(name):
+    def parallelize_predictions(name: str) -> Tuple[List[List[float]], List[List[str]], List[str]]:
+        """
+        Compute performance estimates for meta-models.
+
+        Parameters
+        ----------
+            name : Name of the :py:class:`MetaModel` instance, whose meta-models are supposed to be tested.
+
+        Returns
+        -------
+            Performance estimates, configurations and meta-targets of said meta-models.
+
+        """
         model, _ = Memory.load_model([name])[0]
         model.test()
         stats = model.getStats()
@@ -188,6 +252,10 @@ class Evaluation:
         return stats, config, targets
 
     def predictions(self):
+        """
+        Estimate meta-model performances by testing them on their respective cross validation test splits.
+        Save the results as .csv files in the `metalfi/data/output/predictions` directory.
+        """
         with Pool(processes=4) as pool:
             progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Evaluating meta-models")
             results = [
@@ -203,7 +271,7 @@ class Evaluation:
 
         progress_bar.close()
         for stats, _, _ in results:
-            self.__tests = self.vectorAddition(self.__tests, stats)
+            self.__tests = self.matrix_addition(self.__tests, stats)
 
         self.__tests = [list(map(lambda x: x / len(self.__meta_models), stat)) for stat in self.__tests]
         self.__config = results[0][1]
@@ -232,17 +300,34 @@ class Evaluation:
                                        columns=[x for x in all_results[metric][importance]])
                 Memory.store_data_frame(data_frame.round(3), metric + "x" + importance, "predictions")
 
-        self.storeAllRsults(results)
+        self.__store_all_results(results)
 
     @staticmethod
-    def parallel_comparisons(name, models, targets, subsets, renew):
+    def parallel_comparisons(name: str, models: List[str], targets: List[str], subsets: List[str], renew: bool) \
+            -> List[List[float]]:
+        """
+        Load a trained instance of :py:class:`MetaModel` and call its compare method.
+
+        Parameters
+        ----------
+            name : Name of the file, in which said instance is saved.
+            models : meta-model names.
+            targets : Meta-target names.
+            subsets : Meta-feature subset names.
+            renew : Whether to recalculate or not.
+
+        Returns
+        -------
+            Base-model performance estimates.
+
+        """
         model, _ = Memory.load_model([name])[0]
         model.compare(models, targets, subsets, 33, renew)
         results = model.getResults()
         Memory.renew_model(model, model.getName()[:-4])
         return results
 
-    def storeAllRsults(self, results):
+    def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]):
         columns = ["$" + meta + "_{" + features + "}(" + target + ")$" for meta, target, features in self.__config]
         index = self.__meta_models
 
@@ -250,7 +335,19 @@ class Evaluation:
             data = [tuple(map((lambda x: x[key]), results[i][0])) for i in range(len(index))]
             Memory.store_data_frame(DataFrame(data, columns=columns, index=index), Parameters.metrics[key], "predictions")
 
-    def comparisons(self, models, targets, subsets, renew=False):
+    def comparisons(self, models: List[str], targets: List[str], subsets: List[str], renew=False):
+        """
+        Estimate base-model performances by testing them on their respective cross validation test splits.
+        The base-models are trained on different base-feature subsets, which are determined by different feature
+        selection approaches. Save the results as .csv files in the `metalfi/data/output/selection` directory.
+
+        Parameters
+        ----------
+            models : Meta-model names.
+            targets : Meta-target names.
+            subsets : Meta-feature subsets.
+            renew : Whether to recompute the results, if they have already been computed.
+        """
         with Pool(processes=4) as pool:
             progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
 
@@ -266,7 +363,7 @@ class Evaluation:
         model, _ = Memory.load_model([self.__meta_models[0]])[0]
         rows = model.compare(models, targets, subsets, 33, False)
         for result in results:
-            self.__comparisons = self.vectorAddition(self.__comparisons, result)
+            self.__comparisons = self.matrix_addition(self.__comparisons, result)
 
         self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
         self.__parameters = model.getResultConfig()
@@ -290,9 +387,9 @@ class Evaluation:
                                                   columns=[x for x in all_results[model]]),
                                         model + " x " + subset, "selection", True)
 
-        self.store_all_comparisons(results, rows, "all_comparisons")
+        self.__store_all_comparisons(results, rows, "all_comparisons")
 
-    def store_all_comparisons(self, results, rows, name):
+    def __store_all_comparisons(self, results: List[List[List[float]]], rows: List[str], name: str):
         data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2]
                 + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": list(map(lambda x: x[i][j], results))
                 for i in range(len(self.__parameters)) for j in range(len(rows))}

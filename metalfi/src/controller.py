@@ -77,7 +77,7 @@ class Controller:
 
         with Pool(processes=4) as pool:
             progress_bar = tqdm.tqdm(total=len(data), desc="Computing meta-data")
-            [pool.apply_async(self.__parallel_meta_computation, (args,), callback=(lambda x: progress_bar.update(n=1)))
+            [pool.apply_async(self.parallel_meta_computation, (args,), callback=(lambda x: progress_bar.update(n=1)))
              for args in data]
 
             pool.close()
@@ -86,7 +86,14 @@ class Controller:
         progress_bar.close()
 
     @staticmethod
-    def __parallel_meta_computation(data: List[Tuple[DataFrame, str]]):
+    def parallel_meta_computation(data: Tuple[DataFrame, str]):
+        """
+        Computes a meta-data set, given a base-data set.
+
+        Parameters
+        ----------
+            data : Parameters for instantiating :py:class:`MetaDataset`.
+        """
         result = MetaDataset(data, train=True)
         meta_data = result.getMetaData()
         name = result.getName()
@@ -156,7 +163,7 @@ class Controller:
 
         with Pool(processes=4) as pool:
             progress_bar = tqdm.tqdm(total=len(args), desc="Training meta-models")
-            [pool.apply_async(self.__parallel_training, (arg,), callback=(lambda x: progress_bar.update(n=1)))
+            [pool.apply_async(self.parallel_training, (arg,), callback=(lambda x: progress_bar.update(n=1)))
              for arg in args]
 
             pool.close()
@@ -164,7 +171,14 @@ class Controller:
 
         progress_bar.close()
 
-    def __parallel_training(self, iterable: Tuple[DataFrame, str, DataFrame, Dataset, Dict[str, Dict[str, List[str]]]]):
+    def parallel_training(self, iterable: Tuple[DataFrame, str, DataFrame, Dataset, Dict[str, Dict[str, List[str]]]]):
+        """
+        Create an instance of class :py:class:`MetaModel` and call its :py:func:`MetaModel.fit()` function.
+
+        Parameters
+        ----------
+            iterable : Parameters for the instance of :py:class:`MetaModel`.
+        """
         model = MetaModel(iterable)
         sys.stderr = open(os.devnull, 'w')
         sys.stdout.close()

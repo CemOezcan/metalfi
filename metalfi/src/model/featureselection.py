@@ -2,10 +2,11 @@ import os
 import sys
 import warnings
 from multiprocessing.pool import Pool
+from typing import Dict, List, Tuple
 
 import numpy as np
-
 from statistics import mean
+from pandas import DataFrame
 from sklearn.feature_selection import VarianceThreshold, SelectPercentile
 from sklearn.model_selection import cross_val_score
 import tqdm
@@ -15,8 +16,10 @@ from metalfi.src.parameters import Parameters
 
 
 class MetaFeatureSelection:
-
-    def __init__(self, meta_data):
+    """
+    Methods for feature importance estimation and selection.
+    """
+    def __init__(self, meta_data: DataFrame):
         self.__X = meta_data.drop(Parameters.targets, axis=1)
         fmf = [x for x in self.__X.columns if "." not in x]
         self.__X = self.__X[fmf]
@@ -27,21 +30,40 @@ class MetaFeatureSelection:
 
         self.__X = self.__X[features]
 
-    def select(self, meta_model, scoring, percentiles=(5, 10, 15, 20, 25, 30), k=10, tree=False):
+    def select(self, meta_model, scoring, percentiles=(5, 10, 15, 20, 25, 30), k=10, tree=False) \
+            -> Dict[str, Dict[str, List[str]]]:
+        """
+        Meta-feature selection, given a meta-model.
+        Rank meta-features according to their `scoring` value and search for the percentile of al meta-features,
+        that yields the best results.
+
+        Parameters
+        ----------
+            meta_model (scikit-learn model): The meta-model.
+            scoring (scikit-learn scoring function): Measure of feature importance.
+            percentiles (Tuple[int]): Search space.
+            k (int): k-fold cross validation is used to estimate model performances.
+            tree (bool): Whether the meta-model is a decision tree based model.
+
+        Returns
+        -------
+            Optimal meta-feature subset.
+
+        """
         sets = {}
         for target in Parameters.targets:
             y = self.__Y[target]
             if tree:
-                p, features = self.percentile_search(meta_model, scoring, y, [75], k, self.__X)
+                p, features = self.__percentile_search(meta_model, scoring, y, [75], k, self.__X)
             else:
-                p, features = self.percentile_search(meta_model, scoring, y, percentiles, k, self.__X)
+                p, features = self.__percentile_search(meta_model, scoring, y, percentiles, k, self.__X)
 
             sets[target] = features if (len(features) != 0) else list(self.__X.columns)
 
         return sets
 
     @staticmethod
-    def percentile_search(meta_model, scoring, y, percentiles, k, new_X):
+    def __percentile_search(meta_model, scoring, y, percentiles, k, new_X):
         results = []
         subsets = []
 
@@ -70,7 +92,22 @@ class MetaFeatureSelection:
         return p, f
 
     @staticmethod
-    def metaFeatureImportance(meta_data, models, targets, subsets):
+    def metaFeatureImportance(meta_data: DataFrame, models: List[Tuple[object, str, str]], targets: List[str],
+                              subsets: Dict[str, Dict[str, List[str]]]) -> Dict[str, List[DataFrame]]:
+        """
+        Estimate model based meta-feature importance.
+
+        Parameters
+        ----------
+            meta_data : Meta-data set.
+            models : Meta-models.
+            targets : Meta-targets.
+            subsets : Subset of meta-features, whose importance is supposed to be estimated.
+
+        Returns
+        -------
+            Meta-feature importance estimates for the given meta-features.
+        """
         importance = {}
         all_targets = Parameters.targets
         all_X = meta_data.drop(all_targets, axis=1)
@@ -102,7 +139,18 @@ class MetaFeatureSelection:
         return importance
 
     @staticmethod
-    def parallel_meta_importance(iterable):
+    def parallel_meta_importance(iterable: Tuple[str, object, DataFrame, DataFrame, str]) -> Tuple[str, DataFrame]:
+        """
+        Compute SHAP-importance.
+
+        Parameters
+        ----------
+            iterable : Tuple, contains meta-target name, meta-model, meta-data set, meta-target, meta-model category
+
+        Returns
+        -------
+            SHAP-importance values
+        """
         warnings.simplefilter("ignore")
         with open(os.devnull, 'w') as file:
             sys.stderr = file
