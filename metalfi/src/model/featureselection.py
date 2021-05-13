@@ -43,7 +43,7 @@ class MetaFeatureSelection:
             scoring (scikit-learn scoring function): Measure of feature importance.
             percentiles (Tuple[int]): Search space.
             k (int): k-fold cross validation is used to estimate model performances.
-            tree (bool): Whether the meta-model is a decision tree based model.
+            tree : (bool) Whether the meta-model is a decision tree based model.
 
         Returns
         -------
@@ -92,8 +92,8 @@ class MetaFeatureSelection:
         return p, f
 
     @staticmethod
-    def metaFeatureImportance(meta_data: DataFrame, models: List[Tuple[object, str, str]], targets: List[str],
-                              subsets: Dict[str, Dict[str, List[str]]]) -> Dict[str, List[DataFrame]]:
+    def meta_feature_importance(meta_data: DataFrame, models: List[Tuple[object, str, str]], targets: List[str],
+                                subsets: Dict[str, Dict[str, List[str]]]) -> Dict[str, List[DataFrame]]:
         """
         Estimate model based meta-feature importance.
 
@@ -139,7 +139,8 @@ class MetaFeatureSelection:
         return importance
 
     @staticmethod
-    def parallel_meta_importance(iterable: Tuple[str, object, DataFrame, DataFrame, str]) -> Tuple[str, DataFrame]:
+    def parallel_meta_importance(iterable: Tuple[str, 'sklearn estimator', DataFrame, DataFrame, str]) \
+            -> Tuple[str, DataFrame]:
         """
         Compute SHAP-importance.
 

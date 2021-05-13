@@ -15,13 +15,13 @@ class Parameters:
 
     Attributes
     ----------
-        metrics (Dict[int, str]):
+        metrics : (Dict[int, str])
             Evaluation metrics for meta-models.
-        targets (List[str]):
+        targets : (List[str])
             Names of all meta-targets.
-        base_models (List[Tuple[object, str, str]]):
+        base_models : (List[Tuple[object, str, str]])
             Contains base-models (classifiers), their respective names and categories.
-        meta_models (List[Tuple[object, str, str]]):
+        meta_models : (List[Tuple[object, str, str]])
             Contains meta-models (regression models), their respective names and categories.
 
 

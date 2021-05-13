@@ -244,7 +244,7 @@ class MetaFeatures:
     def addTarget(self, target):
         target.calculateScores()
         imp = target.getFeatureImportances()
-        name = target.getName()
+        name = target.get_name()
         target_names = list()
 
         for i in range(0, len(imp)):

@@ -27,9 +27,12 @@ class Controller:
     Attributes
     ----------
         # TODO: Adjust
-        __train_data (List[Tuple[Dataset, str]]): Base-data sets and their names
-        __data_names (Dict[str, int]): Names of all base-data sets
-        __meta_data (List[DataFrame, name]): Meta-data sets and their names
+        __train_data : (List[Tuple[Dataset, str]])
+            Base-data sets and their names
+        __data_names : (Dict[str, int])
+            Names of all base-data sets
+        __meta_data : (List[DataFrame, name])
+            Meta-data sets and their names
     """
     def __init__(self):
         self.__train_data = None
@@ -239,8 +242,8 @@ class Controller:
                                                      Memory.get_contents("output/importance"))))
 
         targets = list(filter(lambda x: x.endswith("_SHAP") and x not in computed, Parameters.targets))
-        importance = MetaFeatureSelection.metaFeatureImportance(pd.concat(data), models, targets,
-                                                                self.__select_meta_features(memory=True))
+        importance = MetaFeatureSelection.meta_feature_importance(pd.concat(data), models, targets,
+                                                                  self.__select_meta_features(memory=True))
 
         meta_features = {}
         for target in targets:

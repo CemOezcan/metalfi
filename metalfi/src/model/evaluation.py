@@ -18,11 +18,16 @@ class Evaluation:
 
     Attributes
     ----------
-        __meta_models : File names of :py:class:`MetaModel` instances, saved in `metalfi/data/model`.
-        __tests (List[List[float]]) : Meta-model performance estimates for different metrics.
-        __config (List[List[str]]) : Meta-model configurations.
-        __comparisons : Base-model performance estimates for different feature selection approaches.
-        __parameters : Meta-model configurations for MetaLFI feature selection.
+        __meta_models : (List[str])
+            File names of :py:class:`MetaModel` instances, saved in `metalfi/data/model`.
+        __tests : (List[List[float]])
+            Meta-model performance estimates for different metrics.
+        __config : (List[List[str]])
+            Meta-model configurations.
+        __comparisons :
+            Base-model performance estimates for different feature selection approaches.
+        __parameters :
+            Meta-model configurations for MetaLFI feature selection.
     """
     def __init__(self, meta_models: List[str]):
         self.__meta_models = meta_models
@@ -245,9 +250,9 @@ class Evaluation:
         """
         model, _ = Memory.load_model([name])[0]
         model.test()
-        stats = model.getStats()
-        Memory.renew_model(model, model.getName()[:-4])
-        config = [c for (a, b, c) in model.getMetaModels()]
+        stats = model.get_stats()
+        Memory.renew_model(model, model.get_name()[:-4])
+        config = [c for (a, b, c) in model.get_meta_models()]
         targets = Parameters.targets
         return stats, config, targets
 
@@ -323,8 +328,8 @@ class Evaluation:
         """
         model, _ = Memory.load_model([name])[0]
         model.compare(models, targets, subsets, 33, renew)
-        results = model.getResults()
-        Memory.renew_model(model, model.getName()[:-4])
+        results = model.get_results()
+        Memory.renew_model(model, model.get_name()[:-4])
         return results
 
     def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]):
@@ -366,7 +371,7 @@ class Evaluation:
             self.__comparisons = self.matrix_addition(self.__comparisons, result)
 
         self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
-        self.__parameters = model.getResultConfig()
+        self.__parameters = model.get_result_config()
 
         all_results = {}
         for model in models:
