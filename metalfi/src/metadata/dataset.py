@@ -19,16 +19,16 @@ class Dataset:
         mf = MetaFeatures(self)
 
         start_d_total = time.time()
-        d_time, u_time, m_time, l_time = mf.calculateMetaFeatures()
+        d_time, u_time, m_time, l_time = mf.calculate_meta_features()
         end_d_total = time.time()
         d_total = end_d_total - start_d_total
 
         start_t_total = time.time()
-        targets, d, p, l, s = mf.createTarget()
+        targets, d, p, l, s = mf.__create_target()
         end_t_total = time.time()
         t_total = end_t_total - start_t_total
 
-        data = mf.getMetaData()
+        data = mf.get_meta_data()
 
         data_time = {"data": d_time, "univariate": u_time, "multivariate": m_time, "landmarking": l_time,
                      "total": d_total}
@@ -38,6 +38,6 @@ class Dataset:
 
     def testMetaData(self):
         mf = MetaFeatures(self)
-        mf.calculateMetaFeatures()
+        mf.calculate_meta_features()
 
-        return mf.getMetaData()
+        return mf.get_meta_data()

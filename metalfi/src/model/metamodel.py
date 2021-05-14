@@ -283,21 +283,21 @@ class MetaModel:
         new_targets = [x[-4:] for x in targets]
         dataset = Dataset(data_frame, target)
         meta_features = MetaFeatures(dataset)
-        meta_features.calculateMetaFeatures()
+        meta_features.calculate_meta_features()
 
         if "SHAP" in new_targets:
-            meta_features.addTarget(ShapImportance(dataset))
+            meta_features.add_target(ShapImportance(dataset))
 
         if "PIMP" in new_targets:
-            meta_features.addTarget(PermutationImportance(dataset))
+            meta_features.add_target(PermutationImportance(dataset))
 
         if "LOFO" in new_targets:
-            meta_features.addTarget(DropColumnImportance(dataset))
+            meta_features.add_target(DropColumnImportance(dataset))
 
         if "LIME" in new_targets:
-            meta_features.addTarget(LimeImportance(dataset))
+            meta_features.add_target(LimeImportance(dataset))
 
-        meta_data = meta_features.getMetaData()
+        meta_data = meta_features.get_meta_data()
 
         return meta_data.drop(targets, axis=1), meta_data[targets]
 

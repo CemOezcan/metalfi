@@ -1,15 +1,16 @@
+
 import os
 import sys
 import warnings
+import tqdm
+import numpy as np
+
 from multiprocessing.pool import Pool
 from typing import Dict, List, Tuple
-
-import numpy as np
 from statistics import mean
 from pandas import DataFrame
 from sklearn.feature_selection import VarianceThreshold, SelectPercentile
 from sklearn.model_selection import cross_val_score
-import tqdm
 
 from metalfi.src.metadata.shap import ShapImportance
 from metalfi.src.parameters import Parameters
@@ -39,10 +40,10 @@ class MetaFeatureSelection:
 
         Parameters
         ----------
-            meta_model (scikit-learn model): The meta-model.
-            scoring (scikit-learn scoring function): Measure of feature importance.
-            percentiles (Tuple[int]): Search space.
-            k (int): k-fold cross validation is used to estimate model performances.
+            meta_model : (scikit-learn model) The meta-model.
+            scoring : (scikit-learn scoring function) Measure of feature importance.
+            percentiles : (Tuple[int]) Search space.
+            k : (int) k-fold cross validation is used to estimate model performances.
             tree : (bool) Whether the meta-model is a decision tree based model.
 
         Returns
@@ -139,7 +140,7 @@ class MetaFeatureSelection:
         return importance
 
     @staticmethod
-    def parallel_meta_importance(iterable: Tuple[str, 'sklearn estimator', DataFrame, DataFrame, str]) \
+    def parallel_meta_importance(iterable: Tuple[str, object, DataFrame, DataFrame, str]) \
             -> Tuple[str, DataFrame]:
         """
         Compute SHAP-importance.
@@ -160,11 +161,11 @@ class MetaFeatureSelection:
         s = ShapImportance(None)
 
         if category == "linear":
-            imp = s.linearShap(model, X, y)
+            imp = s.linear_shap(model, X, y)
         elif category == "tree":
-            imp = s.treeRegressionShap(model, X, y)
+            imp = s.tree_regression_shap(model, X, y)
         else:
-            imp = s.kernelShap(model, X, y)
+            imp = s.kernel_shap(model, X, y)
 
         array = imp["Importances"].values
         array = list(np.interp(array, (array.min(), array.max()), (0, 1)))
