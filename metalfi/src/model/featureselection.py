@@ -93,7 +93,7 @@ class MetaFeatureSelection:
         return p, f
 
     @staticmethod
-    def meta_feature_importance(meta_data: DataFrame, models: List[Tuple[object, str, str]], targets: List[str],
+    def meta_feature_importance(meta_data: DataFrame, models: List[Tuple['Estimator', str, str]], targets: List[str],
                                 subsets: Dict[str, Dict[str, List[str]]]) -> Dict[str, List[DataFrame]]:
         """
         Estimate model based meta-feature importance.
@@ -140,7 +140,7 @@ class MetaFeatureSelection:
         return importance
 
     @staticmethod
-    def parallel_meta_importance(iterable: Tuple[str, object, DataFrame, DataFrame, str]) \
+    def parallel_meta_importance(iterable: Tuple[str, 'Estimator', DataFrame, DataFrame, str]) \
             -> Tuple[str, DataFrame]:
         """
         Compute SHAP-importance.

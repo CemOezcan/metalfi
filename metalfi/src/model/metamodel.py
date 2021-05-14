@@ -36,7 +36,7 @@ class MetaModel:
             Selected meta-features for all meta-models.
         __file_name : (str)
             Name of the file, this instance is going to be saved as.
-        __meta_models : (List[Tuple[sklearn estimator, List[str], List[str]]])
+        __meta_models : (List[Tuple[Estimator, List[str], List[str]]])
             Trained meta-models, their meta-features and configurations.
         __stats : (List[List[float]])
             Performance estimates for trained meta-models.
@@ -168,7 +168,7 @@ class MetaModel:
         return act, pred
 
     @staticmethod
-    def __get_original_model(name: str) -> 'sklearn estimator':
+    def __get_original_model(name: str) -> 'Estimator':
         """
         Identifies and returns the base-model, given the its name.
 
