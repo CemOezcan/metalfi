@@ -16,25 +16,19 @@ Input data and results data of the experimental pipelines are also available [on
             ├── input                   # Meta-data sets
             ├── model                   # Meta-models
             ├── output                  # .csv files of experimental results. The content of this folder is used to generate the plots.
+                ├── groups              # 
                 ├── importance          # Meta-feature importances
+                ├── models              # .csv files for each research question (q2 - q5). This data is used to create the critical differences plots.
                 ├── predictions         # Meta-model performances
-                ├── questions           # .csv files for each research question (q2 - q5). This data is used to create the critical differences plots.
-                    ├── q2
-                    ├── q3
-                    ├── q4
-                    ├── q5
                 ├── runtime             # .csv files with the calculation times of each meta-data set 
                 ├── selection           # Accuracy scores of base models using different feature selection methods (Part of research question 5)
+                ├── targets             # 
             ├── preprocessed            # Preprocessed data sets
             ├── raw                     # Contains two small data sets
-            ├── visual                  # Contains all plots
             
         ├── src                         # Source code
-            ├── data                    # Scripts that handle the data
-                ├── meta                # Meta-data related scripts
-                    ├── importance      # Meta-target related scripts
+            ├── metadata                # Scripts that handle the meta-data
             ├── model                   # Contains scripts that train and evaluate meta-models
-            ├── visual                  # Scripts that visualize the generated data
     ├── .gitignore                 
     ├── requirements.txt           
     ├── start.py                   
