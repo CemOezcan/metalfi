@@ -1,8 +1,11 @@
+
 import math
 import time
 import warnings
 import numpy as np
 
+from numpy import ndarray
+from typing import List, Dict, Union, Sequence
 from pandas import DataFrame
 from pymfe.mfe import MFE
 from sklearn.feature_selection import f_classif, chi2
@@ -15,7 +18,27 @@ from metalfi.src.metadata.shap import ShapImportance
 
 
 class MetaFeatures:
+    """
+    A meta-data set.
+    Computes a meta-data set, given a base-data set.
 
+    Attributes
+    ----------
+    __dataset : (Dataset)
+        The underlying base-data set.
+    __meta_data : (DataFrame)
+        The extracted meta-data set.
+    __targets : (List[str])
+        The names of all meta-targets.
+    __feature_meta_features : (List[List[float]])
+        The values of all feature-meta-features.
+    __data_meta_features : (List[float])
+        The values of all data-meta-features.
+    __data_meta_feature_names : (List[str])
+        The names of all data-meta-features.
+    __feature_meta_feature_names : (List[str])
+        The names of all feature-meta-features.
+    """
     def __init__(self, dataset):
         self.__dataset = dataset
         self.__meta_data = DataFrame()
@@ -25,17 +48,25 @@ class MetaFeatures:
         self.__data_meta_feature_names = list()
         self.__feature_meta_feature_names = list()
 
-    def getMetaData(self):
+    def get_meta_data(self):
         return self.__meta_data
 
-    def calculateMetaFeatures(self):
-        uni_time, multi_time, lm_time = self.featureMetaFeatures()
-        data_time = self.dataMetaFeatures()
-        self.createMetaData()
+    def calculate_meta_features(self) -> (float, float, float, float):
+        """
+
+        Returns
+        -------
+
+        """
+        uni_time, multi_time, lm_time = self.__compute_feature_meta_features()
+        data_time = self.__compute_data_meta_features()
+        self.__create_meta_data()
 
         return data_time, uni_time, multi_time, lm_time
 
-    def runPymfe(self, X, y, summary, features):
+    @staticmethod
+    def __run_pymfe(X: Union[DataFrame, ndarray], y: Union[DataFrame, ndarray], summary: Union[List[str], None],
+                    features: List[str]) -> (List[str], List[str]):
         warnings.simplefilter("ignore")
         mfe = MFE(summary=summary, features=features)
         mfe.fit(X, y)
@@ -44,7 +75,7 @@ class MetaFeatures:
 
         return vector
 
-    def dataMetaFeatures(self):
+    def __compute_data_meta_features(self) -> float:
         start = time.time()
         data_frame = self.__dataset.getDataFrame()
         target = self.__dataset.getTarget()
@@ -52,14 +83,14 @@ class MetaFeatures:
         X = data_frame.drop(target, axis=1)
         y = data_frame[target]
 
-        names_1, dmf_1 = self.runPymfe(X.values, y.values,
-                                       ["min", "median", "max", "sd", "kurtosis", "skewness", "mean"],
-                                       ["attr_to_inst", "freq_class", "inst_to_attr", "nr_attr", "nr_class", "nr_inst",
-                                        "gravity", "cor", "cov", "eigenvalues", "nr_cor_attr", "class_ent",
-                                        "eq_num_attr", "ns_ratio", "iq_range", "kurtosis", "mad", "max", "mean",
-                                        "median", "min", "range", "sd", "skewness", "sparsity", "t_mean", "var",
-                                        "attr_ent", "joint_ent", "mut_inf", "nr_norm", "nr_outliers", "nr_cat",
-                                        "nr_bin", "nr_num"])
+        names_1, dmf_1 = self.__run_pymfe(X.values, y.values,
+                                          ["min", "median", "max", "sd", "kurtosis", "skewness", "mean"],
+                                          ["attr_to_inst", "freq_class", "inst_to_attr", "nr_attr", "nr_class",
+                                           "nr_inst", "gravity", "cor", "cov", "eigenvalues", "nr_cor_attr",
+                                           "class_ent", "eq_num_attr", "ns_ratio", "iq_range", "kurtosis", "mad", "max",
+                                           "mean", "median", "min", "range", "sd", "skewness", "sparsity", "t_mean",
+                                           "var", "attr_ent", "joint_ent", "mut_inf", "nr_norm", "nr_outliers",
+                                           "nr_cat", "nr_bin", "nr_num"])
 
         self.__data_meta_feature_names = names_1
         self.__data_meta_features = dmf_1
@@ -67,7 +98,7 @@ class MetaFeatures:
 
         return end - start
 
-    def featureMetaFeatures(self):
+    def __compute_feature_meta_features(self) -> (float, float, float):
         start_uni = time.time()
         data_frame = self.__dataset.getDataFrame()
         target = self.__dataset.getTarget()
@@ -79,12 +110,12 @@ class MetaFeatures:
         for feature in X.columns:
             X_temp = data_frame[feature]
 
-            columns, values = self.runPymfe(X_temp.values, y.values, None,
-                                            ["iq_range", "kurtosis", "mad", "max", "mean", "median", "min",
-                                             "range", "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent",
-                                             "nr_norm", "nr_outliers", "nr_cat", "nr_bin", "nr_num"])
+            columns, values = self.__run_pymfe(X_temp.values, y.values, None,
+                                               ["iq_range", "kurtosis", "mad", "max", "mean", "median", "min", "range",
+                                                "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent", "nr_norm",
+                                                "nr_outliers", "nr_cat", "nr_bin", "nr_num"])
 
-            self.__feature_meta_features.append(self.toFeatureVector(values))
+            self.__feature_meta_features.append(self.__to_feature_vector(values))
 
         self.__feature_meta_feature_names = columns
         end_uni = time.time()
@@ -95,19 +126,19 @@ class MetaFeatures:
         p_cor = X.corr("pearson")
         s_cor = X.corr("spearman")
         k_cor = X.corr("kendall")
-        su_cor = self.symmetricalUncertainty(X=X, y=y, matrix=True)
+        su_cor = self.__symmetrical_uncertainty(X=X, y=y, matrix=True)
 
-        self.correlationFeatureMetaFeatures(cov, "_cov")
-        mean_p = self.correlationFeatureMetaFeatures(p_cor, "_p_corr")
-        mean_s = self.correlationFeatureMetaFeatures(s_cor, "_s_corr")
-        mean_k = self.correlationFeatureMetaFeatures(k_cor, "_k_corr")
-        mean_su = self.correlationFeatureMetaFeatures(su_cor, "_su_corr")
+        self.__correlation_feature_meta_features(cov, "_cov")
+        mean_p = self.__correlation_feature_meta_features(p_cor, "_p_corr")
+        mean_s = self.__correlation_feature_meta_features(s_cor, "_s_corr")
+        mean_k = self.__correlation_feature_meta_features(k_cor, "_k_corr")
+        mean_su = self.__correlation_feature_meta_features(su_cor, "_su_corr")
 
         end_multi = time.time()
         total_multi = end_multi - start_multi
 
         start_lm = time.time()
-        columns, values = self.runPymfe(X.values, y.values, None, ["joint_ent", "mut_inf", "var_importance"])
+        columns, values = self.__run_pymfe(X.values, y.values, None, ["joint_ent", "mut_inf", "var_importance"])
         for feature in X.columns:
             loc = X.columns.get_loc(feature)
             self.__feature_meta_features[loc].append(values[0][loc])
@@ -117,13 +148,13 @@ class MetaFeatures:
         for column in columns:
             self.__feature_meta_feature_names.append("target_" + column)
 
-        self.filterScores(X, y, mean_p, mean_s, mean_k, mean_su)
+        self.__filter_scores(X, y, mean_p, mean_s, mean_k, mean_su)
         end_lm = time.time()
         total_lm = end_lm - start_lm
 
         return total_uni, total_multi, total_lm
 
-    def correlationFeatureMetaFeatures(self, matrix, name, threshold=0.5):
+    def __correlation_feature_meta_features(self, matrix: DataFrame, name: str, threshold=0.5) -> Dict[str, ndarray]:
         mean_correlation = {}
         for i in range(0, len(matrix.columns)):
             values = list()
@@ -149,7 +180,8 @@ class MetaFeatures:
                                               "multi_mean_high_corr" + name]
         return mean_correlation
 
-    def filterScores(self, X, y, p_cor, s_cor, k_cor, su_cor):
+    def __filter_scores(self, X: DataFrame, y: DataFrame, p_cor: Dict[str, ndarray], s_cor: Dict[str, ndarray],
+                        k_cor: Dict[str, ndarray], su_cor: Dict[str, ndarray]):
         sc = MinMaxScaler()
         X_sc = sc.fit_transform(X)
 
@@ -164,7 +196,7 @@ class MetaFeatures:
             p = X[feature].corr(y, method="pearson")
             s = X[feature].corr(y, method="kendall")
             k = X[feature].corr(y, method="spearman")
-            su = self.symmetricalUncertainty(X[feature], y, matrix=False)
+            su = self.__symmetrical_uncertainty(X[feature], y, matrix=False)
 
             self.__feature_meta_features[loc].append(abs(p))
             self.__feature_meta_features[loc].append(abs(s))
@@ -192,7 +224,8 @@ class MetaFeatures:
         self.__feature_meta_feature_names.append("multi_cb_kendall")
         self.__feature_meta_feature_names.append("multi_cb_SU")
 
-    def toFeatureVector(self, double_list):
+    @staticmethod
+    def __to_feature_vector(double_list: Sequence[np.array]) -> List[float]:
         vector = list()
         for x in double_list:
             try:
@@ -204,7 +237,7 @@ class MetaFeatures:
 
         return vector
 
-    def createMetaData(self):
+    def __create_meta_data(self):
         self.__meta_data = DataFrame(columns=self.__feature_meta_feature_names,
                                      data=self.__feature_meta_features,
                                      index=self.__dataset.getDataFrame().drop(self.__dataset.getTarget(),
@@ -213,58 +246,65 @@ class MetaFeatures:
         for i in range(0, len(self.__data_meta_feature_names)):
             self.__meta_data[self.__data_meta_feature_names[i]] = self.__data_meta_features[i]
 
-    def createTarget(self):
+    def __create_target(self) -> (List[str], float, float, float, float):
         perm = PermutationImportance(self.__dataset)
         dCol = DropColumnImportance(self.__dataset)
         shap = ShapImportance(self.__dataset)
         lime = LimeImportance(self.__dataset)
 
         start_perm = time.time()
-        self.addTarget(perm)
+        self.add_target(perm)
         end_perm = time.time()
         total_perm = end_perm - start_perm
 
         start_dCol = time.time()
-        self.addTarget(dCol)
+        self.add_target(dCol)
         end_dCol = time.time()
         total_dCol = end_dCol - start_dCol
 
         start_shap = time.time()
-        self.addTarget(shap)
+        self.add_target(shap)
         end_shap = time.time()
         total_shap = end_shap - start_shap
 
         start_lime = time.time()
-        self.addTarget(lime)
+        self.add_target(lime)
         end_lime = time.time()
         total_lime = end_lime - start_lime
 
         return self.__targets, total_dCol, total_perm, total_lime, total_shap
 
-    def addTarget(self, target):
-        target.calculateScores()
-        imp = target.getFeatureImportances()
-        name = target.getName()
+    def add_target(self, target: 'FeatureImportance'):
+        """
+        Compute meta-target values and add them to the meta-data set.
+
+        Parameters
+        ----------
+        target : The underlying feature importance measure.
+        """
+        target.calculate_scores()
+        imp = target.get_feature_importances()
+        name = target.get_name()
         target_names = list()
 
         for i in range(0, len(imp)):
-            self.__meta_data.insert(len(self.__meta_data.columns), target.getModelNames()[i] + name, 0.0, True)
-            target_names.append(target.getModelNames()[i] + name)
+            self.__meta_data.insert(len(self.__meta_data.columns), target.get_model_names()[i] + name, 0.0, True)
+            target_names.append(target.get_model_names()[i] + name)
             for x in imp[i].index:
-                self.__meta_data.at[x, target.getModelNames()[i] + name] = imp[i].loc[x].iat[0]
+                self.__meta_data.at[x, target.get_model_names()[i] + name] = imp[i].loc[x].iat[0]
 
         self.__targets = self.__targets + target_names
 
-    def symmetricalUncertainty(self, X, y, matrix=False):
+    def __symmetrical_uncertainty(self, X: DataFrame, y: DataFrame, matrix=False) -> Union[float, DataFrame]:
         if matrix:
             data = {}
             for feature_1 in X.columns:
                 data[feature_1] = {}
                 for feature_2 in X.columns:
                     columns_1, values_1 = \
-                        self.runPymfe(X[feature_1].values, X[feature_2].values, None, ["attr_ent", "mut_inf"])
+                        self.__run_pymfe(X[feature_1].values, X[feature_2].values, None, ["attr_ent", "mut_inf"])
                     columns_2, values_2 = \
-                        self.runPymfe(X[feature_2].values, X[feature_1].values, None, ["attr_ent", "mut_inf"])
+                        self.__run_pymfe(X[feature_2].values, X[feature_1].values, None, ["attr_ent", "mut_inf"])
 
                     mut_inf = np.mean([values_1[1][0], values_2[1][0]])
                     h_1 = values_1[0][0]
@@ -276,7 +316,7 @@ class MetaFeatures:
 
             return DataFrame(data=data, columns=X.columns, index=X.columns)
 
-        columns, values = self.runPymfe(X.values, y.values, None, ["attr_ent", "class_ent", "mut_inf"])
+        columns, values = self.__run_pymfe(X.values, y.values, None, ["attr_ent", "class_ent", "mut_inf"])
         su = (2 * values[2][0]) / (values[0][0] + values[1])
 
         return su

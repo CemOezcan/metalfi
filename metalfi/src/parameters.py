@@ -1,4 +1,7 @@
+
 import numpy as np
+
+from typing import List, Tuple
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.naive_bayes import GaussianNB
@@ -7,6 +10,23 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 
 class Parameters:
+    """
+    Contains all experimental parameters as attributes.
+
+    Attributes
+    ----------
+        metrics : (Dict[int, str])
+            Evaluation metrics for meta-models.
+        targets : (List[str])
+            Names of all meta-targets.
+        base_models : (List[Tuple[object, str, str]])
+            Contains base-models (classifiers), their respective names and categories.
+        meta_models : (List[Tuple[object, str, str]])
+            Contains meta-models (regression models), their respective names and categories.
+
+
+
+    """
 
     metrics = {0: "R^2"}
     targets = ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP", "DT_SHAP",
@@ -28,7 +48,21 @@ class Parameters:
                    (LinearSVR(max_iter=10000, random_state=115), "linSVR", "linear")]
 
     @staticmethod
-    def calculate_metrics(y_train, y_test, y_pred):
+    def calculate_metrics(y_train: List[float], y_test: List[float], y_pred: List[float]) -> List[float]:
+        """
+        Compute different performance metrics for model predictions.
+
+        Parameters
+        ----------
+            y_train : Target vector of the train data.
+            y_test : Target vector of the test data.
+            y_pred : Predicted target vector of the test data.
+
+        Returns
+        -------
+            Performance of prediction according to different metrics (currently: Coefficient of determination).
+
+        """
         r_2 = 0 if np.std(y_test) <= 0.001 or np.std(y_pred) <= 0.001 else \
             1 - (sum([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))])
                  / sum([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))]))
@@ -36,9 +70,22 @@ class Parameters:
         return [r_2]
 
     @staticmethod
-    def fi_measures():
+    def fi_measures() -> List[str]:
+        """
+
+        Returns
+        -------
+            List of all feature importance measures used to compute meta-targets.
+        """
         return list(dict.fromkeys(map(lambda x: x[-4:], Parameters.targets)))
 
     @staticmethod
-    def question_5_parameters():
+    def question_5_parameters() -> Tuple[List[str], List[str], List[str]]:
+        """
+
+        Returns
+        -------
+            Experimental parameters for research question 5.
+
+        """
         return ["linSVR"], list(filter(lambda x: x.endswith("_PIMP"), Parameters.targets)), ["LM"]

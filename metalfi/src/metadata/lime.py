@@ -1,27 +1,28 @@
-import math
 
+import math
 import lime
 import lime.lime_tabular
-
 import numpy as np
+
 from pandas import DataFrame
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC, LinearSVC
 
 from metalfi.src.metadata.featureimportance import FeatureImportance
 
 
 class LimeImportance(FeatureImportance):
-
-    def __init__(self, dataset):
+    """
+    LIME-importance.
+    """
+    def __init__(self, dataset: 'Dataset'):
         super(LimeImportance, self).__init__(dataset)
         self._name = "_LIME"
 
-    def calculateScores(self):
+    def calculate_scores(self):
         for model in self._all_models:
-            self._feature_importances.append(self.limeImportance(model, self._target))
+            self._feature_importances.append(self.__lime_importance(model, self._target))
 
-    def limeImportance(self, model, target):
+    def __lime_importance(self, model, target: str) -> DataFrame:
         sc = StandardScaler()
         X = DataFrame(data=sc.fit_transform(self._data_frame.drop(target, axis=1)),
                       columns=self._data_frame.drop(target, axis=1).columns)

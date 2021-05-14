@@ -1,25 +1,36 @@
+
 import os
 import pickle
-
 import numpy as np
 import pandas as pd
 
+from typing import List, Tuple
 from pathlib import Path
 from pandas import DataFrame
 from sklearn.datasets import load_wine, load_iris, load_boston, fetch_openml
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, LabelEncoder
-from sklearn.svm import SVC, SVR, LinearSVR
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 
 class Memory:
+    """
+    Provides methods for saving and loading data and files from the metalfi/data directory.
+    """
 
     @staticmethod
-    def load(name, dir=None):
-        path = Memory.getPath()
+    def load(name: str, dir=None):
+        """
+        Load a .csv file.
+
+        Parameters
+        ----------
+            name : Name of the file.
+            dir : Directory of the file.
+
+        Returns
+        -------
+            # TODO: after reimplementing base-data set selection.
+        """
+        path = Memory.get_path()
         if not (dir is None):
             return pd.read_csv(path / (dir + "/" + name))
 
@@ -70,7 +81,7 @@ class Memory:
             data_frame = data_frame.assign(Survived=data_frame_2["Survived"])
             data_frame = data_frame.drop("PassengerId", axis=1)
 
-            data_frame.to_csv(Memory.getPath() / "preprocessed/pptitanic.csv", index=None, header=True)
+            data_frame.to_csv(Memory.get_path() / "preprocessed/pptitanic.csv", index=None, header=True)
 
         return data_frame, "Survived"
 
@@ -95,7 +106,17 @@ class Memory:
         return data_frame, "target"
 
     @staticmethod
-    def loadOpenML():
+    def load_open_ml() -> List[Tuple[DataFrame, str, str]]:
+        """
+        Fetch and preprocess base-data sets from openML:
+        Apply ordinal encoding on categorical features and target variables.
+        Binarize target variables if necessary.
+
+        Returns
+        -------
+            List of tuples containing the preprocessed base-data sets,
+            the name of the base-data set and the name of its target variable.
+        """
         datasets = list()
         ids = [("tic-tac-toe", 1), ("banknote-authentication", 1), ("haberman", 1), ("servo", 1), ("cloud", 2),
                ("primary-tumor", 2), ("EgyptianSkulls", 1), ("SPECTF", 2), ("cpu", 2), ("bodyfat", 2), ("Engine1", 1),
@@ -145,15 +166,15 @@ class Memory:
         return datasets
 
     @staticmethod
-    def storeMetaFeatures(data):
-        path = Memory.getPath() / "features/selected"
+    def store_meta_features(data):
+        path = Memory.get_path() / "features/selected"
         if not path.is_file():
             pickle.dump(data, open(path, 'wb'))
 
     @staticmethod
-    def loadMetaFeatures():
+    def load_meta_features():
         try:
-            path = Memory.getPath() / "features/selected"
+            path = Memory.get_path() / "features/selected"
             file = open(path, 'rb')
             data = pickle.load(file)
             file.close()
@@ -164,8 +185,16 @@ class Memory:
         return data
 
     @staticmethod
-    def storeInput(data, name):
-        path = Memory.getPath() / ("input/" + name + "meta.csv")
+    def store_input(data: DataFrame, name: str):
+        """
+        Store `data` as a .csv file in metalfi/data/input.
+
+        Parameters
+        ----------
+            data : Contains a meta-data set.
+            name : Name of the base-data set, from which the meta-data set in `data` was extracted.
+        """
+        path = Memory.get_path() / ("input/" + name + "meta.csv")
         if not path.is_file():
             data.to_csv(path, index=None, header=True)
 
@@ -173,18 +202,37 @@ class Memory:
         return
 
     @staticmethod
-    def storeModel(model, name, support):
-        path = Memory.getPath() / ("model/" + name)
+    def store_model(model: 'MetaModel', name: str):
+        """
+        Serialize and save an instance of :py:class:`MetaModel` in metalfi/data/model.
+
+        Parameters
+        ----------
+            model : Instance of :py:class:`MetaModel`, that is supposed to be saved as a pickle-file.
+            name : Name of the pickle-file.
+        """
+        path = Memory.get_path() / ("model/" + name)
         if not path.is_file():
             file = open(path, 'wb')
             pickle.dump(model, file)
             file.close()
 
     @staticmethod
-    def loadModel(names):
+    def load_model(names: List[str]) -> List[Tuple['MetaModel', str]]:
+        """
+        Load pickle files in metalfi/data/model and return them as instances of :py:class:`MetaModel`.
+
+        Parameters
+        ----------
+            names : Names of files that are supposed to be loaded.
+
+        Returns
+        -------
+            ist of Tuples containing meta-models as instances of :py:class:`MetaModel` and their respective names.
+        """
         models = list()
         for name in names:
-            path = Memory.getPath() / ("model/" + name)
+            path = Memory.get_path() / ("model/" + name)
             file = open(path, 'rb')
             data = pickle.load(file)
             file.close()
@@ -193,30 +241,73 @@ class Memory:
         return models
 
     @staticmethod
-    def renewModel(model, name):
-        path = Memory.getPath() / ("model/" + name)
+    def renew_model(model: 'MetaModel', name: str):
+        """
+        Replace a meta-model in metalfi/data/model.
+
+        Parameters
+        ----------
+            model : New instance of :py:class:`MetaModel`, that is supposed to replace the old instance.
+            name : Identifies the file that is supposed to be replaced.
+        """
+        path = Memory.get_path() / ("model/" + name)
         file = open(path, 'wb')
         pickle.dump(model, file)
         file.close()
 
     @staticmethod
-    def storeDataFrame(data, name, directory, renew=False):
-        path = Memory.getPath() / ("output/" + directory + "/" + name + ".csv")
+    def store_data_frame(data: DataFrame, name: str, directory: str, renew=False):
+        """
+        Store a :py:obj:`DataFrame` object as .csv file in a given sub directory of metalfi/data.
+
+        Parameters
+        ----------
+            data : Contains the contents of the .csv file.
+            name : Name of the file.
+            directory : Subdirectory of metalfi/data
+            renew : Whether to renew the file, or not, should it already exist.
+        """
+        path = Memory.get_path() / ("output/" + directory + "/" + name + ".csv")
         if renew or not path.is_file():
             data.to_csv(path, header=True)
 
     @staticmethod
-    def storeVisual(plt, name, directory):
-        plt.savefig(Memory.getPath() / ("output/" + directory + "/" + name + ".png"))
+    def store_visual(plt, name, directory):
+        """
+        Save `plt` as .png file in a subdirectory of metalfi/data.
+
+        Parameters
+        ----------
+            plt : Matplotlib-plot.
+            name : Name of the .png file.
+            directory : Subdirectory of metalfi/data.
+        """
+        plt.savefig(Memory.get_path() / ("output/" + directory + "/" + name + ".png"))
         plt.close()
 
     @staticmethod
-    def getContents(directory):
-        path = Memory.getPath() / directory
+    def get_contents(directory) -> List[str]:
+        """
+        Fetch and return all file names in the subdirectory `directory` of metalfi/data.
+
+        Parameters
+        ----------
+            directory : Subdirectory of metalfi/data.
+
+        Returns
+        -------
+            File names in metalfi/data/`directory`.
+        """
+        path = Memory.get_path() / directory
         file_names = list(filter(lambda x: not x.endswith(".gitignore"), os.listdir(path)))
         return file_names
 
     @staticmethod
-    def getPath():
+    def get_path():
+        """
+
+        Returns:
+            The metalfi/data directory.
+        """
         path = Path(__file__).parents[1] / "data"
         return path

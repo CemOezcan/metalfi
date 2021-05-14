@@ -1,3 +1,4 @@
+
 import time
 
 from metalfi.src.controller import Controller
@@ -5,9 +6,15 @@ from metalfi.src.visualization import Visualization
 
 
 class Main(object):
+    """
+    Main Class
+    """
 
     @staticmethod
     def main():
+        """
+        Main method. Computations start here.
+        """
         data = ["Titanic", "Iris", "Cancer", "Wine", "Boston", "tic-tac-toe", "banknote-authentication",
                 "haberman", "servo", "cloud", "primary-tumor", "EgyptianSkulls", "SPECTF", "cpu", "bodyfat",
                 "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob", "ERA", "LEV", "cmc", "credit-g",
@@ -21,17 +28,17 @@ class Main(object):
 
         # Train meta-models (if necessary)
         start = time.time()
-        c.trainMetaModel()
+        c.train_meta_models()
         end = time.time()
         print(end - start)
 
         # Load trained meta-models from storage and get evaluation results
         start = time.time()
-        c.evaluate(data)
+        c.estimate(data)
         end = time.time()
         print(end - start)
 
-        c.metaFeatureImportances()
+        c.meta_feature_importances()
 
         # Compare
         start = time.time()
@@ -42,16 +49,16 @@ class Main(object):
 
         # Tests
         Visualization.performance()
-        Visualization.cleanUp()
+        Visualization.clean_up()
         c.questions(data)
         Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["landmarking", "univariate", "data"], "fast")
         Visualization.runtime_boxplot(100000000, ["LOFO"], ["multivariate"], "fast_multi")
         Visualization.runtime_boxplot(100000000, ["SHAP", "LIME"], ["total"], "slow")
         Visualization.runtime_graph("fast_graph")
-        Visualization.createHistograms()
-        Visualization.correlateTargets()
-        Visualization.correlateMetrics()
-        Visualization.metaFeatureImportance()
+        Visualization.create_histograms()
+        Visualization.correlate_targets()
+        Visualization.correlate_metrics()
+        Visualization.meta_feature_importance()
 
 
 if __name__ == '__main__':

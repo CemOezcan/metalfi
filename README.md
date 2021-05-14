@@ -15,26 +15,32 @@ Input data and results data of the experimental pipelines are also available [on
             ├── features                # Data on meta-feature importance
             ├── input                   # Meta-data sets
             ├── model                   # Meta-models
-            ├── output                  # .csv files of experimental results. The content of this folder is used to generate the plots.
-                ├── importance          # Meta-feature importances
-                ├── predictions         # Meta-model performances
-                ├── questions           # .csv files for each research question (q2 - q5). This data is used to create the critical differences plots.
-                    ├── q2
-                    ├── q3
-                    ├── q4
-                    ├── q5
-                ├── runtime             # .csv files with the calculation times of each meta-data set 
-                ├── selection           # Accuracy scores of base models using different feature selection methods (Part of research question 5)
+            ├── output                  # .csv files of experimental results. The content of this folder is used to generate the plots, which are also saved in this directory.
+                ├── groups              # Group meta-model performance estimates by meta-feature subsets: 
+                ├                            Box plots and critical differences diagrams visualize and compare 
+                ├                            linear and non-linear meta-model performances based on the meta-feature 
+                ├                            subsets, they were trained on.
+                ├── importance          # SHAP-based meta-feature importance estimates: 
+                ├                            Bar plots visualize the importance values of the top 15 meta-features. 
+                ├── models              # Group meta-model performance estimates by meta-model types: 
+                ├                            Box plots and critical differences diagrams visualize and compare meta-model 
+                ├                            performance estimates, grouped by their respective regression model.
+                ├── predictions         # All meta-model performance estimates over all meta-model configurations 
+                ├                            and cross validation splits. 
+                ├── runtime             # Computation times of all meta-feature subsets and meta-targets, 
+                ├                            for all base-data sets. 
+                ├── selection           # Group base-model accuracy scores by different feature selection approaches: 
+                ├                            Bar plots and critical differences diagrams visualize and compare base-model 
+                ├                            accuracies grouped by feature selection approaches. 
+                ├── targets             # Group meta-model performance estimates by meta-targets:
+                                            Box plots and critical differences diagrams visualize and compare meta-model 
+                                            performance estimates grouped by meta-targets. 
             ├── preprocessed            # Preprocessed data sets
             ├── raw                     # Contains two small data sets
-            ├── visual                  # Contains all plots
             
         ├── src                         # Source code
-            ├── data                    # Scripts that handle the data
-                ├── meta                # Meta-data related scripts
-                    ├── importance      # Meta-target related scripts
+            ├── metadata                # Scripts that handle the meta-data
             ├── model                   # Contains scripts that train and evaluate meta-models
-            ├── visual                  # Scripts that visualize the generated data
     ├── .gitignore                 
     ├── requirements.txt           
     ├── start.py                   

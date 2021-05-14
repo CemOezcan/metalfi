@@ -1,15 +1,15 @@
-import os
+
 import re
 import Orange
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.stats as ss
 
 import scikit_posthocs as sp
+from typing import List, Tuple
 from pandas import DataFrame
 from decimal import Decimal
-import scipy.stats as ss
 from sklearn.preprocessing import StandardScaler
 
 from metalfi.src.memory import Memory
@@ -17,11 +17,14 @@ from metalfi.src.parameters import Parameters
 
 
 class Visualization:
+    """"
+    Postprocessing data and visualization.
+    """
 
     @staticmethod
     def fetch_runtime_data(substring, threshold=1000000):
         directory = "output/runtime"
-        file_names = list(filter(lambda x: x.endswith('.csv') and substring in x, Memory.getContents(directory)))
+        file_names = list(filter(lambda x: x.endswith('.csv') and substring in x, Memory.get_contents(directory)))
         data = list()
 
         for name in file_names:
@@ -63,7 +66,7 @@ class Visualization:
             plt.plot(meta_data[x].columns[0], x, data=meta_data[x], linewidth=2)
 
         plt.legend()
-        Memory.storeVisual(plt, name, "runtime")
+        Memory.store_visual(plt, name, "runtime")
 
     @staticmethod
     def runtime_boxplot(threshold, targets, meta, name):
@@ -88,19 +91,19 @@ class Visualization:
         fig, ax = plt.subplots()
         ax.boxplot(data, showfliers=False)
         plt.xticks(list(range(1, len(data) + 1)), names)
-        Memory.storeVisual(plt, name + "_box", "runtime")
+        Memory.store_visual(plt, name + "_box", "runtime")
 
     @staticmethod
     def fetch_predictions():
         directory = "output/predictions"
-        file_names = Memory.getContents(directory)
+        file_names = Memory.get_contents(directory)
 
         for name in file_names:
             frame = Memory.load(name, directory).set_index("Unnamed: 0")
             for column in frame.columns:
                 frame = frame.round({column: 3})
 
-            path = Memory.getPath() / (directory + "/" + name)
+            path = Memory.get_path() / (directory + "/" + name)
             frame.to_csv(path, header=True)
 
         data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
@@ -109,8 +112,11 @@ class Visualization:
 
     @staticmethod
     def performance():
+        """
+        Create and save bar charts. Visualizes the performances of different feature selection approaches.
+        """
         directory = "output/selection"
-        file_names = list(filter(lambda x: x.endswith(".csv") and "_" not in x, Memory.getContents(directory)))
+        file_names = list(filter(lambda x: x.endswith(".csv") and "_" not in x, Memory.get_contents(directory)))
         data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
 
         for frame, name in data:
@@ -136,22 +142,39 @@ class Visualization:
             ax.legend()
             plt.ylim([0.75, 0.85])
 
-            Memory.storeVisual(plt, name[:-4], "selection")
+            Memory.store_visual(plt, name[:-4], "selection")
 
     @staticmethod
-    def metaFeatureImportance():
+    def meta_feature_importance():
+        """
+        Create and save bar charts. Visualizes the importance of meta-features for different meta-targets.
+        """
         directory = "output/importance"
-        file_names = Memory.getContents(directory)
+        file_names = Memory.get_contents(directory)
         data = [(Memory.load(name, directory), name) for name in file_names if ".csv" in name]
 
         for frame, name in data:
             frame = frame.sort_values(by="mean absolute SHAP")
             plt.barh(list(frame["meta-features"])[-15:], list(frame["mean absolute SHAP"])[-15:])
             plt.yticks(list(frame["meta-features"])[-15:])
-            Memory.storeVisual(plt, name[:-4], "importance")
+            Memory.store_visual(plt, name[:-4], "importance")
 
     @staticmethod
-    def compareMeans(data, folder):
+    def compare_means(data: List[Tuple[DataFrame, str]], folder: str):
+        """
+        Determine, whether the differences in meta-model performance are significant:
+        Group data across cross validation splits and employ the non-parametric Friedman test.
+        If the differences between the cross validation splits are significant,
+        employ the Nemenyi post-hoc test and visualize its results using a Critical Differences (CD) diagram.
+
+        Parameters
+        ----------
+            data :
+                List of cross validation results as a tuple. Each tuple contains meta-model performance estimates
+                on a given cross validation split and the name of said split.
+            folder :
+                Name of the subdirectory of metalfi/data, in which the diagrams are supposed to be saved.
+        """
         for data_frame, metric in data:
             d = list()
             names = list()
@@ -176,27 +199,30 @@ class Visualization:
                 val, p_value = ss.friedmanchisquare(*d)
                 if p_value < 0.05:
                     #sp.sign_array(sp.posthoc_nemenyi_friedman(np.array(d).T))
-                    Visualization.createTimeline(names, ranks, metric, d, folder)
+                    Visualization.__create_cd_diagram(names, ranks, metric, d, folder)
 
     @staticmethod
-    def createTimeline(names, ranks, metric, data, folder):
+    def __create_cd_diagram(names: List[str], ranks: List[float], metric: str, data: List[np.array], folder: str):
         cd = Orange.evaluation.compute_CD(ranks, 28) if len(ranks) < 21 else 3.616
         Orange.evaluation.graph_ranks(ranks, names, cd=cd)
-        Memory.storeVisual(plt, metric + "_cd", folder)
+        Memory.store_visual(plt, metric + "_cd", folder)
         plt.close()
 
         fig, ax = plt.subplots()
         ax.boxplot(data, notch=True, showfliers=False)
         ax.set_xticks(list(range(1, len(data) + 1)))
         ax.set_xticklabels(names)
-        Memory.storeVisual(plt, metric + "_means", folder)
+        Memory.store_visual(plt, metric + "_means", folder)
         plt.close()
 
     @staticmethod
-    def correlateMetrics():
+    def correlate_metrics():
+        """
+        Compute pairwise Spearman correlation coefficients between performance metrics.
+        """
         new = {metric: list() for metric in Parameters.metrics.values()}
         directory = "output/predictions"
-        file_names = Memory.getContents(directory)
+        file_names = Memory.get_contents(directory)
         data = [(Memory.load(name, directory), name) for name in file_names if "x" not in name]
 
         columns = data[0][0].columns
@@ -207,14 +233,21 @@ class Visualization:
 
         frame = DataFrame.from_dict(new)
         corr = frame.corr("spearman")
-        Memory.storeDataFrame(corr, "metrics_corr", "", True)
-
-        return data
+        Memory.store_data_frame(corr, "metrics_corr", "", True)
 
     @staticmethod
-    def correlateTargets():
+    def correlate_targets():
+        """
+        Compute pairwise Spearman correlation coefficients between meta-features and meta-targets,
+        grouped by feature importance measure.
+
+        Returns
+        -------
+            Mean and maximum values over all correlation coefficients for each group.
+
+        """
         directory = "input"
-        file_names = Memory.getContents(directory)
+        file_names = Memory.get_contents(directory)
         sc = StandardScaler()
         data = list()
 
@@ -235,20 +268,26 @@ class Visualization:
         matrix = matrix.drop([x for x in lofo + shap + pimp + lime + lm], axis=0)
         matrix = matrix.drop([x for x in list(frame.columns) if x not in lofo + shap + pimp + lime], axis=1)
 
-        def f(targets): return np.round(np.mean([np.mean(list([val for val in list(map(abs, matrix[x].values)) if val < 1])) for x in targets]), 2)
+        def __f(targets):
+            return np.round(np.mean([np.mean(list([val for val in list(map(abs, matrix[x].values)) if val < 1]))
+                                     for x in targets]), 2)
 
-        def f_2(targets): return np.round(np.max([np.mean(list([val for val in list(map(abs, matrix[x].values)) if val < 1])) for x in targets]), 2)
+        def __f_2(targets):
+            return np.round(np.max([np.mean(list([val for val in list(map(abs, matrix[x].values)) if val < 1]))
+                                    for x in targets]), 2)
 
-        d = {'lofo': [f(lofo), f_2(lofo)], 'shap': [f(shap), f_2(shap)], 'lime': [f(lime), f_2(lime)], 'pimp': [f(pimp), f_2(pimp)]}
-
+        d = {'lofo': [__f(lofo), __f_2(lofo)], 'shap': [__f(shap), __f_2(shap)],
+             'lime': [__f(lime), __f_2(lime)], 'pimp': [__f(pimp), __f_2(pimp)]}
         data_frame = pd.DataFrame(data=d, index=["mean", "max"], columns=["lofo", "shap", "lime", "pimp"])
-
-        Memory.storeDataFrame(data_frame, "target_corr", "", True)
+        Memory.store_data_frame(data_frame, "target_corr", "", True)
 
     @staticmethod
-    def createHistograms():
+    def create_histograms():
+        """
+        Group meta-targets by feature importance measure and visualize their distributions as histograms.
+        """
         directory = "input"
-        file_names = Memory.getContents(directory)
+        file_names = Memory.get_contents(directory)
         data = list()
 
         for name in file_names:
@@ -273,12 +312,12 @@ class Visualization:
             axs[x, y].set_title(name)
             axs[x, y].set_xlim(np.quantile(values, 0.05), np.quantile(values, 0.75))
 
-        Memory.storeVisual(plt, "Histograms", "")
+        Memory.store_visual(plt, "Histograms", "")
 
     @staticmethod
-    def cleanUp():
+    def clean_up():
         directory = "output/predictions"
-        file_names = list(filter(lambda x: "x" in x and x.endswith(".csv"), Memory.getContents(directory)))
+        file_names = list(filter(lambda x: "x" in x and x.endswith(".csv"), Memory.get_contents(directory)))
         data = list()
 
         for name in file_names:
@@ -300,4 +339,4 @@ class Visualization:
                         data_frame.iloc[i, j] = round(data_frame.iloc[i].iloc[j], 3)
 
             data_frame = data_frame.set_index("Unnamed: 0")
-            Memory.storeDataFrame(data_frame, name[:-4], "predictions", True)
+            Memory.store_data_frame(data_frame, name[:-4], "predictions", True)
