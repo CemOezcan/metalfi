@@ -135,7 +135,7 @@ After setting up and activating an environment, you are ready to run the code.
 From the top-level of this repo, run
 
 ```bash
-python start.py
+python -m metalfi.src.main
 ```
 
 This will start the meta-data calculations, the meta-model training as well as the generation of the experimental results. 
