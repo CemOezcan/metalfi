@@ -1,8 +1,23 @@
-
+import math
+import multiprocessing
 import time
 
+import numpy as np
+import pandas as pd
+from pandas import DataFrame
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import cross_val_score, KFold
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVR, LinearSVR
+from tqdm import tqdm
+
 from metalfi.src.controller import Controller
+from metalfi.src.memory import Memory
+from metalfi.src.parameters import Parameters
 from metalfi.src.visualization import Visualization
+import openml
 
 
 class Main(object):
@@ -15,11 +30,6 @@ class Main(object):
         """
         Main method. Computations start here.
         """
-        data = ["Titanic", "Iris", "Cancer", "Wine", "Boston", "tic-tac-toe", "banknote-authentication",
-                "haberman", "servo", "cloud", "primary-tumor", "EgyptianSkulls", "SPECTF", "cpu", "bodyfat",
-                "Engine1", "ESL", "ilpd-numeric", "credit-approval", "vowel", "socmob", "ERA", "LEV", "cmc", "credit-g",
-                "phoneme", "bank8FM", "wind"]
-
         # Calculate meta-datasets (if necessary)
         start = time.time()
         c = Controller()
@@ -31,6 +41,8 @@ class Main(object):
         c.train_meta_models()
         end = time.time()
         print(end - start)
+
+        data = Memory.get_contents("model")
 
         # Load trained meta-models from storage and get evaluation results
         start = time.time()

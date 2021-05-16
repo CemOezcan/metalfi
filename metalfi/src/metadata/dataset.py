@@ -24,7 +24,7 @@ class Dataset:
         d_total = end_d_total - start_d_total
 
         start_t_total = time.time()
-        targets, d, p, l, s = mf.__create_target()
+        targets, d, p, l, s = mf.create_target()
         end_t_total = time.time()
         t_total = end_t_total - start_t_total
 

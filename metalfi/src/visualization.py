@@ -195,7 +195,7 @@ class Visualization:
                 names.append(column)
                 d.append(data_frame[column].values)
 
-            if len(names) <= 24:
+            if 24 >= len(names) >= 3:
                 val, p_value = ss.friedmanchisquare(*d)
                 if p_value < 0.05:
                     #sp.sign_array(sp.posthoc_nemenyi_friedman(np.array(d).T))

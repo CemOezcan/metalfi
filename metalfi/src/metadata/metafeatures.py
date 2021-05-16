@@ -187,6 +187,8 @@ class MetaFeatures:
 
         chi2_values, chi2_p_values = chi2(X_sc, y)
         f_values, anova_p_values = f_classif(X, y)
+        # TODO: Better solution
+        f_values = list(map((lambda x: 500 if x == float("inf") else x), f_values))
         log_anova_p = list(map((lambda x: -500 if x == float("-inf") else x), [np.log(x) for x in anova_p_values]))
         log_anova_p = list(map((lambda x: 1 if math.isnan(x) else x), log_anova_p))
         log_chi2_p = [np.log(x) for x in chi2_p_values]
@@ -246,7 +248,15 @@ class MetaFeatures:
         for i in range(0, len(self.__data_meta_feature_names)):
             self.__meta_data[self.__data_meta_feature_names[i]] = self.__data_meta_features[i]
 
-    def __create_target(self) -> (List[str], float, float, float, float):
+    def create_target(self) -> (List[str], float, float, float, float):
+        """
+        Compute meta-target variables and append results to meta-data set.
+
+        Returns
+        -------
+            Names and computation times of all meta-target variables.
+
+        """
         perm = PermutationImportance(self.__dataset)
         dCol = DropColumnImportance(self.__dataset)
         shap = ShapImportance(self.__dataset)
