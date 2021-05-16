@@ -2,6 +2,7 @@
 import numpy as np
 
 from typing import List, Tuple
+from sklearn.metrics import r2_score
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.naive_bayes import GaussianNB
@@ -64,8 +65,7 @@ class Parameters:
 
         """
         r_2 = 0 if np.std(y_test) <= 0.001 or np.std(y_pred) <= 0.001 else \
-            1 - (sum([(y_pred[i] - y_test[i]) ** 2 for i in range(len(y_pred))])
-                 / sum([(np.mean(y_train) - y_test[i]) ** 2 for i in range(len(y_pred))]))
+            r2_score(y_test, y_pred)
 
         return [r_2]
 

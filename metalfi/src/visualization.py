@@ -94,30 +94,13 @@ class Visualization:
         Memory.store_visual(plt, name + "_box", "runtime")
 
     @staticmethod
-    def fetch_predictions():
-        directory = "output/predictions"
-        file_names = Memory.get_contents(directory)
-
-        for name in file_names:
-            frame = Memory.load(name, directory).set_index("Unnamed: 0")
-            for column in frame.columns:
-                frame = frame.round({column: 3})
-
-            path = Memory.get_path() / (directory + "/" + name)
-            frame.to_csv(path, header=True)
-
-        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
-
-        return data
-
-    @staticmethod
     def performance():
         """
         Create and save bar charts. Visualizes the performances of different feature selection approaches.
         """
         directory = "output/selection"
         file_names = list(filter(lambda x: x.endswith(".csv") and "_" not in x, Memory.get_contents(directory)))
-        data = [(Memory.load(name, directory).set_index("Unnamed: 0"), name) for name in file_names]
+        data = [(Memory.load(name, directory).set_index("Index"), name) for name in file_names]
 
         for frame, name in data:
             width = 0.2
@@ -195,7 +178,7 @@ class Visualization:
                 names.append(column)
                 d.append(data_frame[column].values)
 
-            if len(names) <= 24:
+            if 24 >= len(names) >= 3:
                 val, p_value = ss.friedmanchisquare(*d)
                 if p_value < 0.05:
                     #sp.sign_array(sp.posthoc_nemenyi_friedman(np.array(d).T))
@@ -338,5 +321,5 @@ class Visualization:
                     else:
                         data_frame.iloc[i, j] = round(data_frame.iloc[i].iloc[j], 3)
 
-            data_frame = data_frame.set_index("Unnamed: 0")
+            data_frame = data_frame.set_index("Index")
             Memory.store_data_frame(data_frame, name[:-4], "predictions", True)

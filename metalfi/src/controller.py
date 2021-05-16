@@ -2,7 +2,8 @@ import os
 import sys
 
 from typing import Tuple, Dict
-from multiprocessing import Pool
+import multiprocessing as mp
+
 import tqdm
 import pandas as pd
 
@@ -45,26 +46,8 @@ class Controller:
         """
         Fetch base-data sets from openMl and scikit-learn
         """
-        data_frame, target = Memory.loadTitanic()
-        data_1 = Dataset(data_frame, target)
-
-        data_frame_2, target_2 = Memory.loadCancer()
-        data_2 = Dataset(data_frame_2, target_2)
-
-        data_frame_3, target_3 = Memory.loadIris()
-        data_3 = Dataset(data_frame_3, target_3)
-
-        data_frame_4, target_4 = Memory.loadWine()
-        data_4 = Dataset(data_frame_4, target_4)
-
-        data_frame_5, target_5 = Memory.loadBoston()
-        data_5 = Dataset(data_frame_5, target_5)
-
         open_ml = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.load_open_ml()]
-
-        self.__train_data = [(data_1, "Titanic"), (data_2, "Cancer"), (data_3, "Iris"), (data_4, "Wine"),
-                             (data_5, "Boston")] + open_ml
-
+        self.__train_data = open_ml
         self.__data_names = dict({})
         i = 0
         for data, name in self.__train_data:
@@ -78,7 +61,7 @@ class Controller:
         data = [(dataset, name) for dataset, name in self.__train_data
                 if not (Memory.get_path() / ("input/" + name + "meta.csv")).is_file()]
 
-        with Pool(processes=4) as pool:
+        with mp.Pool(processes=mp.cpu_count() - 1) as pool:
             progress_bar = tqdm.tqdm(total=len(data), desc="Computing meta-data")
             [pool.apply_async(self.parallel_meta_computation, (args,), callback=(lambda x: progress_bar.update(n=1)))
              for args in data]
@@ -164,7 +147,7 @@ class Controller:
         selection_results = [self.__select_meta_features(parameter[1][:-4]) for parameter in parameters]
         args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))
 
-        with Pool(processes=4) as pool:
+        with mp.Pool(processes=mp.cpu_count() - 1) as pool:
             progress_bar = tqdm.tqdm(total=len(args), desc="Training meta-models")
             [pool.apply_async(self.parallel_training, (arg,), callback=(lambda x: progress_bar.update(n=1)))
              for arg in args]

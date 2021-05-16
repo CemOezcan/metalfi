@@ -1,6 +1,6 @@
 import re
 from functools import partial
-from multiprocessing import Pool
+import multiprocessing as mp
 from typing import List, Union, Dict, Tuple
 
 import numpy as np
@@ -90,7 +90,7 @@ class Evaluation:
         config = [[pattern.match(column).group("meta"),
                    pattern.match(column).group("target"),
                    pattern.match(column).group("features")]
-                  for column in data[file_names[0][:-4]].columns if "Unnamed" not in column]
+                  for column in data[file_names[0][:-4]].columns if "Index" not in column]
 
         # Q_5
         directory = "output/selection"
@@ -100,7 +100,7 @@ class Evaluation:
 
         config_5 = [[pattern.match(column).group("meta"), pattern.match(column).group("target"),
                      pattern.match(column).group("features"), pattern.match(column).group("selection")]
-                    for column in comparison_data[file_name[:-4]].columns if "Unnamed" not in column]
+                    for column in comparison_data[file_name[:-4]].columns if "Index" not in column]
 
         # Q_2
         subset_names_lin = list(dict.fromkeys([c[2] for c in config if c[2] != "All"]))
@@ -122,7 +122,7 @@ class Evaluation:
                   for meta_target in Parameters.question_5_parameters()[1]}
 
         rows = list()
-        base_data_sets = list(data.values())[0]["Unnamed: 0"]
+        base_data_sets = list(data.values())[0]["Index"]
         for i in range(len(base_data_sets)):
             stats = list(map(lambda x: list(x), zip(*[data_set.iloc[i][1:] for data_set in data.values()])))
             comps = list(map(lambda x: list(x), zip(*[data_set.iloc[i][1:] for data_set in comparison_data.values()])))
@@ -261,7 +261,7 @@ class Evaluation:
         Estimate meta-model performances by testing them on their respective cross validation test splits.
         Save the results as .csv files in the `metalfi/data/output/predictions` directory.
         """
-        with Pool(processes=4) as pool:
+        with mp.Pool(processes=mp.cpu_count() - 1) as pool:
             progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Evaluating meta-models")
             results = [
                 pool.map_async(
@@ -353,7 +353,7 @@ class Evaluation:
             subsets : Meta-feature subsets.
             renew : Whether to recompute the results, if they have already been computed.
         """
-        with Pool(processes=4) as pool:
+        with mp.Pool(processes=mp.cpu_count() - 1) as pool:
             progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
 
             results = [pool.map_async(

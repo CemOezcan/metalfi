@@ -4,8 +4,8 @@ import sys
 import warnings
 import tqdm
 import numpy as np
+import multiprocessing as mp
 
-from multiprocessing.pool import Pool
 from typing import Dict, List, Tuple
 from statistics import mean
 from pandas import DataFrame
@@ -120,7 +120,7 @@ class MetaFeatureSelection:
             iterable += [(target, model, all_X[subsets[name][target]], Y[target], category)
                          for model, name, category in models]
 
-        with Pool(processes=4) as pool:
+        with mp.Pool(processes=mp.cpu_count() - 1) as pool:
             progress_bar = tqdm.tqdm(total=len(iterable), desc="Computing meta-feature importance")
             results = [
                 pool.map_async(

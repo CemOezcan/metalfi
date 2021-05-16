@@ -2,6 +2,7 @@
 import os
 import pickle
 import numpy as np
+import openml
 import pandas as pd
 
 from typing import List, Tuple
@@ -17,98 +18,32 @@ class Memory:
     """
 
     @staticmethod
-    def load(name: str, dir=None):
+    def load(name: str, directory) -> DataFrame:
         """
         Load a .csv file.
 
         Parameters
         ----------
             name : Name of the file.
-            dir : Directory of the file.
+            directory : (str) Directory of the file.
 
         Returns
         -------
-            # TODO: after reimplementing base-data set selection.
+            The .csv file as :py:object:`DataFrame` object.
         """
         path = Memory.get_path()
-        if not (dir is None):
-            return pd.read_csv(path / (dir + "/" + name))
-
-        try:
-            data = pd.read_csv(path / ("preprocessed/pp" + name)), True
-        except FileNotFoundError:
-            data = pd.read_csv(path / ("raw/" + name)), False
-
-        return data
-
-    @staticmethod
-    def loadBoston():
-        boston = load_boston()
-        data_frame = DataFrame(data=boston.data, columns=boston['feature_names'])
-
-        est = KBinsDiscretizer(n_bins=2, encode='ordinal')
-        data_frame["target"] = est.fit_transform(list(map(lambda x: [x], boston.target)))
-
-        return data_frame, "target"
-
-    @staticmethod
-    def loadTitanic():
-        data_frame, preprocessed = Memory.load("titanic.csv")
-
-        if not preprocessed:
-            data_frame = data_frame.drop("Ticket", axis=1)
-
-            data_frame["Sex"].replace({"male": 1, "female": 0}, inplace=True)
-
-            data_frame["Name"] = [x.split(", ")[1] for x in data_frame["Name"]]
-            data_frame["Name"] = [x.split(' ')[0] for x in data_frame["Name"]]
-            data_frame["Name"] = data_frame["Name"].apply(
-                lambda x: 0 if (x == "Mrs." or x == "Ms.") else (1 if x == "Mr." else 2))
-            data_frame = data_frame.rename(columns={"Name": "Title"})
-
-            data_frame["Cabin"] = [0 if (str(x) == "nan") else x[0] for x in data_frame["Cabin"]]
-            data_frame["Cabin"].replace({'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'T': 8}, inplace=True)
-
-            data_frame["Embarked"] = [0 if (str(x) == "nan") else x for x in data_frame["Embarked"]]
-            data_frame["Embarked"].replace({'C': 1, 'Q': 2, 'S': 3}, inplace=True)
-
-            avg_age = int(data_frame["Age"].mean())
-            data_frame["Age"] = [avg_age if (str(x) == "nan") else x for x in data_frame["Age"]]
-
-            data = {"Survived": data_frame["Survived"].values}
-            data_frame_2 = DataFrame(data, columns=["Survived"])
-            data_frame = data_frame.drop("Survived", axis=1)
-            data_frame = data_frame.assign(Survived=data_frame_2["Survived"])
-            data_frame = data_frame.drop("PassengerId", axis=1)
-
-            data_frame.to_csv(Memory.get_path() / "preprocessed/pptitanic.csv", index=None, header=True)
-
-        return data_frame, "Survived"
-
-    @staticmethod
-    def loadCancer():
-        data_frame, preprocessed = Memory.load("cancer.csv")
-
-        return data_frame.drop("Unnamed: 0", axis=1), "MEDV"
-
-    @staticmethod
-    def loadWine():
-        wine = load_wine()
-        data_frame = DataFrame(data=np.c_[wine['data'], wine['target']], columns=wine['feature_names'] + ['target'])
-
-        return data_frame, "target"
-
-    @staticmethod
-    def loadIris():
-        iris = load_iris()
-        data_frame = DataFrame(data=np.c_[iris['data'], iris['target']], columns=iris['feature_names'] + ['target'])
-
-        return data_frame, "target"
+        return pd.read_csv(path / (directory + "/" + name))
 
     @staticmethod
     def load_open_ml() -> List[Tuple[DataFrame, str, str]]:
         """
         Fetch and preprocess base-data sets from openML:
+        Criteria:
+            - Number of instances < 1000
+            - Number of features in [5, 19]
+            - Number of classes = 2
+            - Number of missing values = 0
+            - Number of zero-variance features = 0
         Apply ordinal encoding on categorical features and target variables.
         Binarize target variables if necessary.
 
@@ -117,19 +52,31 @@ class Memory:
             List of tuples containing the preprocessed base-data sets,
             the name of the base-data set and the name of its target variable.
         """
-        datasets = list()
-        ids = [("tic-tac-toe", 1), ("banknote-authentication", 1), ("haberman", 1), ("servo", 1), ("cloud", 2),
-               ("primary-tumor", 2), ("EgyptianSkulls", 1), ("SPECTF", 2), ("cpu", 2), ("bodyfat", 2), ("Engine1", 1),
-               ("ESL", 2), ("ilpd-numeric", 2), ("credit-approval", 1), ("vowel", 3), ("socmob", 2), ("ERA", 1),
-               ("LEV", 1), ("credit-g", 1), ("cmc", 2), ("phoneme", 1), ("bank8FM", 2), ("wind", 2)]
+        openml_list = openml.datasets.list_datasets()
+        data = DataFrame.from_dict(openml_list, orient="index")
+        data = data[data['NumberOfInstances'] < 1000]
+        data = data[data['NumberOfFeatures'] < 20]
+        data = data[data['NumberOfFeatures'] > 4]
+        data = data[data['NumberOfClasses'] == 2]
+        data = data[data['NumberOfMissingValues'] == 0].sort_values(["version"])
+        data = data.drop_duplicates("name", "last")
+
+        target = "base-target_variable"
+        ids = list(filter(lambda x: str(x[0]) + "_" + str(x[1]) + ".csv" not in Memory.get_contents("preprocessed"),
+                          [tuple(x) for x in data[["name", "version"]].values]))
 
         for name, version in ids:
             dataset = fetch_openml(name=name, version=version, as_frame=True)
-            categories = fetch_openml(name=name, version=version, as_frame=False)["categories"]
+            try:
+                categories = fetch_openml(name=name, version=version, as_frame=False)["categories"]
+            except ValueError:
+                ids.remove((name, version))
+                continue
+
             all_features = dataset["feature_names"]
             cat_features = list()
             data_frame = dataset["frame"].dropna(axis=0)
-            target = dataset["target_names"][0]
+            data_frame = data_frame.rename(columns={dataset["target_names"][0]: target})
 
             X = data_frame.drop(target, axis=1)
             X_cat = X
@@ -161,9 +108,13 @@ class Memory:
             data_frame = DataFrame(data=np.c_[np.c_[X_cat, X_num], y],
                                    columns=cat_features + num_features + [target])
 
-            datasets.append((data_frame, name, target))
+            if True in [data_frame[d].var() == 0.0 for d in data_frame.columns]:
+                ids.remove((name, version))
+                continue
 
-        return datasets
+            Memory.store_preprocessed(data_frame, name + "_" + str(version))
+
+        return [(Memory.load(file, "preprocessed"), file[:-4], target) for file in Memory.get_contents("preprocessed")]
 
     @staticmethod
     def store_meta_features(data):
@@ -196,7 +147,7 @@ class Memory:
         """
         path = Memory.get_path() / ("input/" + name + "meta.csv")
         if not path.is_file():
-            data.to_csv(path, index=None, header=True)
+            data.to_csv(path, index=False, header=True)
 
     def storeOutput(self, data):
         return
@@ -258,7 +209,7 @@ class Memory:
     @staticmethod
     def store_data_frame(data: DataFrame, name: str, directory: str, renew=False):
         """
-        Store a :py:obj:`DataFrame` object as .csv file in a given sub directory of metalfi/data.
+        Store a :py:obj:`DataFrame` object as .csv file in a given sub directory of metalfi/data/output.
 
         Parameters
         ----------
@@ -269,6 +220,8 @@ class Memory:
         """
         path = Memory.get_path() / ("output/" + directory + "/" + name + ".csv")
         if renew or not path.is_file():
+            if data.index.name is None:
+                data.index.name = "Index"
             data.to_csv(path, header=True)
 
     @staticmethod
@@ -311,3 +264,16 @@ class Memory:
         """
         path = Path(__file__).parents[1] / "data"
         return path
+
+    @staticmethod
+    def store_preprocessed(data: DataFrame, name: str):
+        """
+        Store a :py:obj:`DataFrame` object as .csv file in metalfi/data/preprocessed.
+
+        Parameters
+        ----------
+            data : Contains the contents of the .csv file.
+            name : Name of the file.
+        """
+        path = Memory.get_path() / ("preprocessed/" + name + ".csv")
+        data.to_csv(path, index=False, header=True)
