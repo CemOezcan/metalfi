@@ -18,34 +18,32 @@ class Memory:
     """
 
     @staticmethod
-    def load(name: str, dir=None):
+    def load(name: str, directory) -> DataFrame:
         """
         Load a .csv file.
 
         Parameters
         ----------
             name : Name of the file.
-            dir : Directory of the file.
+            directory : (str) Directory of the file.
 
         Returns
         -------
-            # TODO: after reimplementing base-data set selection.
+            The .csv file as :py:object:`DataFrame` object.
         """
         path = Memory.get_path()
-        if not (dir is None):
-            return pd.read_csv(path / (dir + "/" + name))
-
-        try:
-            data = pd.read_csv(path / ("preprocessed/pp" + name)), True
-        except FileNotFoundError:
-            data = pd.read_csv(path / ("raw/" + name)), False
-
-        return data
+        return pd.read_csv(path / (directory + "/" + name))
 
     @staticmethod
     def load_open_ml() -> List[Tuple[DataFrame, str, str]]:
         """
         Fetch and preprocess base-data sets from openML:
+        Criteria:
+            - Number of instances < 1000
+            - Number of features in [5, 19]
+            - Number of classes = 2
+            - Number of missing values = 0
+            - Number of zero-variance features = 0
         Apply ordinal encoding on categorical features and target variables.
         Binarize target variables if necessary.
 
@@ -54,8 +52,6 @@ class Memory:
             List of tuples containing the preprocessed base-data sets,
             the name of the base-data set and the name of its target variable.
         """
-        datasets = list()
-
         openml_list = openml.datasets.list_datasets()
         data = DataFrame.from_dict(openml_list, orient="index")
         data = data[data['NumberOfInstances'] < 1000]
@@ -65,8 +61,9 @@ class Memory:
         data = data[data['NumberOfMissingValues'] == 0].sort_values(["version"])
         data = data.drop_duplicates("name", "last")
 
-        l = data[["name", "version"]].values
-        ids = [tuple(x) for x in l]
+        target = "base-target_variable"
+        ids = list(filter(lambda x: str(x[0]) + "_" + str(x[1]) + ".csv" not in Memory.get_contents("preprocessed"),
+                          [tuple(x) for x in data[["name", "version"]].values]))
 
         for name, version in ids:
             dataset = fetch_openml(name=name, version=version, as_frame=True)
@@ -75,10 +72,11 @@ class Memory:
             except ValueError:
                 ids.remove((name, version))
                 continue
+
             all_features = dataset["feature_names"]
             cat_features = list()
             data_frame = dataset["frame"].dropna(axis=0)
-            target = dataset["target_names"][0]
+            data_frame = data_frame.rename(columns={dataset["target_names"][0]: target})
 
             X = data_frame.drop(target, axis=1)
             X_cat = X
@@ -114,9 +112,9 @@ class Memory:
                 ids.remove((name, version))
                 continue
 
-            datasets.append((data_frame, name, target))
+            Memory.store_preprocessed(data_frame, name + "_" + str(version))
 
-        return datasets
+        return [(Memory.load(file, "preprocessed"), file[:-4], target) for file in Memory.get_contents("preprocessed")]
 
     @staticmethod
     def store_meta_features(data):
@@ -211,7 +209,7 @@ class Memory:
     @staticmethod
     def store_data_frame(data: DataFrame, name: str, directory: str, renew=False):
         """
-        Store a :py:obj:`DataFrame` object as .csv file in a given sub directory of metalfi/data.
+        Store a :py:obj:`DataFrame` object as .csv file in a given sub directory of metalfi/data/output.
 
         Parameters
         ----------
@@ -264,3 +262,16 @@ class Memory:
         """
         path = Path(__file__).parents[1] / "data"
         return path
+
+    @staticmethod
+    def store_preprocessed(data: DataFrame, name: str):
+        """
+        Store a :py:obj:`DataFrame` object as .csv file in metalfi/data/preprocessed.
+
+        Parameters
+        ----------
+            data : Contains the contents of the .csv file.
+            name : Name of the file.
+        """
+        path = Memory.get_path() / ("preprocessed/" + name + ".csv")
+        data.to_csv(path, header=True)

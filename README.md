@@ -33,11 +33,19 @@ Input data and results data of the experimental pipelines are also available [on
                 ├                            Bar plots and critical differences diagrams visualize and compare base-model 
                 ├                            accuracies grouped by feature selection approaches. 
                 ├── targets             # Group meta-model performance estimates by meta-targets:
-                                            Box plots and critical differences diagrams visualize and compare meta-model 
-                                            performance estimates grouped by meta-targets. 
-            ├── preprocessed            # Preprocessed data sets
-            ├── raw                     # Contains two small data sets
-            
+                ├                            Box plots and critical differences diagrams visualize and compare meta-model 
+                ├                            performance estimates grouped by meta-targets. 
+            ├── preprocessed            # Preprocessed base-data sets. 
+            ├                                The latest versions of all active openML data sets, 
+            ├                                which meet the following criteria, are fetched and preprcessed 
+            ├                                in order to be used as base-data sets:
+            ├                                    - Number of instances < 1000
+            ├                                    - Number of features in [5, 19]
+            ├                                    - Number of classes = 2
+            ├                                    - Number of missing values = 0
+            ├                                    - Number of zero-variance features = 0
+            ├                                Preprocessing: 
+            ├                                    - Apply ordinal encoding on categorical features and target variables.
         ├── src                         # Source code
             ├── metadata                # Scripts that handle the meta-data
             ├── model                   # Contains scripts that train and evaluate meta-models

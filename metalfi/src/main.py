@@ -35,6 +35,7 @@ class Main(object):
         c = Controller()
         end = time.time()
         print(end - start)
+        return
 
         # Train meta-models (if necessary)
         start = time.time()
