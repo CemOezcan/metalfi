@@ -147,7 +147,7 @@ class Memory:
         """
         path = Memory.get_path() / ("input/" + name + "meta.csv")
         if not path.is_file():
-            data.to_csv(path, index=None, header=True)
+            data.to_csv(path, index=False, header=True)
 
     def storeOutput(self, data):
         return
@@ -220,6 +220,8 @@ class Memory:
         """
         path = Memory.get_path() / ("output/" + directory + "/" + name + ".csv")
         if renew or not path.is_file():
+            if data.index.name is None:
+                data.index.name = "Index"
             data.to_csv(path, header=True)
 
     @staticmethod
@@ -274,4 +276,4 @@ class Memory:
             name : Name of the file.
         """
         path = Memory.get_path() / ("preprocessed/" + name + ".csv")
-        data.to_csv(path, header=True)
+        data.to_csv(path, index=False, header=True)
