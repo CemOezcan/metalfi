@@ -20,9 +20,9 @@ class Parameters:
             Evaluation metrics for meta-models.
         targets : (List[str])
             Names of all meta-targets.
-        base_models : (List[Tuple[object, str, str]])
+        base_models : (List[Tuple[Estimator, str, str]])
             Contains base-models (classifiers), their respective names and categories.
-        meta_models : (List[Tuple[object, str, str]])
+        meta_models : (List[Tuple[Estimator, str, str]])
             Contains meta-models (regression models), their respective names and categories.
 
 
@@ -35,7 +35,11 @@ class Parameters:
                "linSVC_PIMP", "LOG_PIMP", "RF_PIMP", "NB_PIMP", "SVC_PIMP", "DT_PIMP",
                "linSVC_LOFO", "LOG_LOFO", "RF_LOFO", "NB_LOFO", "SVC_LOFO", "DT_LOFO"]
 
-    base_models = [(RandomForestClassifier(oob_score=True, random_state=115), "RF", "tree"),
+    # Hyperparameters:
+    #   (probability): Required for LIME-importance.
+    #   (max_iter): Fix convergence issues.
+    #   (random_state): Ensure reproducibility.
+    base_models = [(RandomForestClassifier(random_state=115), "RF", "tree"),
                    (DecisionTreeClassifier(random_state=115), "DT", "tree"),
                    (SVC(probability=True, random_state=115), "SVC", "kernel"),
                    (LogisticRegression(max_iter=1000, random_state=115), "LOG", "linear"),
