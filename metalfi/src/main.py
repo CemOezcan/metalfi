@@ -1,23 +1,9 @@
-import math
-import multiprocessing
-import time
 
-import numpy as np
-import pandas as pd
-from pandas import DataFrame
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import cross_val_score, KFold
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVR, LinearSVR
-from tqdm import tqdm
+import time
 
 from metalfi.src.controller import Controller
 from metalfi.src.memory import Memory
-from metalfi.src.parameters import Parameters
 from metalfi.src.visualization import Visualization
-import openml
 
 
 class Main(object):

@@ -42,25 +42,25 @@ class ShapImportance(FeatureImportance):
         sys.stderr = sys.__stderr__
         warnings.simplefilter("default")
 
-    def tree_shap(self, model, X: DataFrame, y: DataFrame) -> DataFrame:
+    def tree_shap(self, model: 'Estimator', X: DataFrame, y: DataFrame) -> DataFrame:
         model.fit(X, y)
         imp = shap.TreeExplainer(model).shap_values(X)
 
         return self.__create_data_frame(imp[1], X)
 
-    def linear_shap(self, model, X: DataFrame, y: DataFrame) -> DataFrame:
+    def linear_shap(self, model: 'Estimator', X: DataFrame, y: DataFrame) -> DataFrame:
         model.fit(X, y)
         imp = shap.LinearExplainer(model, X).shap_values(X)
 
         return self.__create_data_frame(imp, X)
 
-    def tree_regression_shap(self, model, X: DataFrame, y: DataFrame) -> DataFrame:
+    def tree_regression_shap(self, model: 'Estimator', X: DataFrame, y: DataFrame) -> DataFrame:
         model.fit(X, y)
         imp = shap.TreeExplainer(model).shap_values(X)
 
         return self.__create_data_frame(imp, X)
 
-    def kernel_shap(self, model, X: DataFrame, y: DataFrame, k=10) -> DataFrame:
+    def kernel_shap(self, model: 'Estimator', X: DataFrame, y: DataFrame, k=10) -> DataFrame:
         model.fit(X, y)
         np.random.seed(115)
         X_summary = shap.kmeans(X, k)

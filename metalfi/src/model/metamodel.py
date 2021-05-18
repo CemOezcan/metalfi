@@ -1,12 +1,6 @@
-import math
+
 from typing import List, Tuple
-
-import numpy
-import numpy as np
-
 from copy import deepcopy
-
-import sklearn
 from pandas import DataFrame
 from sklearn.feature_selection import f_classif, mutual_info_classif, SelectPercentile
 from sklearn.model_selection import KFold
@@ -130,7 +124,7 @@ class MetaModel:
 
                     i -= -1
 
-    def __feature_selection(self, name, X_train, target_name):
+    def __feature_selection(self, name: str, X_train: DataFrame, target_name: str) -> Tuple[DataFrame, List[str]]:
         features = self.__selected[name][target_name]
         return X_train[features], features
 
@@ -159,7 +153,9 @@ class MetaModel:
 
             self.__stats.append(Parameters.calculate_metrics(y_train, y_test, y_pred))
 
-    def __get_rankings(self, columns, prediction, actual):
+    @staticmethod
+    def __get_rankings(columns: List[str], prediction: List[float], actual: List[float]) \
+            -> Tuple[List[float], List[float]]:
         pred_data = {"target": prediction, "names": columns}
         act_data = {"target": actual, "names": columns}
         pred = DataFrame(pred_data).sort_values(by=["target"], ascending=False)["names"].values
@@ -302,7 +298,8 @@ class MetaModel:
         return meta_data.drop(targets, axis=1), meta_data[targets]
 
     @staticmethod
-    def __get_cross_validation_folds(X, y, k=5):
+    def __get_cross_validation_folds(X: DataFrame, y: DataFrame, k=5) \
+            -> List[Tuple[DataFrame, DataFrame, DataFrame, DataFrame]]:
         X_temp = X.values
         y_temp = y.values
 
