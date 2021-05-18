@@ -1,11 +1,12 @@
-import re
-from functools import partial
-import multiprocessing as mp
-from typing import List, Union, Dict, Tuple
 
-import numpy as np
-from pandas import DataFrame
+import re
 import tqdm
+import numpy as np
+import multiprocessing as mp
+
+from functools import partial
+from typing import List, Dict, Tuple
+from pandas import DataFrame
 
 from metalfi.src.memory import Memory
 from metalfi.src.parameters import Parameters

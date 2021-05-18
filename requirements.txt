@@ -9,6 +9,5 @@ scikit-learn==0.22.1
 pandas==1.0.1
 scikit-posthocs==0.6.4
 Orange3==3.28.0
-sklearn==0.0
 tqdm==4.60.0
 openml==0.12.1

@@ -8,7 +8,7 @@ import pandas as pd
 from typing import List, Tuple
 from pathlib import Path
 from pandas import DataFrame
-from sklearn.datasets import load_wine, load_iris, load_boston, fetch_openml
+from sklearn.datasets import fetch_openml
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, LabelEncoder
 
 
