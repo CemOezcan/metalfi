@@ -58,7 +58,7 @@ Input data and results data of the experimental pipelines are also available [on
 ## Setup
 
 Before running scripts to reproduce the experiments, you need to set up an environment with all necessary dependencies.
-Our code is implemented in Python (version 3.7).
+Our code is implemented in Python (version 3.8).
 
 ### Option 1: `conda` Environment
 
@@ -66,7 +66,7 @@ If you use `conda`, you can install the right Python version into a new `conda` 
 and activate the environment as follows:
 
 ```bash
-conda create --name <conda-env-name> python=3.7
+conda create --name <conda-env-name> python=3.8
 conda activate <conda-env-name>
 ```
 
