@@ -1,4 +1,3 @@
-
 import time
 
 from metalfi.src.metadata.metafeatures import MetaFeatures
@@ -10,13 +9,13 @@ class Dataset:
         self.__data_frame = data_frame
         self.__target = target
 
-    def getDataFrame(self):
+    def get_data_frame(self):
         return self.__data_frame
 
-    def getTarget(self):
+    def get_target(self):
         return self.__target
 
-    def trainMetaData(self):
+    def train_meta_data(self):
         mf = MetaFeatures(self)
 
         start_d_total = time.time()
@@ -37,7 +36,7 @@ class Dataset:
 
         return data, targets, (data_time, target_time), len(self.__data_frame.columns) - 1, len(self.__data_frame.index)
 
-    def testMetaData(self):
+    def test_meta_data(self):
         mf = MetaFeatures(self)
         mf.calculate_meta_features()
 

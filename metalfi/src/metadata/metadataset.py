@@ -1,4 +1,3 @@
-
 import pandas as pd
 
 
@@ -7,30 +6,30 @@ class MetaDataset:
     def __init__(self, dataset, train=False):
         self.__name = dataset[1]
         self.__meta_data, self.__target_names, self.__times, self.nr_feat, self.nr_inst = \
-            self.calculateTrainingData(dataset[0]) if train else self.calculateTestData(dataset[0])
+            self.calculate_training_data(dataset[0]) if train else self.calculate_test_data(dataset[0])
 
-    def getName(self):
+    def get_name(self):
         return self.__name
 
-    def getMetaData(self):
+    def get_meta_data(self):
         return self.__meta_data
 
-    def getTargetNames(self):
+    def get_target_names(self):
         return self.__target_names
 
-    def getTimes(self):
+    def get_times(self):
         return self.__times
 
-    def getNrs(self):
+    def get_nrs(self):
         return self.nr_feat, self.nr_inst
 
     @staticmethod
-    def calculateTrainingData(dataset):
+    def calculate_training_data(dataset):
         data_frames = list()
         nr_feat = 0
         nr_inst = 0
 
-        data, targets, (data_time, target_time), x, y = dataset.trainMetaData()
+        data, targets, (data_time, target_time), x, y = dataset.train_meta_data()
         nr_feat += x
         nr_inst += y
         times = (data_time, target_time)
@@ -39,9 +38,9 @@ class MetaDataset:
         return pd.concat(data_frames), targets, times, nr_feat, nr_inst
 
     @staticmethod
-    def calculateTestData(datasets):
+    def calculate_test_data(datasets):
         data_frames = list()
         for dataset in datasets:
-            data_frames.append(dataset.testMetaData())
+            data_frames.append(dataset.test_meta_data())
 
         return pd.concat(data_frames), None, None, None, None

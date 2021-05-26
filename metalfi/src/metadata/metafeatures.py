@@ -1,17 +1,16 @@
-
 import math
 import time
-import warnings
-import numpy as np
-
-from numpy import ndarray
 from typing import List, Dict, Union, Sequence
+import warnings
+
+import numpy as np
 from pandas import DataFrame
 from pymfe.mfe import MFE
 from sklearn.feature_selection import f_classif, chi2
 from sklearn.preprocessing import MinMaxScaler
 
 from metalfi.src.metadata.dropcolumn import DropColumnImportance
+from metalfi.src.metadata.featureimportance import FeatureImportance
 from metalfi.src.metadata.lime import LimeImportance
 from metalfi.src.metadata.permutation import PermutationImportance
 from metalfi.src.metadata.shap import ShapImportance
@@ -39,6 +38,7 @@ class MetaFeatures:
     __feature_meta_feature_names : (List[str])
         The names of all feature-meta-features.
     """
+
     def __init__(self, dataset):
         self.__dataset = dataset
         self.__meta_data = DataFrame()
@@ -65,7 +65,7 @@ class MetaFeatures:
         return data_time, uni_time, multi_time, lm_time
 
     @staticmethod
-    def __run_pymfe(X: Union[DataFrame, ndarray], y: Union[DataFrame, ndarray], summary: Union[List[str], None],
+    def __run_pymfe(X: Union[DataFrame, np.ndarray], y: Union[DataFrame, np.ndarray], summary: Union[List[str], None],
                     features: List[str]) -> (List[str], List[str]):
         warnings.simplefilter("ignore")
         mfe = MFE(summary=summary, features=features)
@@ -77,8 +77,8 @@ class MetaFeatures:
 
     def __compute_data_meta_features(self) -> float:
         start = time.time()
-        data_frame = self.__dataset.getDataFrame()
-        target = self.__dataset.getTarget()
+        data_frame = self.__dataset.get_data_frame()
+        target = self.__dataset.get_target()
 
         X = data_frame.drop(target, axis=1)
         y = data_frame[target]
@@ -100,8 +100,8 @@ class MetaFeatures:
 
     def __compute_feature_meta_features(self) -> (float, float, float):
         start_uni = time.time()
-        data_frame = self.__dataset.getDataFrame()
-        target = self.__dataset.getTarget()
+        data_frame = self.__dataset.get_data_frame()
+        target = self.__dataset.get_target()
 
         y = data_frame[target]
         X = data_frame.drop(target, axis=1)
@@ -154,12 +154,12 @@ class MetaFeatures:
 
         return total_uni, total_multi, total_lm
 
-    def __correlation_feature_meta_features(self, matrix: DataFrame, name: str, threshold=0.5) -> Dict[str, ndarray]:
+    def __correlation_feature_meta_features(self, matrix: DataFrame, name: str, threshold=0.5) -> Dict[str, np.ndarray]:
         mean_correlation = {}
         for i in range(0, len(matrix.columns)):
             values = list()
             for j in range(0, len(matrix.columns)):
-                if not (i == j):
+                if i != j:
                     values.append(abs(matrix.iloc[i].iloc[j]))
 
             mean_correlation[matrix.columns[i]] = np.mean(values)
@@ -180,8 +180,8 @@ class MetaFeatures:
                                               "multi_mean_high_corr" + name]
         return mean_correlation
 
-    def __filter_scores(self, X: DataFrame, y: DataFrame, p_cor: Dict[str, ndarray], s_cor: Dict[str, ndarray],
-                        k_cor: Dict[str, ndarray], su_cor: Dict[str, ndarray]):
+    def __filter_scores(self, X: DataFrame, y: DataFrame, p_cor: Dict[str, np.ndarray], s_cor: Dict[str, np.ndarray],
+                        k_cor: Dict[str, np.ndarray], su_cor: Dict[str, np.ndarray]):
         sc = MinMaxScaler()
         X_sc = sc.fit_transform(X)
 
@@ -240,10 +240,10 @@ class MetaFeatures:
         return vector
 
     def __create_meta_data(self):
-        self.__meta_data = DataFrame(columns=self.__feature_meta_feature_names,
-                                     data=self.__feature_meta_features,
-                                     index=self.__dataset.getDataFrame().drop(self.__dataset.getTarget(),
-                                                                              axis=1).columns)
+        self.__meta_data = DataFrame(
+            columns=self.__feature_meta_feature_names,
+            data=self.__feature_meta_features,
+            index=self.__dataset.get_data_frame().drop(self.__dataset.get_target(), axis=1).columns)
 
         for i in range(0, len(self.__data_meta_feature_names)):
             self.__meta_data[self.__data_meta_feature_names[i]] = self.__data_meta_features[i]
@@ -284,7 +284,7 @@ class MetaFeatures:
 
         return self.__targets, total_dCol, total_perm, total_lime, total_shap
 
-    def add_target(self, target: 'FeatureImportance'):
+    def add_target(self, target: FeatureImportance):
         """
         Compute meta-target values and add them to the meta-data set.
 
@@ -311,9 +311,9 @@ class MetaFeatures:
             for feature_1 in X.columns:
                 data[feature_1] = {}
                 for feature_2 in X.columns:
-                    columns_1, values_1 = \
+                    _, values_1 = \
                         self.__run_pymfe(X[feature_1].values, X[feature_2].values, None, ["attr_ent", "mut_inf"])
-                    columns_2, values_2 = \
+                    _, values_2 = \
                         self.__run_pymfe(X[feature_2].values, X[feature_1].values, None, ["attr_ent", "mut_inf"])
 
                     mut_inf = np.mean([values_1[1][0], values_2[1][0]])
@@ -326,7 +326,7 @@ class MetaFeatures:
 
             return DataFrame(data=data, columns=X.columns, index=X.columns)
 
-        columns, values = self.__run_pymfe(X.values, y.values, None, ["attr_ent", "class_ent", "mut_inf"])
+        _, values = self.__run_pymfe(X.values, y.values, None, ["attr_ent", "class_ent", "mut_inf"])
         su = (2 * values[2][0]) / (values[0][0] + values[1])
 
         return su

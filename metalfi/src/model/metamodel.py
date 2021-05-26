@@ -1,7 +1,8 @@
-
-from typing import List, Tuple
 from copy import deepcopy
+from typing import List, Tuple
+
 from pandas import DataFrame
+from sklearn.base import BaseEstimator
 from sklearn.feature_selection import f_classif, mutual_info_classif, SelectPercentile
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
@@ -9,9 +10,9 @@ from sklearn.preprocessing import StandardScaler
 from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.metadata.dropcolumn import DropColumnImportance
 from metalfi.src.metadata.lime import LimeImportance
+from metalfi.src.metadata.metafeatures import MetaFeatures
 from metalfi.src.metadata.permutation import PermutationImportance
 from metalfi.src.metadata.shap import ShapImportance
-from metalfi.src.metadata.metafeatures import MetaFeatures
 from metalfi.src.model.evaluation import Evaluation
 from metalfi.src.parameters import Parameters
 
@@ -49,12 +50,12 @@ class MetaModel:
             Meta-feature subsets.
         __meta_feature_groups : (Dict[int, str])
             Maps indices to meta-feature subset names.
-
     """
+
     def __init__(self, iterable):
         train, name, test, og_data, selected = iterable
-        self.__og_y = og_data.getDataFrame()[og_data.getTarget()]
-        self.__og_X = og_data.getDataFrame().drop(og_data.getTarget(), axis=1)
+        self.__og_y = og_data.get_data_frame()[og_data.get_target()]
+        self.__og_X = og_data.get_data_frame().drop(og_data.get_target(), axis=1)
         self.__selected = selected
         self.__file_name = name
         self.__meta_models = list()
@@ -163,7 +164,7 @@ class MetaModel:
         return act, pred
 
     @staticmethod
-    def __get_original_model(name: str) -> 'Estimator':
+    def __get_original_model(name: str) -> BaseEstimator:
         """
         Identifies and returns the base-model, given the its name.
 
@@ -274,7 +275,8 @@ class MetaModel:
 
         return ["ANOVA", "MI", "FI", "MetaLFI"]
 
-    def __get_meta(self, data_frame: DataFrame, target: str, targets: List[str]) -> Tuple[DataFrame, DataFrame]:
+    @staticmethod
+    def __get_meta(data_frame: DataFrame, target: str, targets: List[str]) -> Tuple[DataFrame, DataFrame]:
         new_targets = [x[-4:] for x in targets]
         dataset = Dataset(data_frame, target)
         meta_features = MetaFeatures(dataset)

@@ -1,15 +1,12 @@
-
+from decimal import Decimal
 import re
-import Orange
-import pandas as pd
+from typing import List, Tuple
+
 import matplotlib.pyplot as plt
 import numpy as np
+import Orange
+import pandas as pd
 import scipy.stats as ss
-
-import scikit_posthocs as sp
-from typing import List, Tuple
-from pandas import DataFrame
-from decimal import Decimal
 from sklearn.preprocessing import StandardScaler
 
 from metalfi.src.memory import Memory
@@ -22,7 +19,7 @@ class Visualization:
     """
 
     @staticmethod
-    def fetch_runtime_data(substring, threshold=1000000):
+    def fetch_runtime_data(substring, threshold: int = 1000000):
         directory = "output/runtime"
         file_names = list(filter(lambda x: x.endswith('.csv') and substring in x, Memory.get_contents(directory)))
         data = list()
@@ -35,7 +32,7 @@ class Visualization:
         columns = list(data[0][0].columns)
         columns.pop(0)
         for column in columns:
-            summary[column] = DataFrame(columns=["size", column])
+            summary[column] = pd.DataFrame(columns=["size", column])
 
         for file, name in data:
             for x in summary:
@@ -55,13 +52,13 @@ class Visualization:
         target_data = Visualization.fetch_runtime_data("XtargetX")
         meta_data = Visualization.fetch_runtime_data("XmetaX")
         for x in target_data:
-            if x == "LOFO" or x == "SHAP" or x == "LIME" or x == "total":
+            if x in ["LOFO", "SHAP", "LIME", "total"]:
                 continue
             target_data[x][x] /= 5
             plt.plot(target_data[x].columns[0], x, data=target_data[x], linewidth=2)
 
         for x in meta_data:
-            if x == "total" or x == "multivariate":
+            if x in ["total", "multivariate"]:
                 continue
             plt.plot(meta_data[x].columns[0], x, data=meta_data[x], linewidth=2)
 
@@ -88,7 +85,7 @@ class Visualization:
             names.append(x)
             data.append(meta_data[x][x].values)
 
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
         ax.boxplot(data, showfliers=False)
         plt.xticks(list(range(1, len(data) + 1)), names)
         Memory.store_visual(plt, name + "_box", "runtime")
@@ -104,7 +101,7 @@ class Visualization:
 
         for frame, name in data:
             width = 0.2
-            fig, ax = plt.subplots()
+            _, ax = plt.subplots()
 
             anova = frame.loc["ANOVA"].values
             mi = frame.loc["MI"].values
@@ -143,7 +140,7 @@ class Visualization:
             Memory.store_visual(plt, name[:-4], "importance")
 
     @staticmethod
-    def compare_means(data: List[Tuple[DataFrame, str]], folder: str):
+    def compare_means(data: List[Tuple[pd.DataFrame, str]], folder: str):
         """
         Determine, whether the differences in meta-model performance are significant:
         Group data across cross validation splits and employ the non-parametric Friedman test.
@@ -179,9 +176,8 @@ class Visualization:
                 d.append(data_frame[column].values)
 
             if 24 >= len(names) >= 3:
-                val, p_value = ss.friedmanchisquare(*d)
+                _, p_value = ss.friedmanchisquare(*d)
                 if p_value < 0.05:
-                    #sp.sign_array(sp.posthoc_nemenyi_friedman(np.array(d).T))
                     Visualization.__create_cd_diagram(names, ranks, metric, d, folder)
 
     @staticmethod
@@ -191,7 +187,7 @@ class Visualization:
         Memory.store_visual(plt, metric + "_cd", folder)
         plt.close()
 
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
         ax.boxplot(data, notch=True, showfliers=False)
         ax.set_xticks(list(range(1, len(data) + 1)))
         ax.set_xticklabels(names)
@@ -214,7 +210,7 @@ class Visualization:
             for column in columns[1:]:
                 new[n[:-4]] += list(d[column].values)
 
-        frame = DataFrame.from_dict(new)
+        frame = pd.DataFrame.from_dict(new)
         corr = frame.corr("spearman")
         Memory.store_data_frame(corr, "metrics_corr", "", True)
 
@@ -236,7 +232,7 @@ class Visualization:
 
         for name in file_names:
             d = Memory.load(name, directory)
-            df = DataFrame(data=sc.fit_transform(d), columns=d.columns)
+            df = pd.DataFrame(data=sc.fit_transform(d), columns=d.columns)
             data.append(df)
 
         frame = pd.concat(data)
@@ -248,7 +244,7 @@ class Visualization:
         lm = [x for x in frame.columns if not x.startswith("target_")]
 
         matrix = frame.corr("spearman")
-        matrix = matrix.drop([x for x in lofo + shap + pimp + lime + lm], axis=0)
+        matrix = matrix.drop(lofo + shap + pimp + lime + lm, axis=0)
         matrix = matrix.drop([x for x in list(frame.columns) if x not in lofo + shap + pimp + lime], axis=1)
 
         def __f(targets):
@@ -275,7 +271,7 @@ class Visualization:
 
         for name in file_names:
             d = Memory.load(name, directory)
-            df = DataFrame(data=d, columns=d.columns)
+            df = pd.DataFrame(data=d, columns=d.columns)
             data.append(df)
 
         frame = pd.concat(data)
@@ -285,13 +281,13 @@ class Visualization:
                         ([x for x in frame.columns if "LIME" in x], "LIME", 1, 0),
                         ([x for x in frame.columns if "PIMP" in x], "PIMP", 1, 1)]
 
-        fig, axs = plt.subplots(2, 2)
+        _, axs = plt.subplots(2, 2)
         for target, name, x, y in meta_targets:
             values = list()
             for value in [list(frame[column].values) for column in target]:
                 values += value
 
-            n, _, _ = axs[x, y].hist(x=values, rwidth=1, bins=len(values))
+            axs[x, y].hist(x=values, rwidth=1, bins=len(values))
             axs[x, y].set_title(name)
             axs[x, y].set_xlim(np.quantile(values, 0.05), np.quantile(values, 0.75))
 

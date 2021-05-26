@@ -1,12 +1,11 @@
-
-import re
-import tqdm
-import numpy as np
-import multiprocessing as mp
-
 from functools import partial
+import multiprocessing as mp
+import re
 from typing import List, Dict, Tuple
+
+import numpy as np
 from pandas import DataFrame
+import tqdm
 
 from metalfi.src.memory import Memory
 from metalfi.src.parameters import Parameters
@@ -173,7 +172,7 @@ class Evaluation:
                      metric: str, name: str, targets=False) -> Tuple[DataFrame, str]:
         for key in dictionary:
             if targets:
-                subset = [column for column in data_frame.columns if (key == column[-4:])]
+                subset = [column for column in data_frame.columns if key == column[-4:]]
             else:
                 subset = [column for column in data_frame.columns if (key == column[:-5]) and (column[-4:] != "LOFO")]
 
@@ -193,9 +192,9 @@ class Evaluation:
 
         if question == 2:
             if linear:
-                tuples = [t for t in performances if (t[0][0] in linear_meta_models)]
+                tuples = [t for t in performances if t[0][0] in linear_meta_models]
             else:
-                tuples = [t for t in performances if (t[0][0] in non_linear_meta_models)]
+                tuples = [t for t in performances if t[0][0] in non_linear_meta_models]
         elif question == 3:
             tuples = [t for t in performances
                       if ((t[0][0] in linear_meta_models) and (t[0][2] == "LM"))

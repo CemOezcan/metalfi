@@ -1,19 +1,16 @@
-
+import multiprocessing as mp
 import os
 import sys
-import tqdm
-import pandas as pd
-import multiprocessing as mp
+from typing import Dict, List, Tuple
 
-from typing import Tuple, Dict
-from pandas import DataFrame
+import pandas as pd
 from sklearn.feature_selection import f_regression
 from sklearn.preprocessing import StandardScaler
-from typing import List
+import tqdm
 
 from metalfi.src.metadata.dataset import Dataset
-from metalfi.src.memory import Memory
 from metalfi.src.metadata.metadataset import MetaDataset
+from metalfi.src.memory import Memory
 from metalfi.src.model.evaluation import Evaluation
 from metalfi.src.model.featureselection import MetaFeatureSelection
 from metalfi.src.model.metamodel import MetaModel
@@ -34,6 +31,7 @@ class Controller:
         __meta_data : (List[DataFrame, name])
             Meta-data sets and their names
     """
+
     def __init__(self):
         self.__train_data = None
         self.__data_names = None
@@ -49,7 +47,7 @@ class Controller:
         self.__train_data = open_ml
         self.__data_names = dict({})
         i = 0
-        for data, name in self.__train_data:
+        for _, name in self.__train_data:
             self.__data_names[name] = i
             i += 1
 
@@ -62,8 +60,8 @@ class Controller:
 
         with mp.Pool(processes=mp.cpu_count() - 1) as pool:
             progress_bar = tqdm.tqdm(total=len(data), desc="Computing meta-data")
-            [pool.apply_async(self.parallel_meta_computation, (args,), callback=(lambda x: progress_bar.update(n=1)))
-             for args in data]
+            _ = [pool.apply_async(self.parallel_meta_computation, (args,), callback=(lambda x: progress_bar.update()))
+                 for args in data]
 
             pool.close()
             pool.join()
@@ -71,7 +69,7 @@ class Controller:
         progress_bar.close()
 
     @staticmethod
-    def parallel_meta_computation(data: Tuple[DataFrame, str]):
+    def parallel_meta_computation(data: Tuple[pd.DataFrame, str]):
         """
         Computes a meta-data set, given a base-data set.
 
@@ -80,26 +78,26 @@ class Controller:
             data : Parameters for instantiating :py:class:`MetaDataset`.
         """
         result = MetaDataset(data, train=True)
-        meta_data = result.getMetaData()
-        name = result.getName()
-        d_times, t_times = result.getTimes()
-        nr_feat, nr_inst = result.getNrs()
+        meta_data = result.get_meta_data()
+        name = result.get_name()
+        d_times, t_times = result.get_times()
+        nr_feat, nr_inst = result.get_nrs()
 
         Memory.store_input(meta_data, name)
-        Memory.store_data_frame(DataFrame(data=d_times, index=["Time"], columns=[x for x in d_times]),
+        Memory.store_data_frame(pd.DataFrame(data=d_times, index=["Time"], columns=[x for x in d_times]),
                                 name + "XmetaX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
-        Memory.store_data_frame(DataFrame(data=t_times, index=["Time"], columns=[x for x in t_times]),
+        Memory.store_data_frame(pd.DataFrame(data=t_times, index=["Time"], columns=[x for x in t_times]),
                                 name + "XtargetX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
 
     def __load_meta_data(self):
-        for dataset, name in self.__train_data:
+        for _, name in self.__train_data:
             sc = StandardScaler()
             data = Memory.load(name + "meta.csv", "input")
             fmf = [x for x in data.columns if "." not in x]
             dmf = [x for x in data.columns if "." in x]
 
-            X_f = DataFrame(data=sc.fit_transform(data[fmf]), columns=fmf)
-            X_d = DataFrame(data=data[dmf], columns=dmf)
+            X_f = pd.DataFrame(data=sc.fit_transform(data[fmf]), columns=fmf)
+            X_d = pd.DataFrame(data=data[dmf], columns=dmf)
 
             data_frame = pd.concat([X_d, X_f], axis=1)
             self.__meta_data.append((data_frame, name))
@@ -148,15 +146,16 @@ class Controller:
 
         with mp.Pool(processes=mp.cpu_count() - 1) as pool:
             progress_bar = tqdm.tqdm(total=len(args), desc="Training meta-models")
-            [pool.apply_async(self.parallel_training, (arg,), callback=(lambda x: progress_bar.update(n=1)))
-             for arg in args]
+            _ = [pool.apply_async(self.parallel_training, (arg,), callback=(lambda x: progress_bar.update()))
+                 for arg in args]
 
             pool.close()
             pool.join()
 
         progress_bar.close()
 
-    def parallel_training(self, iterable: Tuple[DataFrame, str, DataFrame, Dataset, Dict[str, Dict[str, List[str]]]]):
+    @staticmethod
+    def parallel_training(iterable: Tuple[pd.DataFrame, str, pd.DataFrame, Dataset, Dict[str, Dict[str, List[str]]]]):
         """
         Create an instance of class :py:class:`MetaModel` and call its :py:func:`MetaModel.fit()` function.
 
@@ -171,7 +170,8 @@ class Controller:
         sys.stderr = sys.__stderr__
         Memory.store_model(model, iterable[1][:-4])
 
-    def estimate(self, names: List[str]):
+    @staticmethod
+    def estimate(names: List[str]):
         """
         Estimate meta-model performances. Use file names in `names` to identify these meta-models.
 
@@ -248,7 +248,6 @@ class Controller:
                 imp.append(this_meta_feature)
 
             this_target["mean absolute SHAP"] = imp
-            data = DataFrame(data=this_target, index=index, columns=["mean absolute SHAP"])
+            data = pd.DataFrame(data=this_target, index=index, columns=["mean absolute SHAP"])
             data.index.name = "meta-features"
             Memory.store_data_frame(data, target, "importance")
-

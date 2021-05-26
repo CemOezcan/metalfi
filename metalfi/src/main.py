@@ -1,4 +1,3 @@
-
 import time
 
 from metalfi.src.controller import Controller
@@ -6,7 +5,7 @@ from metalfi.src.memory import Memory
 from metalfi.src.visualization import Visualization
 
 
-class Main(object):
+class Main:
     """
     Main Class
     """

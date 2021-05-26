@@ -1,16 +1,16 @@
-
-import os
-import sys
-import warnings
-import tqdm
-import numpy as np
 import multiprocessing as mp
-
-from typing import Dict, List, Tuple
+import os
 from statistics import mean
+import sys
+from typing import Dict, List, Tuple
+import warnings
+
+import numpy as np
 from pandas import DataFrame
+from sklearn.base import BaseEstimator
 from sklearn.feature_selection import VarianceThreshold, SelectPercentile
 from sklearn.model_selection import cross_val_score
+import tqdm
 
 from metalfi.src.metadata.shap import ShapImportance
 from metalfi.src.parameters import Parameters
@@ -20,6 +20,7 @@ class MetaFeatureSelection:
     """
     Methods for feature importance estimation and selection.
     """
+
     def __init__(self, meta_data: DataFrame):
         self.__X = meta_data.drop(Parameters.targets, axis=1)
         fmf = [x for x in self.__X.columns if "." not in x]
@@ -55,9 +56,9 @@ class MetaFeatureSelection:
         for target in Parameters.targets:
             y = self.__Y[target]
             if tree:
-                p, features = self.__percentile_search(meta_model, scoring, y, [75], k, self.__X)
+                _, features = self.__percentile_search(meta_model, scoring, y, [75], k, self.__X)
             else:
-                p, features = self.__percentile_search(meta_model, scoring, y, percentiles, k, self.__X)
+                _, features = self.__percentile_search(meta_model, scoring, y, percentiles, k, self.__X)
 
             sets[target] = features if (len(features) != 0) else list(self.__X.columns)
 
@@ -93,7 +94,7 @@ class MetaFeatureSelection:
         return p, f
 
     @staticmethod
-    def meta_feature_importance(meta_data: DataFrame, models: List[Tuple['Estimator', str, str]], targets: List[str],
+    def meta_feature_importance(meta_data: DataFrame, models: List[Tuple[BaseEstimator, str, str]], targets: List[str],
                                 subsets: Dict[str, Dict[str, List[str]]]) -> Dict[str, List[DataFrame]]:
         """
         Estimate model based meta-feature importance.
@@ -140,7 +141,7 @@ class MetaFeatureSelection:
         return importance
 
     @staticmethod
-    def parallel_meta_importance(iterable: Tuple[str, 'Estimator', DataFrame, DataFrame, str]) \
+    def parallel_meta_importance(iterable: Tuple[str, BaseEstimator, DataFrame, DataFrame, str]) \
             -> Tuple[str, DataFrame]:
         """
         Compute SHAP-importance.

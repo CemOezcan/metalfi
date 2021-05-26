@@ -1,15 +1,15 @@
-
 import os
+from pathlib import Path
 import pickle
+from typing import List, Tuple
+
 import numpy as np
 import openml
 import pandas as pd
-
-from typing import List, Tuple
-from pathlib import Path
-from pandas import DataFrame
 from sklearn.datasets import fetch_openml
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, LabelEncoder
+
+from metalfi.src.model.metamodel import MetaModel
 
 
 class Memory:
@@ -18,7 +18,7 @@ class Memory:
     """
 
     @staticmethod
-    def load(name: str, directory) -> DataFrame:
+    def load(name: str, directory) -> pd.DataFrame:
         """
         Load a .csv file.
 
@@ -35,7 +35,7 @@ class Memory:
         return pd.read_csv(path / (directory + "/" + name))
 
     @staticmethod
-    def load_open_ml() -> List[Tuple[DataFrame, str, str]]:
+    def load_open_ml() -> List[Tuple[pd.DataFrame, str, str]]:
         """
         Fetch and preprocess base-data sets from openML:
         Criteria:
@@ -53,7 +53,7 @@ class Memory:
             the name of the base-data set and the name of its target variable.
         """
         openml_list = openml.datasets.list_datasets()
-        data = DataFrame.from_dict(openml_list, orient="index")
+        data = pd.DataFrame.from_dict(openml_list, orient="index")
         data = data[data['NumberOfInstances'] < 1000]
         data = data[data['NumberOfFeatures'] < 20]
         data = data[data['NumberOfFeatures'] > 4]
@@ -105,8 +105,8 @@ class Memory:
             X_enc = OrdinalEncoder(sorted_categories)
             X_cat = X_enc.fit_transform(X_cat)
 
-            data_frame = DataFrame(data=np.c_[np.c_[X_cat, X_num], y],
-                                   columns=cat_features + num_features + [target])
+            data_frame = pd.DataFrame(data=np.c_[np.c_[X_cat, X_num], y],
+                                      columns=cat_features + num_features + [target])
 
             if True in [data_frame[d].var() == 0.0 for d in data_frame.columns]:
                 ids.remove((name, version))
@@ -136,7 +136,7 @@ class Memory:
         return data
 
     @staticmethod
-    def store_input(data: DataFrame, name: str):
+    def store_input(data: pd.DataFrame, name: str):
         """
         Store `data` as a .csv file in metalfi/data/input.
 
@@ -149,11 +149,8 @@ class Memory:
         if not path.is_file():
             data.to_csv(path, index=False, header=True)
 
-    def storeOutput(self, data):
-        return
-
     @staticmethod
-    def store_model(model: 'MetaModel', name: str):
+    def store_model(model: MetaModel, name: str):
         """
         Serialize and save an instance of :py:class:`MetaModel` in metalfi/data/model.
 
@@ -169,7 +166,7 @@ class Memory:
             file.close()
 
     @staticmethod
-    def load_model(names: List[str]) -> List[Tuple['MetaModel', str]]:
+    def load_model(names: List[str]) -> List[Tuple[MetaModel, str]]:
         """
         Load pickle files in metalfi/data/model and return them as instances of :py:class:`MetaModel`.
 
@@ -192,7 +189,7 @@ class Memory:
         return models
 
     @staticmethod
-    def renew_model(model: 'MetaModel', name: str):
+    def renew_model(model: MetaModel, name: str):
         """
         Replace a meta-model in metalfi/data/model.
 
@@ -207,7 +204,7 @@ class Memory:
         file.close()
 
     @staticmethod
-    def store_data_frame(data: DataFrame, name: str, directory: str, renew=False):
+    def store_data_frame(data: pd.DataFrame, name: str, directory: str, renew=False):
         """
         Store a :py:obj:`DataFrame` object as .csv file in a given sub directory of metalfi/data/output.
 
@@ -266,7 +263,7 @@ class Memory:
         return path
 
     @staticmethod
-    def store_preprocessed(data: DataFrame, name: str):
+    def store_preprocessed(data: pd.DataFrame, name: str):
         """
         Store a :py:obj:`DataFrame` object as .csv file in metalfi/data/preprocessed.
 

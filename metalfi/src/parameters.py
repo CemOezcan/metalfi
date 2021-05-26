@@ -1,7 +1,6 @@
+from typing import List, Tuple
 
 import numpy as np
-
-from typing import List, Tuple
 from sklearn.metrics import r2_score
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression, LinearRegression

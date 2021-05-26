@@ -1,12 +1,13 @@
-
 import math
+
 import lime
 import lime.lime_tabular
 import numpy as np
-
 from pandas import DataFrame
+from sklearn.base import BaseEstimator
 from sklearn.preprocessing import StandardScaler
 
+from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.metadata.featureimportance import FeatureImportance
 
 
@@ -14,15 +15,16 @@ class LimeImportance(FeatureImportance):
     """
     LIME-importance.
     """
-    def __init__(self, dataset: 'Dataset'):
-        super(LimeImportance, self).__init__(dataset)
+
+    def __init__(self, dataset: Dataset):
+        super().__init__(dataset=dataset)
         self._name = "_LIME"
 
-    def calculate_scores(self):
+    def calculate_scores(self) -> None:
         for model in self._all_models:
             self._feature_importances.append(self.__lime_importance(model, self._target))
 
-    def __lime_importance(self, model: 'Estimator', target: str) -> DataFrame:
+    def __lime_importance(self, model: BaseEstimator, target: str) -> DataFrame:
         sc = StandardScaler()
         X = DataFrame(data=sc.fit_transform(self._data_frame.drop(target, axis=1)),
                       columns=self._data_frame.drop(target, axis=1).columns)

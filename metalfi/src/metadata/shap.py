@@ -1,14 +1,15 @@
-
 import os
 import sys
-import shap
-import warnings
-import numpy as np
-
 from typing import List
+import warnings
+
+import numpy as np
 from pandas import DataFrame
+import shap
+from sklearn.base import BaseEstimator
 from sklearn.preprocessing import StandardScaler
 
+from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.metadata.featureimportance import FeatureImportance
 
 
@@ -16,11 +17,12 @@ class ShapImportance(FeatureImportance):
     """
     SHAP-importance.
     """
-    def __init__(self, dataset: 'Dataset'):
-        super(ShapImportance, self).__init__(dataset)
+
+    def __init__(self, dataset: Dataset):
+        super().__init__(dataset=dataset)
         self._name = "_SHAP"
 
-    def calculate_scores(self):
+    def calculate_scores(self) -> None:
         warnings.simplefilter("ignore")
         with open(os.devnull, 'w') as file:
             sys.stderr = file
@@ -30,11 +32,11 @@ class ShapImportance(FeatureImportance):
                       columns=self._data_frame.drop(self._target, axis=1).columns)
         y = self._data_frame[self._target]
 
-        for type in self._models.keys():
-            for model in self._models[type].values():
-                if type == "tree":
+        for model_type in self._models.keys():
+            for model in self._models[model_type].values():
+                if model_type == "tree":
                     self._feature_importances.append(self.tree_shap(model, X, y))
-                elif type == "linear":
+                elif model_type == "linear":
                     self._feature_importances.append(self.linear_shap(model, X, y))
                 else:
                     self._feature_importances.append(self.kernel_shap(model, X, y))
@@ -42,25 +44,25 @@ class ShapImportance(FeatureImportance):
         sys.stderr = sys.__stderr__
         warnings.simplefilter("default")
 
-    def tree_shap(self, model: 'Estimator', X: DataFrame, y: DataFrame) -> DataFrame:
+    def tree_shap(self, model: BaseEstimator, X: DataFrame, y: DataFrame) -> DataFrame:
         model.fit(X, y)
         imp = shap.TreeExplainer(model).shap_values(X)
 
         return self.__create_data_frame(imp[1], X)
 
-    def linear_shap(self, model: 'Estimator', X: DataFrame, y: DataFrame) -> DataFrame:
+    def linear_shap(self, model: BaseEstimator, X: DataFrame, y: DataFrame) -> DataFrame:
         model.fit(X, y)
         imp = shap.LinearExplainer(model, X).shap_values(X)
 
         return self.__create_data_frame(imp, X)
 
-    def tree_regression_shap(self, model: 'Estimator', X: DataFrame, y: DataFrame) -> DataFrame:
+    def tree_regression_shap(self, model: BaseEstimator, X: DataFrame, y: DataFrame) -> DataFrame:
         model.fit(X, y)
         imp = shap.TreeExplainer(model).shap_values(X)
 
         return self.__create_data_frame(imp, X)
 
-    def kernel_shap(self, model: 'Estimator', X: DataFrame, y: DataFrame, k=10) -> DataFrame:
+    def kernel_shap(self, model: BaseEstimator, X: DataFrame, y: DataFrame, k=10) -> DataFrame:
         model.fit(X, y)
         np.random.seed(115)
         X_summary = shap.kmeans(X, k)

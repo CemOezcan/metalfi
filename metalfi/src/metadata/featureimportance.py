@@ -1,6 +1,6 @@
-
 from abc import ABC, abstractmethod
 
+from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.parameters import Parameters
 
 
@@ -25,20 +25,21 @@ class FeatureImportance(ABC):
         __model_names : (List[str])
             Names of all meta-models.
     """
-    def __init__(self, dataset: 'Dataset'):
+
+    def __init__(self, dataset: Dataset):
         if dataset is None:
             return
 
-        self._data_frame = dataset.getDataFrame()
-        self._target = dataset.getTarget()
+        self._data_frame = dataset.get_data_frame()
+        self._target = dataset.get_target()
         self._models = dict()
 
-        for model, name, type in Parameters.base_models:
+        for model, model_name, model_type in Parameters.base_models:
             try:
-                self._models[type][name] = model
+                self._models[model_type][model_name] = model
             except KeyError:
-                self._models[type] = dict()
-                self._models[type][name] = model
+                self._models[model_type] = dict()
+                self._models[model_type][model_name] = model
 
         self.__model_names = sum([list(d.keys()) for d in self._models.values()], [])
         self._all_models = sum([list(d.values()) for d in self._models.values()], [])
@@ -56,9 +57,8 @@ class FeatureImportance(ABC):
         return self._name
 
     @abstractmethod
-    def calculate_scores(self):
+    def calculate_scores(self) -> None:
         """
-        Compute feature importance estimates.
+        Compute feature importance estimates and store them, so they can be retrieved later.
         """
-        pass
-
+        raise NotImplementedError('Abstract method.')
