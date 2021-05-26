@@ -7,7 +7,6 @@ from pandas import DataFrame
 from sklearn.base import BaseEstimator
 from sklearn.preprocessing import StandardScaler
 
-from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.metadata.featureimportance import FeatureImportance
 
 
@@ -16,7 +15,7 @@ class LimeImportance(FeatureImportance):
     LIME-importance.
     """
 
-    def __init__(self, dataset: Dataset):
+    def __init__(self, dataset: 'Dataset'):
         super().__init__(dataset=dataset)
         self._name = "_LIME"
 
@@ -39,6 +38,8 @@ class LimeImportance(FeatureImportance):
         num_features = len(X.columns)
         num_entries = len(X.values)
         num_samples = int(max([0.1 * num_entries, min([num_features * 2 * math.log2(num_entries), 0.5 * num_entries])]))
+        # TODO: Temporary
+        num_samples = int(0.1 * num_entries)
         np.random.seed(115)
         samples = list(np.random.permutation(num_entries))[:num_samples]
 

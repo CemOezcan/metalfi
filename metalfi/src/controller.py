@@ -164,10 +164,7 @@ class Controller:
             iterable : Parameters for the instance of :py:class:`MetaModel`.
         """
         model = MetaModel(iterable)
-        sys.stderr = open(os.devnull, 'w')
-        sys.stdout.close()
         model.fit()
-        sys.stderr = sys.__stderr__
         Memory.store_model(model, iterable[1][:-4])
 
     @staticmethod
