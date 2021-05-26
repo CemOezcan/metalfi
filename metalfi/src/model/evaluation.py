@@ -30,6 +30,7 @@ class Evaluation:
         __parameters :
             Meta-model configurations for MetaLFI feature selection.
     """
+
     def __init__(self, meta_models: List[str]):
         self.__meta_models = meta_models
         self.__tests = list()
@@ -106,16 +107,16 @@ class Evaluation:
         # Q_2
         subset_names_lin = list(dict.fromkeys([c[2] for c in config if c[2] != "All"]))
         subset_names_non = list(dict.fromkeys([c[2] for c in config]))
-        data_2_lin = {metric: {key: list() for key in subset_names_lin} for metric in Parameters.metrics.values()}
-        data_2_non = {metric: {key: list() for key in subset_names_non} for metric in Parameters.metrics.values()}
+        data_2_lin = {metric: {key: list() for key in subset_names_lin} for metric in Parameters.metrics}
+        data_2_non = {metric: {key: list() for key in subset_names_non} for metric in Parameters.metrics}
 
         # Q_3
         target_names = list(dict.fromkeys([c[1] for c in config]))
-        data_3 = {metric: {key: list() for key in target_names} for metric in Parameters.metrics.values()}
+        data_3 = {metric: {key: list() for key in target_names} for metric in Parameters.metrics}
 
         # Q_4
         meta_model_names = list(dict.fromkeys([c[0] for c in config]))
-        data_4 = {metric: {key: list() for key in meta_model_names} for metric in Parameters.metrics.values()}
+        data_4 = {metric: {key: list() for key in meta_model_names} for metric in Parameters.metrics}
 
         # Q_5
         selection_names = list(set(c[3] for c in config_5))
@@ -207,7 +208,7 @@ class Evaluation:
             tuples = list()
 
         for name in names:
-            numerator = [0] * len(Parameters.metrics.keys())
+            numerator = [0] * len(Parameters.metrics)
             denominator = 0
             for t in tuples:
                 if t[0][index] == name:
@@ -215,8 +216,8 @@ class Evaluation:
                     denominator += 1
 
             values = list(map(lambda x: x / denominator, numerator))
-            for i in Parameters.metrics.keys():
-                data[Parameters.metrics[i]][name].append(values[i])
+            for metric_idx, metric_name in enumerate(Parameters.metrics):
+                data[metric_name][name].append(values[metric_idx])
 
         return data
 
@@ -287,7 +288,7 @@ class Evaluation:
         rows = list()
 
         all_results = {}
-        for i in Parameters.metrics:
+        for i, metric_name in enumerate(Parameters.metrics):
             metric = {measure: {a: list() for a in algorithms} for measure in Parameters.fi_measures()}
             index = 0
             for a, b, c in self.__config:
@@ -298,7 +299,7 @@ class Evaluation:
                 metric[b[-4:]][b[:-5]].append(self.__tests[index][i])
                 index -= -1
 
-            all_results[Parameters.metrics[i]] = metric
+            all_results[metric_name] = metric
 
         for metric in all_results:
             for importance in all_results[metric]:
@@ -337,9 +338,9 @@ class Evaluation:
         columns = ["$" + meta + "_{" + features + "}(" + target + ")$" for meta, target, features in self.__config]
         index = self.__meta_models
 
-        for key in Parameters.metrics.keys():
-            data = [tuple(map((lambda x: x[key]), results[i][0])) for i in range(len(index))]
-            Memory.store_data_frame(DataFrame(data, columns=columns, index=index), Parameters.metrics[key], "predictions")
+        for metric_idx, metric_name in enumerate(Parameters.metrics):
+            data = [tuple(map((lambda x: x[metric_idx]), results[i][0])) for i in range(len(index))]
+            Memory.store_data_frame(DataFrame(data, columns=columns, index=index), metric_name, "predictions")
 
     def comparisons(self, models: List[str], targets: List[str], subsets: List[str], renew=False):
         """

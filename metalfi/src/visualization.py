@@ -203,7 +203,7 @@ class Visualization:
         """
         Compute pairwise Spearman correlation coefficients between performance metrics.
         """
-        new = {metric: list() for metric in Parameters.metrics.values()}
+        new = {metric: list() for metric in Parameters.metrics}
         directory = "output/predictions"
         file_names = Memory.get_contents(directory)
         data = [(Memory.load(name, directory), name) for name in file_names if "x" not in name]

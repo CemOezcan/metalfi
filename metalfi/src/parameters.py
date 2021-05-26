@@ -16,7 +16,7 @@ class Parameters:
 
     Attributes
     ----------
-        metrics : (Dict[int, str])
+        metrics : (List[str])
             Evaluation metrics for meta-models.
         targets : (List[str])
             Names of all meta-targets.
@@ -24,12 +24,9 @@ class Parameters:
             Contains base-models (classifiers), their respective names and categories.
         meta_models : (List[Tuple[Estimator, str, str]])
             Contains meta-models (regression models), their respective names and categories.
-
-
-
     """
 
-    metrics = {0: "R^2"}
+    metrics = ["R^2"]
     targets = ["linSVC_SHAP", "LOG_SHAP", "RF_SHAP", "NB_SHAP", "SVC_SHAP", "DT_SHAP",
                "linSVC_LIME", "LOG_LIME", "RF_LIME", "NB_LIME", "SVC_LIME", "DT_LIME",
                "linSVC_PIMP", "LOG_PIMP", "RF_PIMP", "NB_PIMP", "SVC_PIMP", "DT_PIMP",
