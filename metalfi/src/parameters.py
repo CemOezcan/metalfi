@@ -50,13 +50,12 @@ class Parameters:
                    (LinearSVR(max_iter=10000, random_state=115), "linSVR", "linear")]
 
     @staticmethod
-    def calculate_metrics(y_train: List[float], y_test: List[float], y_pred: List[float]) -> List[float]:
+    def calculate_metrics(y_test: List[float], y_pred: List[float]) -> List[float]:
         """
         Compute different performance metrics for model predictions.
 
         Parameters
         ----------
-            y_train : Target vector of the train data.
             y_test : Target vector of the test data.
             y_pred : Predicted target vector of the test data.
 

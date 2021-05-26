@@ -148,10 +148,9 @@ class MetaModel:
         for (model, features, config) in self.__meta_models:
             X_test = X[features]
             y_test = self.__test_data[config[1]]
-            y_train = self.__train_data[config[1]]
             y_pred = model.predict(X_test)
 
-            self.__stats.append(Parameters.calculate_metrics(y_train, y_test, y_pred))
+            self.__stats.append(Parameters.calculate_metrics(y_test=y_test, y_pred=y_pred))
 
     @staticmethod
     def __get_rankings(columns: List[str], prediction: List[float], actual: List[float]) \
