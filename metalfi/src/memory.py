@@ -9,8 +9,6 @@ import pandas as pd
 from sklearn.datasets import fetch_openml
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, LabelEncoder
 
-from metalfi.src.model.metamodel import MetaModel
-
 
 class Memory:
     """
@@ -55,9 +53,10 @@ class Memory:
         openml_list = openml.datasets.list_datasets()
         data = pd.DataFrame.from_dict(openml_list, orient="index")
         data = data[data['NumberOfInstances'] < 1000]
-        data = data[data['NumberOfFeatures'] < 20]
+        data = data[data['NumberOfFeatures'] < 15]
         data = data[data['NumberOfFeatures'] > 4]
         data = data[data['NumberOfClasses'] == 2]
+        data = data[(data["MajorityClassSize"] / data['NumberOfInstances']) < 0.67]
         data = data[data['NumberOfMissingValues'] == 0].sort_values(["version"])
         data = data.drop_duplicates("name", "last")
 
@@ -66,10 +65,10 @@ class Memory:
                           [tuple(x) for x in data[["name", "version"]].values]))
 
         for name, version in ids:
-            dataset = fetch_openml(name=name, version=version, as_frame=True)
             try:
+                dataset = fetch_openml(name=name, version=version, as_frame=True)
                 categories = fetch_openml(name=name, version=version, as_frame=False)["categories"]
-            except ValueError:
+            except Exception:
                 ids.remove((name, version))
                 continue
 
@@ -150,7 +149,7 @@ class Memory:
             data.to_csv(path, index=False, header=True)
 
     @staticmethod
-    def store_model(model: MetaModel, name: str):
+    def store_model(model: 'MetaModel', name: str):
         """
         Serialize and save an instance of :py:class:`MetaModel` in metalfi/data/model.
 
@@ -166,7 +165,7 @@ class Memory:
             file.close()
 
     @staticmethod
-    def load_model(names: List[str]) -> List[Tuple[MetaModel, str]]:
+    def load_model(names: List[str]) -> List[Tuple['MetaModel', str]]:
         """
         Load pickle files in metalfi/data/model and return them as instances of :py:class:`MetaModel`.
 
@@ -189,7 +188,7 @@ class Memory:
         return models
 
     @staticmethod
-    def renew_model(model: MetaModel, name: str):
+    def renew_model(model: 'MetaModel', name: str):
         """
         Replace a meta-model in metalfi/data/model.
 

@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 
-from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.parameters import Parameters
 
 
@@ -26,7 +25,7 @@ class FeatureImportance(ABC):
             Names of all meta-models.
     """
 
-    def __init__(self, dataset: Dataset):
+    def __init__(self, dataset: 'Dataset'):
         if dataset is None:
             return
 

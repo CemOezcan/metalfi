@@ -4,7 +4,6 @@ import rfpimp
 from sklearn.base import BaseEstimator
 from sklearn.preprocessing import StandardScaler
 
-from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.metadata.featureimportance import FeatureImportance
 
 
@@ -13,7 +12,7 @@ class PermutationImportance(FeatureImportance):
     PIMP-importance.
     """
 
-    def __init__(self, dataset: Dataset):
+    def __init__(self, dataset: 'Dataset'):
         super().__init__(dataset=dataset)
         self._name = "_PIMP"
 
