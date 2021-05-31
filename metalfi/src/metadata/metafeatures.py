@@ -248,6 +248,8 @@ class MetaFeatures:
         for i in range(0, len(self.__data_meta_feature_names)):
             self.__meta_data[self.__data_meta_feature_names[i]] = self.__data_meta_features[i]
 
+        self.__meta_data.fillna(0, inplace=True)
+
     def create_target(self) -> (List[str], float, float, float, float):
         """
         Compute meta-target variables and append results to meta-data set.

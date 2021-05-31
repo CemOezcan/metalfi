@@ -1,4 +1,8 @@
 import math
+import os
+import sys
+import time
+import warnings
 
 import lime
 import lime.lime_tabular
@@ -20,8 +24,15 @@ class LimeImportance(FeatureImportance):
         self._name = "_LIME"
 
     def calculate_scores(self) -> None:
+        warnings.simplefilter("ignore")
+        with open(os.devnull, 'w') as file:
+            sys.stderr = file
+
         for model in self._all_models:
             self._feature_importances.append(self.__lime_importance(model, self._target))
+
+        sys.stderr = sys.__stderr__
+        warnings.simplefilter("default")
 
     def __lime_importance(self, model: BaseEstimator, target: str) -> DataFrame:
         sc = StandardScaler()

@@ -1,3 +1,7 @@
+import os
+import sys
+import warnings
+
 from pandas import DataFrame
 import rfpimp
 from sklearn.base import BaseEstimator
@@ -16,10 +20,17 @@ class DropColumnImportance(FeatureImportance):
         self._name = "_LOFO"
 
     def calculate_scores(self) -> None:
+        warnings.simplefilter("ignore")
+        with open(os.devnull, 'w') as file:
+            sys.stderr = file
+
         for model_type in self._models.keys():
             for name in self._models[model_type].keys():
                 model = self._models[model_type][name]
                 self._feature_importances.append(self.__dropcol_importance(model, self._target))
+
+        sys.stderr = sys.__stderr__
+        warnings.simplefilter("default")
 
     def __dropcol_importance(self, model: BaseEstimator, target: str) -> DataFrame:
         sc = StandardScaler()

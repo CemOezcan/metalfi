@@ -53,7 +53,7 @@ class Memory:
         openml_list = openml.datasets.list_datasets()
         data = pd.DataFrame.from_dict(openml_list, orient="index")
         data = data[data['NumberOfInstances'] < 1000]
-        data = data[data['NumberOfFeatures'] < 15]
+        data = data[data['NumberOfFeatures'] < 20]
         data = data[data['NumberOfFeatures'] > 4]
         data = data[data['NumberOfClasses'] == 2]
         data = data[(data["MajorityClassSize"] / data['NumberOfInstances']) < 0.67]
@@ -101,7 +101,7 @@ class Memory:
             X_num = X.drop(X_cat.columns, axis=1)
             num_features = list(set(all_features) - set(cat_features))
 
-            X_enc = OrdinalEncoder(sorted_categories)
+            X_enc = OrdinalEncoder(categories=sorted_categories)
             X_cat = X_enc.fit_transform(X_cat)
 
             data_frame = pd.DataFrame(data=np.c_[np.c_[X_cat, X_num], y],
