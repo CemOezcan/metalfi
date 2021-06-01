@@ -67,11 +67,11 @@ class MetaFeatures:
     @staticmethod
     def __run_pymfe(X: Union[DataFrame, np.ndarray], y: Union[DataFrame, np.ndarray], summary: Union[List[str], None],
                     features: List[str]) -> (List[str], List[str]):
-        warnings.simplefilter("ignore")
+        warnings.filterwarnings("ignore", message="It is not possible make equal discretization")
         mfe = MFE(summary=summary, features=features)
         mfe.fit(X, y)
         vector = mfe.extract()
-        warnings.simplefilter("default")
+        warnings.filterwarnings("default")
 
         return vector
 

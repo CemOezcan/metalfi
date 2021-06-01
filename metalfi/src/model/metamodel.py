@@ -1,3 +1,4 @@
+import warnings
 from copy import deepcopy
 from typing import List, Tuple
 
@@ -117,7 +118,9 @@ class MetaModel:
                     X_train, selected_features = self.__feature_selection(base_model_name, X, target) \
                         if feature_set[0] == "Auto" else (X[feature_set], feature_set)
 
+                    warnings.filterwarnings("ignore", message="Liblinear failed to converge, increase the number of iterations.")
                     model = base_model.fit(X_train, y)
+                    warnings.filterwarnings("default")
                     feature_set_name = self.__meta_feature_groups.get(i)
 
                     self.__meta_models.append((deepcopy(model), selected_features,
@@ -245,6 +248,7 @@ class MetaModel:
                 predicted = [columns[i] for i in p]
                 actual = [columns[i] for i in a]
 
+                warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
                 X_fi_train = X_train[actual[:k_number]]
                 X_metalfi_train = X_train[predicted[:k_number]]
 
@@ -262,6 +266,7 @@ class MetaModel:
 
                 og_model.fit(X_mi_train, y_train)
                 mi = og_model.score(X_mi_test, y_test)
+                warnings.filterwarnings("default")
 
                 results[i].append([anova, mi, fi, metalfi])
 

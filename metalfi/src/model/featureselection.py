@@ -1,9 +1,6 @@
 import multiprocessing as mp
-import os
 from statistics import mean
-import sys
 from typing import Dict, List, Tuple
-import warnings
 
 import numpy as np
 from pandas import DataFrame
@@ -154,27 +151,21 @@ class MetaFeatureSelection:
         -------
             SHAP-importance values
         """
-        warnings.simplefilter("ignore")
-        with open(os.devnull, 'w') as file:
-            sys.stderr = file
-
         target, model, X, y, category = iterable
         s = ShapImportance(None)
 
-        if category == "linear":
-            imp = s.linear_shap(model, X, y)
-        elif category == "tree":
-            imp = s.tree_regression_shap(model, X, y)
-        else:
-            imp = s.kernel_shap(model, X, y)
+        with s.ignore_progress_bars():
+            if category == "linear":
+                imp = s.linear_shap(model, X, y)
+            elif category == "tree":
+                imp = s.tree_regression_shap(model, X, y)
+            else:
+                imp = s.kernel_shap(model, X, y)
 
         array = imp["Importances"].values
         array = list(np.interp(array, (array.min(), array.max()), (0, 1)))
 
         for i in range(len(imp.index)):
             imp.iloc[i, 0] = array[i]
-
-        sys.stderr = sys.__stderr__
-        warnings.simplefilter("default")
 
         return target, imp

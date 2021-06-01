@@ -1,7 +1,4 @@
-import os
-import sys
 from typing import List
-import warnings
 
 import numpy as np
 from pandas import DataFrame
@@ -22,26 +19,20 @@ class ShapImportance(FeatureImportance):
         self._name = "_SHAP"
 
     def calculate_scores(self) -> None:
-        warnings.simplefilter("ignore")
-        with open(os.devnull, 'w') as file:
-            sys.stderr = file
+        with self.ignore_progress_bars():
+            sc = StandardScaler()
+            X = DataFrame(data=sc.fit_transform(self._data_frame.drop(self._target, axis=1)),
+                          columns=self._data_frame.drop(self._target, axis=1).columns)
+            y = self._data_frame[self._target]
 
-        sc = StandardScaler()
-        X = DataFrame(data=sc.fit_transform(self._data_frame.drop(self._target, axis=1)),
-                      columns=self._data_frame.drop(self._target, axis=1).columns)
-        y = self._data_frame[self._target]
-
-        for model_type in self._models.keys():
-            for model in self._models[model_type].values():
-                if model_type == "tree":
-                    self._feature_importances.append(self.tree_shap(model, X, y))
-                elif model_type == "linear":
-                    self._feature_importances.append(self.linear_shap(model, X, y))
-                else:
-                    self._feature_importances.append(self.kernel_shap(model, X, y))
-
-        sys.stderr = sys.__stderr__
-        warnings.simplefilter("default")
+            for model_type in self._models.keys():
+                for model in self._models[model_type].values():
+                    if model_type == "tree":
+                        self._feature_importances.append(self.tree_shap(model, X, y))
+                    elif model_type == "linear":
+                        self._feature_importances.append(self.linear_shap(model, X, y))
+                    else:
+                        self._feature_importances.append(self.kernel_shap(model, X, y))
 
     def tree_shap(self, model: BaseEstimator, X: DataFrame, y: DataFrame) -> DataFrame:
         model.fit(X, y)
