@@ -17,8 +17,9 @@ class PermutationImportance(FeatureImportance):
         self._name = "_PIMP"
 
     def calculate_scores(self) -> None:
-        for model in self._all_models:
-            self._feature_importances.append(self.__permutation_importance(model, self._target))
+        with self.ignore_np_deprecation_warning():
+            for model in self._all_models:
+                self._feature_importances.append(self.__permutation_importance(model, self._target))
 
     def __permutation_importance(self, model: BaseEstimator, target: str) -> DataFrame:
         sc = StandardScaler()

@@ -16,10 +16,11 @@ class DropColumnImportance(FeatureImportance):
         self._name = "_LOFO"
 
     def calculate_scores(self) -> None:
-        for model_type in self._models.keys():
-            for name in self._models[model_type].keys():
-                model = self._models[model_type][name]
-                self._feature_importances.append(self.__dropcol_importance(model, self._target))
+        with self.ignore_np_deprecation_warning():
+            for model_type in self._models.keys():
+                for name in self._models[model_type].keys():
+                    model = self._models[model_type][name]
+                    self._feature_importances.append(self.__dropcol_importance(model, self._target))
 
     def __dropcol_importance(self, model: BaseEstimator, target: str) -> DataFrame:
         sc = StandardScaler()

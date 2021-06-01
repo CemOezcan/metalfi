@@ -67,11 +67,11 @@ class MetaFeatures:
     @staticmethod
     def __run_pymfe(X: Union[DataFrame, np.ndarray], y: Union[DataFrame, np.ndarray], summary: Union[List[str], None],
                     features: List[str]) -> (List[str], List[str]):
-        warnings.simplefilter("ignore")
+        warnings.filterwarnings("ignore", message="(It is not possible make equal discretization|(divide by zero|invalid value) encountered in .*)")
         mfe = MFE(summary=summary, features=features)
         mfe.fit(X, y)
         vector = mfe.extract()
-        warnings.simplefilter("default")
+        warnings.filterwarnings("default")
 
         return vector
 
@@ -186,10 +186,12 @@ class MetaFeatures:
         X_sc = sc.fit_transform(X)
 
         chi2_values, chi2_p_values = chi2(X_sc, y)
+        warnings.filterwarnings("ignore", message="divide by zero encountered in .*")
         f_values, anova_p_values = f_classif(X, y)
         # TODO: Better solution
         f_values = list(map((lambda x: 500 if x == float("inf") else x), f_values))
         log_anova_p = list(map((lambda x: -500 if x == float("-inf") else x), [np.log(x) for x in anova_p_values]))
+        warnings.filterwarnings("default")
         log_anova_p = list(map((lambda x: 1 if math.isnan(x) else x), log_anova_p))
         log_chi2_p = [np.log(x) for x in chi2_p_values]
 
@@ -247,6 +249,8 @@ class MetaFeatures:
 
         for i in range(0, len(self.__data_meta_feature_names)):
             self.__meta_data[self.__data_meta_feature_names[i]] = self.__data_meta_features[i]
+
+        self.__meta_data.fillna(0, inplace=True)
 
     def create_target(self) -> (List[str], float, float, float, float):
         """

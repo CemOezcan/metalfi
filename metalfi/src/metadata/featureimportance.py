@@ -1,4 +1,9 @@
+import re
+import sys
+import warnings
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
+from io import StringIO
 
 from metalfi.src.parameters import Parameters
 
@@ -54,6 +59,29 @@ class FeatureImportance(ABC):
 
     def get_name(self):
         return self._name
+
+    @contextmanager
+    def ignore_np_deprecation_warning(self):
+        warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
+        try:
+            yield
+        finally:
+            warnings.filterwarnings("default")
+
+    @contextmanager
+    def ignore_progress_bars(self):
+        warnings.filterwarnings("ignore", category=DeprecationWarning,
+                                message=".*(is a deprecated alias for the builtin|tostring).*")
+        temp = StringIO()
+        sys.stderr = temp
+        try:
+            yield
+        finally:
+            warnings.filterwarnings("default")
+            sys.stderr = sys.__stderr__
+            pattern = re.compile(r".*\d+%\|.*\|\s\d+/\d+\s\[.*<.*,.*(it/s|s/it)].*")
+            for warning in set(filter(lambda x: not re.match(pattern, x) and x != "", temp.getvalue().splitlines())):
+                warnings.warn(warning)
 
     @abstractmethod
     def calculate_scores(self) -> None:
