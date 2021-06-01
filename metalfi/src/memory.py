@@ -52,8 +52,8 @@ class Memory:
         """
         openml_list = openml.datasets.list_datasets()
         data = pd.DataFrame.from_dict(openml_list, orient="index")
-        data = data[data['NumberOfInstances'] < 1000]
-        data = data[data['NumberOfFeatures'] < 20]
+        data = data[data['NumberOfInstances'] < 751]
+        data = data[data['NumberOfFeatures'] < 16]
         data = data[data['NumberOfFeatures'] > 4]
         data = data[data['NumberOfClasses'] == 2]
         data = data[(data["MajorityClassSize"] / data['NumberOfInstances']) < 0.67]

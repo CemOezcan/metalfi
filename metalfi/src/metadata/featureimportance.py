@@ -1,3 +1,4 @@
+import re
 import sys
 import warnings
 from abc import ABC, abstractmethod
@@ -78,7 +79,8 @@ class FeatureImportance(ABC):
         finally:
             warnings.filterwarnings("default")
             sys.stderr = sys.__stderr__
-            for warning in set(filter(lambda x: "it/s" not in x, temp.getvalue().splitlines())):
+            pattern = re.compile(r".*\d+%\|.*\|\s\d+/\d+\s\[.*<.*,.*(it/s|s/it)].*")
+            for warning in set(filter(lambda x: not re.match(pattern, x) and x != "", temp.getvalue().splitlines())):
                 warnings.warn(warning)
 
     @abstractmethod
