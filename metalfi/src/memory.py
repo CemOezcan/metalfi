@@ -1,4 +1,5 @@
 import os
+import multiprocessing as mp
 from pathlib import Path
 import pickle
 from typing import List, Tuple
@@ -13,7 +14,13 @@ from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, LabelEncoder
 class Memory:
     """
     Provides methods for saving and loading data and files from the metalfi/data directory.
+
+    Global variables
+    ----------
+        lock : (Lock)
+            Mutex lock.
     """
+    lock = mp.Lock()
 
     @staticmethod
     def load(name: str, directory) -> pd.DataFrame:
@@ -119,15 +126,15 @@ class Memory:
     def store_meta_features(data):
         path = Memory.get_path() / "features/selected"
         if not path.is_file():
-            pickle.dump(data, open(path, 'wb'))
+            with open(path, 'wb') as file:
+                pickle.dump(data, file)
 
     @staticmethod
     def load_meta_features():
         try:
             path = Memory.get_path() / "features/selected"
-            file = open(path, 'rb')
-            data = pickle.load(file)
-            file.close()
+            with open(path, 'rb') as file:
+                data = pickle.load(file)
 
         except FileNotFoundError:
             data = None
@@ -158,11 +165,14 @@ class Memory:
             model : Instance of :py:class:`MetaModel`, that is supposed to be saved as a pickle-file.
             name : Name of the pickle-file.
         """
-        path = Memory.get_path() / ("model/" + name)
-        if not path.is_file():
-            file = open(path, 'wb')
-            pickle.dump(model, file)
-            file.close()
+        Memory.lock.acquire()
+        try:
+            path = Memory.get_path() / ("model/" + name)
+            if not path.is_file():
+                with open(path, 'wb') as file:
+                    pickle.dump(model, file)
+        finally:
+            Memory.lock.release()
 
     @staticmethod
     def load_model(names: List[str]) -> List[Tuple['MetaModel', str]]:
@@ -177,13 +187,16 @@ class Memory:
         -------
             ist of Tuples containing meta-models as instances of :py:class:`MetaModel` and their respective names.
         """
-        models = list()
-        for name in names:
-            path = Memory.get_path() / ("model/" + name)
-            file = open(path, 'rb')
-            data = pickle.load(file)
-            file.close()
-            models.append((data, name))
+        Memory.lock.acquire()
+        try:
+            models = list()
+            for name in names:
+                path = Memory.get_path() / ("model/" + name)
+                with open(path, 'rb') as file:
+                    data = pickle.load(file)
+                models.append((data, name))
+        finally:
+            Memory.lock.release()
 
         return models
 
@@ -197,10 +210,13 @@ class Memory:
             model : New instance of :py:class:`MetaModel`, that is supposed to replace the old instance.
             name : Identifies the file that is supposed to be replaced.
         """
-        path = Memory.get_path() / ("model/" + name)
-        file = open(path, 'wb')
-        pickle.dump(model, file)
-        file.close()
+        Memory.lock.acquire()
+        try:
+            path = Memory.get_path() / ("model/" + name)
+            with open(path, 'wb') as file:
+                pickle.dump(model, file)
+        finally:
+            Memory.lock.release()
 
     @staticmethod
     def store_data_frame(data: pd.DataFrame, name: str, directory: str, renew=False):
