@@ -289,3 +289,17 @@ class Memory:
         """
         path = Memory.get_path() / ("preprocessed/" + name + ".csv")
         data.to_csv(path, index=False, header=True)
+
+    @staticmethod
+    def clean_up(directory=None):
+        """
+
+        Parameters
+        ----------
+        directory :
+
+        Returns
+        -------
+
+        """
+        return
