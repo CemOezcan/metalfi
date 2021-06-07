@@ -151,10 +151,10 @@ The results will be saved in subdirectories of `metalfi/metalfi/data/`.
 On an average laptop, the calculations require approximately 20 hours to finish.
 
 If necessary, one can delete (and subsequently recompute) all meta-data sets or all trained meta-models by passing 
-`delete_meta=True` or `delete_meta=True` as keyword arguments: 
+`delete_meta=True` or `delete_models=True` as keyword arguments: 
 
 ```bash
-python -m metalfi.src.main delete_meta=True delete_meta=True
+python -m metalfi.src.main delete_meta=True delete_models=True
 ```
 
 ### Plots and Tables
