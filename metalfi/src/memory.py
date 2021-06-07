@@ -219,7 +219,7 @@ class Memory:
             Memory.lock.release()
 
     @staticmethod
-    def store_data_frame(data: pd.DataFrame, name: str, directory: str, renew=False):
+    def store_data_frame(data: pd.DataFrame, name: str, directory: str, renew=True):
         """
         Store a :py:obj:`DataFrame` object as .csv file in a given sub directory of metalfi/data/output.
 
@@ -291,15 +291,18 @@ class Memory:
         data.to_csv(path, index=False, header=True)
 
     @staticmethod
-    def clean_up(directory=None):
+    def clear_directory(directories: List[str]):
         """
+        Delete all files (except .gitignore files) from given directories.
 
         Parameters
         ----------
-        directory :
-
-        Returns
-        -------
-
+        directories :
+            The directories, whose contents are supposed to be deleted.
         """
-        return
+        for directory in directories:
+            for file in Memory.get_contents(directory):
+                try:
+                    os.remove(Memory.get_path() / directory / file)
+                except FileNotFoundError:
+                    continue
