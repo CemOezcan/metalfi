@@ -262,7 +262,7 @@ class Evaluation:
         Estimate meta-model performances by testing them on their respective cross validation test splits.
         Save the results as .csv files in the `metalfi/data/output/predictions` directory.
         """
-        with mp.Pool(processes=mp.cpu_count() - 1) as pool:
+        with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Evaluating meta-models")
             results = [
                 pool.map_async(
@@ -354,7 +354,7 @@ class Evaluation:
             subsets : Meta-feature subsets.
             renew : Whether to recompute the results, if they have already been computed.
         """
-        with mp.Pool(processes=mp.cpu_count() - 1) as pool:
+        with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
 
             results = [pool.map_async(
