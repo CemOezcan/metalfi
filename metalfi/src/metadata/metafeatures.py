@@ -67,7 +67,7 @@ class MetaFeatures:
     @staticmethod
     def __run_pymfe(X: Union[DataFrame, np.ndarray], y: Union[DataFrame, np.ndarray], summary: Union[List[str], None],
                     features: List[str]) -> (List[str], List[str]):
-        warnings.filterwarnings("ignore", message="(It is not possible make equal discretization|(divide by zero|invalid value) encountered in .*)")
+        warnings.filterwarnings("ignore", message="(It is not possible make equal discretization|(divide by zero|invalid value) encountered in .*|Can't summarize feature 'cor' with .*)")
         mfe = MFE(summary=summary, features=features)
         mfe.fit(X, y)
         vector = mfe.extract()
