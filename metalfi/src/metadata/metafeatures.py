@@ -262,9 +262,9 @@ class MetaFeatures:
 
         """
         perm = PermutationImportance(self.__dataset)
-        dCol = PermutationImportance(self.__dataset)
-        shap = PermutationImportance(self.__dataset)
-        lime = PermutationImportance(self.__dataset)
+        dCol = DropColumnImportance(self.__dataset)
+        shap = ShapImportance(self.__dataset)
+        lime = LimeImportance(self.__dataset)
 
         start_perm = time.time()
         self.add_target(perm)
@@ -296,8 +296,9 @@ class MetaFeatures:
         ----------
         target : The underlying feature importance measure.
         """
-        target.calculate_scores()
-        imp = target.get_feature_importances()
+        perm = PermutationImportance(self.__dataset)
+        perm.calculate_scores()
+        imp = perm.get_feature_importances()
         name = target.get_name()
         target_names = list()
 
