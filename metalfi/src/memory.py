@@ -37,11 +37,12 @@ class Memory:
         """
         Fetch and preprocess base-data sets from openML:
         Criteria:
-            - Number of instances < 1000
-            - Number of features in [5, 19]
+            - Number of instances <= 500
+            - Number of features in [5, 10]
             - Number of classes = 2
             - Number of missing values = 0
             - Number of zero-variance features = 0
+            - Majority class ratio < 0.67
         Apply ordinal encoding on categorical features and target variables.
         Binarize target variables if necessary.
 
