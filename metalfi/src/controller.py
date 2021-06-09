@@ -207,7 +207,7 @@ class Controller:
         """
         evaluation = Evaluation(names)
         meta_model, meta_targets, meta_features = Parameters.question_5_parameters()
-        evaluation.comparisons(meta_model, meta_targets, meta_features, False)
+        evaluation.comparisons(meta_model, meta_targets, meta_features, True)
 
     def meta_feature_importances(self):
         """
