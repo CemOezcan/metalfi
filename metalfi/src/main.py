@@ -31,7 +31,7 @@ class Main:
         if delete_meta:
             Memory.clear_directory(["input", "preprocessed", "output/runtime", "model", "features"])
         if delete_models:
-            Memory.clear_directory(["model", "features"])
+            Memory.clear_directory(["model", "features", "output/importance"])
 
         c = Controller()
         c.train_meta_models()

@@ -296,9 +296,8 @@ class MetaFeatures:
         ----------
         target : The underlying feature importance measure.
         """
-        perm = PermutationImportance(self.__dataset)
-        perm.calculate_scores()
-        imp = perm.get_feature_importances()
+        target.calculate_scores()
+        imp = target.get_feature_importances()
         name = target.get_name()
         target_names = list()
 
