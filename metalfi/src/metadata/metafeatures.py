@@ -262,9 +262,9 @@ class MetaFeatures:
 
         """
         perm = PermutationImportance(self.__dataset)
-        dCol = DropColumnImportance(self.__dataset)
-        shap = ShapImportance(self.__dataset)
-        lime = LimeImportance(self.__dataset)
+        dCol = PermutationImportance(self.__dataset)
+        shap = PermutationImportance(self.__dataset)
+        lime = PermutationImportance(self.__dataset)
 
         start_perm = time.time()
         self.add_target(perm)

@@ -20,7 +20,7 @@ class Memory:
         lock : (Lock)
             Mutex lock.
     """
-    lock = mp.Lock()
+   # lock = mp.Lock()
 
     @staticmethod
     def load(name: str, directory) -> pd.DataFrame:
@@ -59,8 +59,8 @@ class Memory:
         """
         openml_list = openml.datasets.list_datasets()
         data = pd.DataFrame.from_dict(openml_list, orient="index")
-        data = data[data['NumberOfInstances'] < 501]
-        data = data[data['NumberOfFeatures'] < 16]
+        data = data[data['NumberOfInstances'] < 1001]
+        data = data[data['NumberOfFeatures'] < 21]
         data = data[data['NumberOfFeatures'] > 4]
         data = data[data['NumberOfClasses'] == 2]
         data = data[(data["MajorityClassSize"] / data['NumberOfInstances']) < 0.67]
@@ -165,14 +165,14 @@ class Memory:
             model : Instance of :py:class:`MetaModel`, that is supposed to be saved as a pickle-file.
             name : Name of the pickle-file.
         """
-        Memory.lock.acquire()
+        #Memory.lock.acquire()
         try:
             path = Memory.get_path() / ("model/" + name)
             if not path.is_file():
                 with open(path, 'wb') as file:
                     pickle.dump(model, file)
-        finally:
-            Memory.lock.release()
+        finally: return
+           # Memory.lock.release()
 
     @staticmethod
     def load_model(names: List[str]) -> List[Tuple['MetaModel', str]]:
@@ -187,7 +187,7 @@ class Memory:
         -------
             ist of Tuples containing meta-models as instances of :py:class:`MetaModel` and their respective names.
         """
-        Memory.lock.acquire()
+        #Memory.lock.acquire()
         try:
             models = list()
             for name in names:
@@ -195,8 +195,7 @@ class Memory:
                 with open(path, 'rb') as file:
                     data = pickle.load(file)
                 models.append((data, name))
-        finally:
-            Memory.lock.release()
+        finally: return #Memory.lock.release()
 
         return models
 
@@ -210,13 +209,12 @@ class Memory:
             model : New instance of :py:class:`MetaModel`, that is supposed to replace the old instance.
             name : Identifies the file that is supposed to be replaced.
         """
-        Memory.lock.acquire()
+        #Memory.lock.acquire()
         try:
             path = Memory.get_path() / ("model/" + name)
             with open(path, 'wb') as file:
                 pickle.dump(model, file)
-        finally:
-            Memory.lock.release()
+        finally: return #Memory.lock.release()
 
     @staticmethod
     def store_data_frame(data: pd.DataFrame, name: str, directory: str, renew=True):
