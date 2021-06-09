@@ -59,8 +59,8 @@ class Memory:
         """
         openml_list = openml.datasets.list_datasets()
         data = pd.DataFrame.from_dict(openml_list, orient="index")
-        data = data[data['NumberOfInstances'] < 1001]
-        data = data[data['NumberOfFeatures'] < 21]
+        data = data[data['NumberOfInstances'] < 501]
+        data = data[data['NumberOfFeatures'] < 11]
         data = data[data['NumberOfFeatures'] > 4]
         data = data[data['NumberOfClasses'] == 2]
         data = data[(data["MajorityClassSize"] / data['NumberOfInstances']) < 0.67]
@@ -171,7 +171,8 @@ class Memory:
             if not path.is_file():
                 with open(path, 'wb') as file:
                     pickle.dump(model, file)
-        finally: return
+        finally:
+            return
            # Memory.lock.release()
 
     @staticmethod
@@ -188,14 +189,15 @@ class Memory:
             ist of Tuples containing meta-models as instances of :py:class:`MetaModel` and their respective names.
         """
         #Memory.lock.acquire()
+        models = list()
         try:
-            models = list()
             for name in names:
                 path = Memory.get_path() / ("model/" + name)
                 with open(path, 'rb') as file:
                     data = pickle.load(file)
                 models.append((data, name))
-        finally: return #Memory.lock.release()
+        finally:
+            return models #Memory.lock.release()
 
         return models
 
@@ -214,7 +216,9 @@ class Memory:
             path = Memory.get_path() / ("model/" + name)
             with open(path, 'wb') as file:
                 pickle.dump(model, file)
-        finally: return #Memory.lock.release()
+        finally:
+            return
+            #Memory.lock.release()
 
     @staticmethod
     def store_data_frame(data: pd.DataFrame, name: str, directory: str, renew=True):
