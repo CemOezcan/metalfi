@@ -108,23 +108,29 @@ class MetaModel:
         """
         Fit all meta-models to the train split in `__train_data`. Save trained meta-models at `__meta_models`.
         """
-        X = self.__train_data.drop(Parameters.targets, axis=1)
+        X_1 = self.__train_data.drop(Parameters.targets, axis=1)
+        X_2 = self.__test_data.drop(Parameters.targets, axis=1)
 
         for base_model, base_model_name, _ in Parameters.meta_models:
             for target in Parameters.targets:
                 i = 0
                 for feature_set in self.__feature_sets:
                     y = self.__train_data[target]
-                    X_train, selected_features = self.__feature_selection(base_model_name, X, target) \
-                        if feature_set[0] == "Auto" else (X[feature_set], feature_set)
+                    X_train, selected_features = self.__feature_selection(base_model_name, X_1, target) \
+                        if feature_set[0] == "Auto" else (X_1[feature_set], feature_set)
 
                     warnings.filterwarnings("ignore", message="Liblinear failed to converge, increase the number of iterations.")
                     model = base_model.fit(X_train, y)
                     warnings.filterwarnings("default")
                     feature_set_name = self.__meta_feature_groups.get(i)
 
-                    self.__meta_models.append((deepcopy(model), selected_features,
+                    self.__meta_models.append((None, selected_features,
                                                [base_model_name, target, feature_set_name]))
+                    X_test = X_2[selected_features]
+                    y_test = self.__test_data[target]
+                    y_pred = model.predict(X_test)
+
+                    self.__stats.append(Parameters.calculate_metrics(y_test=y_test, y_pred=y_pred))
 
                     i -= -1
 
