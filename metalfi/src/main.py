@@ -38,10 +38,10 @@ class Main:
         data = Memory.get_contents("model")
         c.estimate(data)
         c.meta_feature_importances()
-        c.compare(data)
+        # c.compare(data)
         c.questions(data)
 
-        Visualization.performance()
+        #Visualization.performance()
         Visualization.clean_up()
         Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["landmarking", "univariate", "data"], "fast")
         Visualization.runtime_boxplot(100000000, ["LOFO"], ["multivariate"], "fast_multi")

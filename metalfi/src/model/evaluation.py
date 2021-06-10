@@ -94,14 +94,14 @@ class Evaluation:
                   for column in data[file_names[0][:-4]].columns if "Index" not in column]
 
         # Q_5
-        directory = "output/selection"
+        """directory = "output/selection"
         file_name = list(filter(lambda x: x.endswith(".csv") and "_" in x, Memory.get_contents(directory)))[0]
         comparison_data = {file_name[:-4]: Memory.load(file_name, directory)}
         pattern = re.compile(r"\$(?P<meta>.+)\_\{(?P<features>.+) \\times (?P<selection>.+)\}\((?P<target>.+)\)\$")
 
         config_5 = [[pattern.match(column).group("meta"), pattern.match(column).group("target"),
                      pattern.match(column).group("features"), pattern.match(column).group("selection")]
-                    for column in comparison_data[file_name[:-4]].columns if "Index" not in column]
+                    for column in comparison_data[file_name[:-4]].columns if "Index" not in column]"""
 
         # Q_2
         subset_names_lin = list(dict.fromkeys([c[2] for c in config if c[2] != "All"]))
@@ -118,25 +118,25 @@ class Evaluation:
         data_4 = {metric: {key: list() for key in meta_model_names} for metric in Parameters.metrics}
 
         # Q_5
-        selection_names = list(set(c[3] for c in config_5))
+        """selection_names = list(set(c[3] for c in config_5))
         data_5 = {meta_target: {key: list() for key in selection_names}
-                  for meta_target in Parameters.question_5_parameters()[1]}
+                  for meta_target in Parameters.question_5_parameters()[1]}"""
 
         rows = list()
         base_data_sets = list(data.values())[0]["Index"]
         for i in range(len(base_data_sets)):
             stats = list(map(lambda x: list(x), zip(*[data_set.iloc[i][1:] for data_set in data.values()])))
-            comps = list(map(lambda x: list(x), zip(*[data_set.iloc[i][1:] for data_set in comparison_data.values()])))
+            #comps = list(map(lambda x: list(x), zip(*[data_set.iloc[i][1:] for data_set in comparison_data.values()])))
 
             performances = list(zip(config, stats))
-            comparisons = list(zip(config_5, comps))
+            #comparisons = list(zip(config_5, comps))
             rows.append(base_data_sets.iloc[i])
 
             data_2_lin = self.__create_question_csv(performances, subset_names_lin, data_2_lin, 2, question=2, linear=True)
             data_2_non = self.__create_question_csv(performances, subset_names_non, data_2_non, 2, question=2, linear=False)
             data_3 = self.__create_question_csv(performances, target_names, data_3, 1, question=3)
             data_4 = self.__create_question_csv(performances, meta_model_names, data_4, 0, question=4)
-            data_5 = self.__create_question_5_csv(comparisons, data_5)
+            #data_5 = self.__create_question_5_csv(comparisons, data_5)
 
         def __question_data(data: Dict[str, Dict[str, List[float]]], rows: List[str], suffix: str) \
                 -> List[Tuple[DataFrame, str]]:
@@ -147,12 +147,12 @@ class Evaluation:
         q_2_non = __question_data(data_2_non, rows, "_NON")
         q_3 = self.__q_3(data_3, rows)
         q_4 = __question_data(data_4, rows, "")
-        q_5 = __question_data(data_5, rows, "")
+        #q_5 = __question_data(data_5, rows, "")
 
         Visualization.compare_means(q_2_lin + q_2_non, "groups")
         Visualization.compare_means(q_3, "targets")
         Visualization.compare_means(q_4, "models")
-        Visualization.compare_means(q_5, "selection")
+        #Visualization.compare_means(q_5, "selection")
 
     def __q_3(self, data: Dict[str, Dict[str, List[float]]], rows: List[str]) -> List[Tuple[DataFrame, str]]:
         data_frames = list()
@@ -250,10 +250,8 @@ class Evaluation:
 
         """
         model, _ = Memory.load_model([name])[0]
-        model.test()
-        stats = model.get_stats()
-        Memory.renew_model(model, model.get_name()[:-4])
-        config = [c for (a, b, c) in model.get_meta_models()]
+        stats = model[1]
+        config = [c for (a, b, c) in model[0]]
         targets = Parameters.targets
         return stats, config, targets
 
