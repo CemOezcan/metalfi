@@ -105,22 +105,22 @@ class Visualization:
 
             anova = frame.loc["ANOVA"].values
             mi = frame.loc["MI"].values
-            fi = frame.loc["FI"].values
+            #fi = frame.loc["FI"].values
             meta = frame.loc["MetaLFI"].values
 
             x = np.arange(len(anova))
 
             ax.bar(x - 1.5 * width, anova, width, label="ANOVA")
             ax.bar(x - width / 2, mi, width, label="MI")
-            ax.bar(x + width / 2, fi, width, label="FI")
+            #ax.bar(x + width / 2, fi, width, label="FI")
             ax.bar(x + 1.5 * width, meta, width, label="MetaLFI")
 
             ax.set_ylabel("Acc. Scores")
-            ax.set_yticks([0.775, 0.8, 0.825, 0.85])
+            ax.set_yticks([0.55, 0.6, 0.65, 0.7, 0.75, 0.775, 0.8, 0.825, 0.85])
             ax.set_xticks(x)
             ax.set_xticklabels(list(frame.columns))
             ax.legend()
-            plt.ylim([0.75, 0.85])
+            plt.ylim([0.5, 0.85])
 
             Memory.store_visual(plt, name[:-4], "selection")
 

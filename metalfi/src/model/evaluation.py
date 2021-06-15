@@ -339,6 +339,49 @@ class Evaluation:
             data = [tuple(map((lambda x: x[metric_idx]), results[i][0])) for i in range(len(index))]
             Memory.store_data_frame(DataFrame(data, columns=columns, index=index), metric_name, "predictions")
 
+    def new_comparisons(self, model):
+        rows = ["ANOVA", "MI", "MetaLFI"]
+        subsets = ["Auto", "All", "FMF", "LM"]
+        self.__meta_models = list()
+        results = list()
+        comps = model.get_results()
+
+        for key in comps:
+            results.append(comps[key])
+            self.__meta_models.append(key)
+
+        for result in results:
+            self.__comparisons = self.matrix_addition(self.__comparisons, result)
+
+        self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
+        self.__parameters = model.get_result_config()
+
+        all_results = {}
+        for _, model, _ in Parameters.meta_models:
+            this_model = {}
+            for subset in subsets:
+                index = 0
+                for a, b, c in self.__parameters:
+                    if a == model and c == subset:
+                        try:
+                            x = this_model[c]
+                        except KeyError:
+                            this_model[c] = dict()
+                        finally:
+                            this_model[c][b] = self.__comparisons[index]
+
+                    index += 1
+
+            all_results[model] = this_model
+
+        for model in all_results:
+            for subset in subsets:
+                Memory.store_data_frame(DataFrame(data=all_results[model][subset], index=rows,
+                                                  columns=[x for x in all_results[model][subset]]),
+                                        model + " x " + subset, "selection", True)
+
+        self.__store_all_comparisons(results, rows, "all_comparisons")
+
     def comparisons(self, models: List[str], targets: List[str], subsets: List[str], renew=False):
         """
         Estimate base-model performances by testing them on their respective cross validation test splits.
@@ -396,6 +439,13 @@ class Evaluation:
     def __store_all_comparisons(self, results: List[List[List[float]]], rows: List[str], name: str):
         data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2]
                 + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": list(map(lambda x: x[i][j], results))
+                for i in range(len(self.__parameters)) for j in range(len(rows))}
+
+        Memory.store_data_frame(DataFrame(data, index=self.__meta_models), name, "selection")
+
+    def __store_all_comparisons_2(self, results: List[List[float]], rows: List[str], name: str):
+        data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2]
+                + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": [results[i][j]]
                 for i in range(len(self.__parameters)) for j in range(len(rows))}
 
         Memory.store_data_frame(DataFrame(data, index=self.__meta_models), name, "selection")
