@@ -6,8 +6,8 @@ from typing import List, Tuple, Dict
 
 import numpy as np
 from sklearn.pipeline import make_pipeline
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import StratifiedKFold
+import multiprocessing as mp
+import tqdm
 
 from pandas import DataFrame
 from sklearn.base import BaseEstimator
@@ -199,68 +199,83 @@ class MetaModel:
             if name.startswith(model_name):
                 return model
 
-    def compare_all(self, test_data: List[Tuple[Dataset, str]]):
-        # TODO:
-        #   - Separate training from other methods
-        #   - Parallelization
-        #   - Apply on large data sets
-        #   - Parameterize k
-        #   - Documentation
+    def parallel_comparisons(self, args):
         k = 33
         meta_target_names = [x for x in Parameters.targets if "SHAP" in x]
-        X_1 = self.__train_data.drop(Parameters.targets, axis=1)
+        X_test, y_test, name = args
 
-        anova_scores = dict().fromkeys([x[1] for x in test_data], dict())
-        mi_scores = dict().fromkeys([x[1] for x in test_data], dict())
-        all_res = dict().fromkeys([x[1] for x in test_data], list())
+        anova_scores = {name: dict()}
+        mi_scores = {name: dict()}
+        all_res = {name: dict()}
+
+        cv = self.__get_cross_validation_folds(X_test, y_test)
+        results = list()
+        for X_tr, X_te, y_tr, y_te in cv:
+            results.append(list())
+            mf = MetaFeatures(Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target"))
+            mf.calculate_meta_features()
+            X_m = DataFrame(data=self.__sc1.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
+
+            warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
+            for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
+                pipeline_anova = make_pipeline(StandardScaler(),
+                                               SelectPercentile(f_classif, percentile=k),
+                                               og_model)
+                pipeline_mi = make_pipeline(StandardScaler(),
+                                            SelectPercentile(mutual_info_classif, percentile=k),
+                                            og_model)
+
+                anova_scores[name][n] = pipeline_anova.fit(X_tr, y_tr).score(X_te, y_te)
+                mi_scores[name][n] = pipeline_mi.fit(X_tr, y_tr).score(X_te, y_te)
+
+            for model, features, config in self.__meta_models:
+                pipeline_metalfi = make_pipeline(StandardScaler(),
+                                                 SelectPercentile(lambda x, y: model.predict(X_m[features]),
+                                                                  percentile=k),
+                                                 self.__get_original_model(config[1]))
+
+                metalfi = pipeline_metalfi.fit(X_tr, y_tr).score(X_te, y_te)
+                results[-1].append([anova_scores[name][config[1][:-5]], mi_scores[name][config[1][:-5]], metalfi])
+
+            warnings.filterwarnings("default")
+
+        all_res[name] = results
+        return all_res
+
+    def compare_all(self, test_data: List[Tuple[Dataset, str]]):
+        # TODO:
+        #   - Apply on large data sets
+        #   - Separate training from other methods
+        #   - Parameterize k and meta-model configurations
+        #   - Documentation
+        meta_target_names = [x for x in Parameters.targets if "SHAP" in x]
+        X_1 = self.__train_data.drop(Parameters.targets, axis=1)
         test_data_sets = [(d.get_data_frame().drop("base-target_variable", axis=1),  d.get_data_frame()["base-target_variable"], name) for d, name in test_data]
 
         for meta_model, model_name, _ in Parameters.meta_models:
             for target in meta_target_names:
                 y = self.__train_data[target]
                 j = 0
-                for feature_set in self.__feature_sets[:2]:
+                for feature_set in self.__feature_sets[:4]:
                     X_train, selected_features = self.__feature_selection(model_name, X_1, target) \
                         if feature_set[0] == "Auto" else (X_1[feature_set], feature_set)
                     model = meta_model.fit(X_train, y)
                     feature_set_name = self.__meta_feature_groups.get(j)
                     self.__meta_models.append((deepcopy(model), selected_features, [model_name, target, feature_set_name]))
-
                     j += 1
 
-        for X_test, y_test, name in test_data_sets:
-            cv = self.__get_cross_validation_folds(X_test, y_test)
-            results = list()
-            for X_tr, X_te, y_tr, y_te in cv:
-                results.append(list())
-                mf = MetaFeatures(Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target"))
-                mf.calculate_meta_features()
-                X_m = DataFrame(data=self.__sc1.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
+        with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
+            progress_bar = tqdm.tqdm(total=len(test_data_sets), desc="Training meta-models")
+            results = [pool.map_async(self.parallel_comparisons, (arg,), callback=(lambda x: progress_bar.update()))
+                       for arg in test_data_sets]
 
-                warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
-                for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
-                    pipeline_anova = make_pipeline(StandardScaler(),
-                                                   SelectPercentile(f_classif, percentile=k),
-                                                   og_model)
-                    pipeline_mi = make_pipeline(StandardScaler(),
-                                                SelectPercentile(mutual_info_classif, percentile=k),
-                                                og_model)
+            results = [x.get()[0] for x in results]
+            pool.close()
+            pool.join()
 
-                    anova_scores[name][n] = pipeline_anova.fit(X_tr, y_tr).score(X_te, y_te)
-                    mi_scores[name][n] = pipeline_mi.fit(X_tr, y_tr).score(X_te, y_te)
+        progress_bar.close()
 
-                for model, features, config in self.__meta_models:
-                    pipeline_metalfi = make_pipeline(StandardScaler(),
-                                                     SelectPercentile(lambda x, y: model.predict(X_m[features]), percentile=k),
-                                                     self.__get_original_model(config[1]))
-
-                    metalfi = pipeline_metalfi.fit(X_tr, y_tr).score(X_te, y_te)
-                    results[-1].append([anova_scores[name][config[1][:-5]], mi_scores[name][config[1][:-5]], metalfi])
-
-                warnings.filterwarnings("default")
-
-            all_res[name] = results
-
+        all_res = {list(result.keys())[0]: result[list(result.keys())[0]] for result in results}
         sum_up = lambda x: x[0] if len(x) == 1 else Evaluation.matrix_addition(x[0], sum_up(x[1:]))
         self.__results = {key: [list(map(lambda x: x / 5, result)) for result in sum_up(all_res[key])] for key in all_res.keys()}
         self.__result_configurations += [config for (_, _, config) in self.__meta_models]

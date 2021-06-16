@@ -143,7 +143,7 @@ class Controller:
         selection_results = [self.__select_meta_features(parameter[1][:-4]) for parameter in parameters]
         args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))
 
-        with mp.Pool(processes=mp.cpu_count() -1, maxtasksperchild=1) as pool:
+        with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(args), desc="Training meta-models")
             _ = [pool.apply_async(self.parallel_training, (arg,), callback=(lambda x: progress_bar.update()))
                  for arg in args]
@@ -207,7 +207,7 @@ class Controller:
         args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))
 
         m = MetaModel(args[0])
-        m.compare_all(self.__train_data[57:])
+        m.compare_all(self.__train_data[:7])
         evaluation = Evaluation(["all"])
         evaluation.new_comparisons(m)
 
