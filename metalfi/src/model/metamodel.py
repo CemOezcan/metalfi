@@ -200,31 +200,14 @@ class MetaModel:
                 return model
 
     def compare_all(self, test_data: List[Tuple[Dataset, str]]):
-        start = time.time()
         k = 33
         meta_target_names = [x for x in Parameters.targets if "SHAP" in x]
         X_1 = self.__train_data.drop(Parameters.targets, axis=1)
+
         anova_scores = dict().fromkeys([x[1] for x in test_data], dict())
         mi_scores = dict().fromkeys([x[1] for x in test_data], dict())
-
-        test_data_sets = [(d.get_data_frame().drop("base-target_variable", axis=1), d.get_data_frame()["base-target_variable"], name) for d, name in test_data]
-
-        for X_test, y_test, name in test_data_sets:
-            cv = list(self.__indices(X_test, y_test))
-
-            for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
-                pipeline_anova = make_pipeline(StandardScaler(),
-                                               SelectPercentile(f_classif, percentile=k),
-                                               og_model)
-                pipeline_mi = make_pipeline(StandardScaler(),
-                                            SelectPercentile(mutual_info_classif, percentile=k),
-                                            og_model)
-                warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
-                anova_scores[name][n] = np.mean(cross_val_score(pipeline_anova, X_test, y_test, cv=cv))
-                mi_scores[name][n] = np.mean(cross_val_score(pipeline_mi, X_test, y_test, cv=cv))
-                warnings.filterwarnings("default")
-
         all_res = dict().fromkeys([x[1] for x in test_data], list())
+        test_data_sets = [(d.get_data_frame().drop("base-target_variable", axis=1),  d.get_data_frame()["base-target_variable"], name) for d, name in test_data]
 
         for meta_model, model_name, _ in Parameters.meta_models:
             for target in meta_target_names:
@@ -239,39 +222,42 @@ class MetaModel:
 
                     j += 1
 
-        def metalfi_classif_2(X, y, m=None, smf=None, X_m=None):
-            return m.predict(X_m[smf])
-
         for X_test, y_test, name in test_data_sets:
             cv = self.__get_cross_validation_folds(X_test, y_test)
             i = 0
             results = {0: list(), 1: list(), 2: list(), 3: list(), 4: list()}
             for X_tr, X_te, y_tr, y_te in cv:
-                df = DataFrame(data=X_tr).assign(target=y_tr)
-                mf = MetaFeatures(Dataset(df, "target"))
+                mf = MetaFeatures(Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target"))
                 mf.calculate_meta_features()
                 X_m = DataFrame(data=self.__sc1.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
+
+                warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
+                for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
+                    pipeline_anova = make_pipeline(StandardScaler(),
+                                                   SelectPercentile(f_classif, percentile=k),
+                                                   og_model)
+                    pipeline_mi = make_pipeline(StandardScaler(),
+                                                SelectPercentile(mutual_info_classif, percentile=k),
+                                                og_model)
+
+                    anova_scores[name][n] = pipeline_anova.fit(X_tr, y_tr).score(X_te, y_te)
+                    mi_scores[name][n] = pipeline_mi.fit(X_tr, y_tr).score(X_te, y_te)
+
                 for model, features, config in self.__meta_models:
                     pipeline_metalfi = make_pipeline(StandardScaler(),
-                                                     SelectPercentile(partial(metalfi_classif_2,
-                                                                              m=model,
-                                                                              smf=features,
-                                                                              X_m=X_m),
-                                                                      percentile=k),
+                                                     SelectPercentile(lambda x, y: model.predict(X_m[features]), percentile=k),
                                                      self.__get_original_model(config[1]))
 
-                    warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
-                    pipeline_metalfi.fit(X_tr, y_tr)
-                    metalfi = pipeline_metalfi.score(X_te, y_te)
-                    warnings.filterwarnings("default")
-
+                    metalfi = pipeline_metalfi.fit(X_tr, y_tr).score(X_te, y_te)
                     results[i].append([anova_scores[name][config[1][:-5]], mi_scores[name][config[1][:-5]], metalfi])
 
                 i += 1
+                warnings.filterwarnings("default")
 
             all_res[name] = results
 
         for key in all_res.keys():
+
             results = all_res[key]
             current_res = list()
             for i in results:
@@ -281,8 +267,6 @@ class MetaModel:
 
         self.__result_configurations += [config for (_, _, config) in self.__meta_models]
         self.__results = all_res
-        end = time.time()
-        print(end - start)
 
     def compare(self, models: List[str], targets: List[str], subsets: List[str], k: int, renew=False) -> List[str]:
         """
@@ -418,11 +402,3 @@ class MetaModel:
             folds.append((X_temp[train_index], X_temp[test_index], y_temp[train_index], y_temp[test_index]))
 
         return folds
-
-    @staticmethod
-    def __indices(X: DataFrame, y: DataFrame, k=5) \
-            -> List[Tuple[DataFrame, DataFrame, DataFrame, DataFrame]]:
-        kf = KFold(n_splits=k, shuffle=True, random_state=115)
-        kf.get_n_splits(X)
-
-        return kf.split(X)
