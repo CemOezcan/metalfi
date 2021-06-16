@@ -224,9 +224,9 @@ class MetaModel:
 
         for X_test, y_test, name in test_data_sets:
             cv = self.__get_cross_validation_folds(X_test, y_test)
-            i = 0
-            results = {0: list(), 1: list(), 2: list(), 3: list(), 4: list()}
+            results = list()
             for X_tr, X_te, y_tr, y_te in cv:
+                results.append(list())
                 mf = MetaFeatures(Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target"))
                 mf.calculate_meta_features()
                 X_m = DataFrame(data=self.__sc1.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
@@ -249,24 +249,15 @@ class MetaModel:
                                                      self.__get_original_model(config[1]))
 
                     metalfi = pipeline_metalfi.fit(X_tr, y_tr).score(X_te, y_te)
-                    results[i].append([anova_scores[name][config[1][:-5]], mi_scores[name][config[1][:-5]], metalfi])
+                    results[-1].append([anova_scores[name][config[1][:-5]], mi_scores[name][config[1][:-5]], metalfi])
 
-                i += 1
                 warnings.filterwarnings("default")
 
             all_res[name] = results
 
-        for key in all_res.keys():
-
-            results = all_res[key]
-            current_res = list()
-            for i in results:
-                current_res = Evaluation.matrix_addition(current_res, results[i])
-            current_res = [list(map(lambda x: x / 5, result)) for result in current_res]
-            all_res[key] = current_res
-
+        sum_up = lambda x: x[0] if len(x) == 1 else Evaluation.matrix_addition(x[0], sum_up(x[1:]))
+        self.__results = {key: [list(map(lambda x: x / 5, result)) for result in sum_up(all_res[key])] for key in all_res.keys()}
         self.__result_configurations += [config for (_, _, config) in self.__meta_models]
-        self.__results = all_res
 
     def compare(self, models: List[str], targets: List[str], subsets: List[str], k: int, renew=False) -> List[str]:
         """
