@@ -12,7 +12,7 @@ import tqdm
 from pandas import DataFrame
 from sklearn.base import BaseEstimator
 from sklearn.feature_selection import f_classif, mutual_info_classif, SelectPercentile
-from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
 
 from metalfi.src.metadata.dataset import Dataset
@@ -208,9 +208,8 @@ class MetaModel:
         mi_scores = {name: dict()}
         all_res = {name: dict()}
 
-        cv = self.__get_cross_validation_folds(X_test, y_test)
         results = list()
-        for X_tr, X_te, y_tr, y_te in cv:
+        for X_tr, X_te, y_tr, y_te in self.__get_cross_validation_folds(X_test, y_test):
             results.append(list())
             mf = MetaFeatures(Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target"))
             mf.calculate_meta_features()
@@ -248,24 +247,27 @@ class MetaModel:
         #   - Separate training from other methods
         #   - Parameterize k and meta-model configurations
         #   - Documentation
-        meta_target_names = [x for x in Parameters.targets if "SHAP" in x]
         X_1 = self.__train_data.drop(Parameters.targets, axis=1)
-        test_data_sets = [(d.get_data_frame().drop("base-target_variable", axis=1),  d.get_data_frame()["base-target_variable"], name) for d, name in test_data]
+        meta_model_names, meta_target_names, meta_feature_subsets = Parameters.question_5_parameters()
+        test_data_sets = [(d.get_data_frame().drop("base-target_variable", axis=1),
+                           d.get_data_frame()["base-target_variable"], name) for d, name in test_data]
 
-        for meta_model, model_name, _ in Parameters.meta_models:
+        for meta_model, model_name, _ in filter(lambda x: x[1] in meta_model_names, Parameters.meta_models):
             for target in meta_target_names:
                 y = self.__train_data[target]
                 j = 0
                 for feature_set in self.__feature_sets[:4]:
                     X_train, selected_features = self.__feature_selection(model_name, X_1, target) \
                         if feature_set[0] == "Auto" else (X_1[feature_set], feature_set)
+                    warnings.filterwarnings("ignore", message="Liblinear failed to converge, increase the number of iterations.")
                     model = meta_model.fit(X_train, y)
+                    warnings.filterwarnings("default")
                     feature_set_name = self.__meta_feature_groups.get(j)
                     self.__meta_models.append((deepcopy(model), selected_features, [model_name, target, feature_set_name]))
                     j += 1
 
         with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
-            progress_bar = tqdm.tqdm(total=len(test_data_sets), desc="Training meta-models")
+            progress_bar = tqdm.tqdm(total=len(test_data_sets), desc="Comparing feature-selection approaches")
             results = [pool.map_async(self.parallel_comparisons, (arg,), callback=(lambda x: progress_bar.update()))
                        for arg in test_data_sets]
 
@@ -277,8 +279,9 @@ class MetaModel:
 
         all_res = {list(result.keys())[0]: result[list(result.keys())[0]] for result in results}
         sum_up = lambda x: x[0] if len(x) == 1 else Evaluation.matrix_addition(x[0], sum_up(x[1:]))
-        self.__results = {key: [list(map(lambda x: x / 5, result)) for result in sum_up(all_res[key])] for key in all_res.keys()}
         self.__result_configurations += [config for (_, _, config) in self.__meta_models]
+        self.__results = {key: [list(map(lambda x: x / 5, result)) for result in sum_up(all_res[key])]
+                          for key in all_res.keys()}
 
     def compare(self, models: List[str], targets: List[str], subsets: List[str], k: int, renew=False) -> List[str]:
         """
@@ -406,11 +409,11 @@ class MetaModel:
         X_temp = X.values
         y_temp = y.values
 
-        kf = KFold(n_splits=k, shuffle=True, random_state=115)
+        kf = StratifiedKFold(n_splits=k, shuffle=True, random_state=115)
         kf.get_n_splits(X)
 
         folds = list()
-        for train_index, test_index in kf.split(X):
+        for train_index, test_index in kf.split(X, y):
             folds.append((X_temp[train_index], X_temp[test_index], y_temp[train_index], y_temp[test_index]))
 
         return folds
