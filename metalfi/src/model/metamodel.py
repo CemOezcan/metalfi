@@ -1,11 +1,18 @@
+import time
 import warnings
 from copy import deepcopy
-from typing import List, Tuple
+from functools import partial
+from typing import List, Tuple, Dict
+
+import numpy as np
+from sklearn.pipeline import make_pipeline
+import multiprocessing as mp
+import tqdm
 
 from pandas import DataFrame
 from sklearn.base import BaseEstimator
 from sklearn.feature_selection import f_classif, mutual_info_classif, SelectPercentile
-from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
 
 from metalfi.src.metadata.dataset import Dataset
@@ -65,10 +72,13 @@ class MetaModel:
         self.__result_configurations = list()
         self.__was_compared = False
 
-        sc1 = StandardScaler()
-        sc1.fit(train)
-        self.__train_data = DataFrame(data=sc1.transform(train), columns=train.columns)
-        self.__test_data = DataFrame(data=sc1.transform(test), columns=test.columns)
+        self.__sc1 = StandardScaler()
+        self.__sc1.fit(train)
+        temp = train.drop(Parameters.targets, axis=1)
+        self.__train_data = DataFrame(data=self.__sc1.transform(train), columns=train.columns)
+        self.__test_data = DataFrame(data=self.__sc1.transform(test), columns=test.columns)
+
+        self.__sc1.fit(temp)
 
         train = train.drop(Parameters.targets, axis=1)
         fmf = \
@@ -108,23 +118,29 @@ class MetaModel:
         """
         Fit all meta-models to the train split in `__train_data`. Save trained meta-models at `__meta_models`.
         """
-        X = self.__train_data.drop(Parameters.targets, axis=1)
+        X_1 = self.__train_data.drop(Parameters.targets, axis=1)
+        X_2 = self.__test_data.drop(Parameters.targets, axis=1)
 
         for base_model, base_model_name, _ in Parameters.meta_models:
             for target in Parameters.targets:
                 i = 0
                 for feature_set in self.__feature_sets:
                     y = self.__train_data[target]
-                    X_train, selected_features = self.__feature_selection(base_model_name, X, target) \
-                        if feature_set[0] == "Auto" else (X[feature_set], feature_set)
+                    X_train, selected_features = self.__feature_selection(base_model_name, X_1, target) \
+                        if feature_set[0] == "Auto" else (X_1[feature_set], feature_set)
 
                     warnings.filterwarnings("ignore", message="Liblinear failed to converge, increase the number of iterations.")
                     model = base_model.fit(X_train, y)
                     warnings.filterwarnings("default")
                     feature_set_name = self.__meta_feature_groups.get(i)
 
-                    self.__meta_models.append((deepcopy(model), selected_features,
+                    self.__meta_models.append((None, selected_features,
                                                [base_model_name, target, feature_set_name]))
+                    X_test = X_2[selected_features]
+                    y_test = self.__test_data[target]
+                    y_pred = model.predict(X_test)
+
+                    self.__stats.append(Parameters.calculate_metrics(y_test=y_test, y_pred=y_pred))
 
                     i -= -1
 
@@ -182,6 +198,90 @@ class MetaModel:
         for model, model_name, _ in Parameters.base_models:
             if name.startswith(model_name):
                 return model
+
+    def parallel_comparisons(self, args):
+        k = 33
+        meta_target_names = [x for x in Parameters.targets if "SHAP" in x]
+        X_test, y_test, name = args
+
+        anova_scores = {name: dict()}
+        mi_scores = {name: dict()}
+        all_res = {name: dict()}
+
+        results = list()
+        for X_tr, X_te, y_tr, y_te in self.__get_cross_validation_folds(X_test, y_test):
+            results.append(list())
+            mf = MetaFeatures(Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target"))
+            mf.calculate_meta_features()
+            X_m = DataFrame(data=self.__sc1.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
+
+            warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
+            for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
+                pipeline_anova = make_pipeline(StandardScaler(),
+                                               SelectPercentile(f_classif, percentile=k),
+                                               og_model)
+                pipeline_mi = make_pipeline(StandardScaler(),
+                                            SelectPercentile(mutual_info_classif, percentile=k),
+                                            og_model)
+
+                anova_scores[name][n] = pipeline_anova.fit(X_tr, y_tr).score(X_te, y_te)
+                mi_scores[name][n] = pipeline_mi.fit(X_tr, y_tr).score(X_te, y_te)
+
+            for model, features, config in self.__meta_models:
+                pipeline_metalfi = make_pipeline(StandardScaler(),
+                                                 SelectPercentile(lambda x, y: model.predict(X_m[features]),
+                                                                  percentile=k),
+                                                 self.__get_original_model(config[1]))
+
+                metalfi = pipeline_metalfi.fit(X_tr, y_tr).score(X_te, y_te)
+                results[-1].append([anova_scores[name][config[1][:-5]], mi_scores[name][config[1][:-5]], metalfi])
+
+            warnings.filterwarnings("default")
+
+        all_res[name] = results
+        return all_res
+
+    def compare_all(self, test_data: List[Tuple[Dataset, str]]):
+        # TODO:
+        #   - Apply on large data sets
+        #   - Separate training from other methods
+        #   - Parameterize k and meta-model configurations
+        #   - Documentation
+        X_1 = self.__train_data.drop(Parameters.targets, axis=1)
+        meta_model_names, meta_target_names, meta_feature_subsets = Parameters.question_5_parameters()
+        test_data_sets = [(d.get_data_frame().drop("base-target_variable", axis=1),
+                           d.get_data_frame()["base-target_variable"], name) for d, name in test_data]
+
+        for meta_model, model_name, _ in filter(lambda x: x[1] in meta_model_names, Parameters.meta_models):
+            for target in meta_target_names:
+                y = self.__train_data[target]
+                j = 0
+                for feature_set in self.__feature_sets[:4]:
+                    X_train, selected_features = self.__feature_selection(model_name, X_1, target) \
+                        if feature_set[0] == "Auto" else (X_1[feature_set], feature_set)
+                    warnings.filterwarnings("ignore", message="Liblinear failed to converge, increase the number of iterations.")
+                    model = meta_model.fit(X_train, y)
+                    warnings.filterwarnings("default")
+                    feature_set_name = self.__meta_feature_groups.get(j)
+                    self.__meta_models.append((deepcopy(model), selected_features, [model_name, target, feature_set_name]))
+                    j += 1
+
+        with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
+            progress_bar = tqdm.tqdm(total=len(test_data_sets), desc="Comparing feature-selection approaches")
+            results = [pool.map_async(self.parallel_comparisons, (arg,), callback=(lambda x: progress_bar.update()))
+                       for arg in test_data_sets]
+
+            results = [x.get()[0] for x in results]
+            pool.close()
+            pool.join()
+
+        progress_bar.close()
+
+        all_res = {list(result.keys())[0]: result[list(result.keys())[0]] for result in results}
+        sum_up = lambda x: x[0] if len(x) == 1 else Evaluation.matrix_addition(x[0], sum_up(x[1:]))
+        self.__result_configurations += [config for (_, _, config) in self.__meta_models]
+        self.__results = {key: [list(map(lambda x: x / 5, result)) for result in sum_up(all_res[key])]
+                          for key in all_res.keys()}
 
     def compare(self, models: List[str], targets: List[str], subsets: List[str], k: int, renew=False) -> List[str]:
         """
@@ -309,11 +409,11 @@ class MetaModel:
         X_temp = X.values
         y_temp = y.values
 
-        kf = KFold(n_splits=k, shuffle=True, random_state=115)
+        kf = StratifiedKFold(n_splits=k, shuffle=True, random_state=115)
         kf.get_n_splits(X)
 
         folds = list()
-        for train_index, test_index in kf.split(X):
+        for train_index, test_index in kf.split(X, y):
             folds.append((X_temp[train_index], X_temp[test_index], y_temp[train_index], y_temp[test_index]))
 
         return folds

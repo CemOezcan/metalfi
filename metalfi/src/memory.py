@@ -160,9 +160,10 @@ class Memory:
             name : Name of the pickle-file.
         """
         path = Memory.get_path() / ("model/" + name)
+        data = (model.get_meta_models(), model.get_stats())
         if not path.is_file():
             with open(path, 'wb') as file:
-                pickle.dump(model, file)
+                pickle.dump(data, file)
 
     @staticmethod
     def load_model(names: List[str]) -> List[Tuple['MetaModel', str]]:

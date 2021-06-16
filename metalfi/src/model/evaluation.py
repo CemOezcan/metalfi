@@ -126,16 +126,19 @@ class Evaluation:
         base_data_sets = list(data.values())[0]["Index"]
         for i in range(len(base_data_sets)):
             stats = list(map(lambda x: list(x), zip(*[data_set.iloc[i][1:] for data_set in data.values()])))
-            comps = list(map(lambda x: list(x), zip(*[data_set.iloc[i][1:] for data_set in comparison_data.values()])))
-
             performances = list(zip(config, stats))
-            comparisons = list(zip(config_5, comps))
             rows.append(base_data_sets.iloc[i])
-
             data_2_lin = self.__create_question_csv(performances, subset_names_lin, data_2_lin, 2, question=2, linear=True)
             data_2_non = self.__create_question_csv(performances, subset_names_non, data_2_non, 2, question=2, linear=False)
             data_3 = self.__create_question_csv(performances, target_names, data_3, 1, question=3)
             data_4 = self.__create_question_csv(performances, meta_model_names, data_4, 0, question=4)
+
+        comp_rows = list()
+        base_data_sets = list(comparison_data.values())[0]["Index"]
+        for i in range(len(base_data_sets)):
+            comp_rows.append(base_data_sets.iloc[i])
+            comps = list(map(lambda x: list(x), zip(*[data_set.iloc[i][1:] for data_set in comparison_data.values()])))
+            comparisons = list(zip(config_5, comps))
             data_5 = self.__create_question_5_csv(comparisons, data_5)
 
         def __question_data(data: Dict[str, Dict[str, List[float]]], rows: List[str], suffix: str) \
@@ -147,7 +150,7 @@ class Evaluation:
         q_2_non = __question_data(data_2_non, rows, "_NON")
         q_3 = self.__q_3(data_3, rows)
         q_4 = __question_data(data_4, rows, "")
-        q_5 = __question_data(data_5, rows, "")
+        q_5 = __question_data(data_5, comp_rows, "")
 
         Visualization.compare_means(q_2_lin + q_2_non, "groups")
         Visualization.compare_means(q_3, "targets")
@@ -250,10 +253,8 @@ class Evaluation:
 
         """
         model, _ = Memory.load_model([name])[0]
-        model.test()
-        stats = model.get_stats()
-        Memory.renew_model(model, model.get_name()[:-4])
-        config = [c for (a, b, c) in model.get_meta_models()]
+        stats = model[1]
+        config = [c for (a, b, c) in model[0]]
         targets = Parameters.targets
         return stats, config, targets
 
@@ -341,6 +342,49 @@ class Evaluation:
             data = [tuple(map((lambda x: x[metric_idx]), results[i][0])) for i in range(len(index))]
             Memory.store_data_frame(DataFrame(data, columns=columns, index=index), metric_name, "predictions")
 
+    def new_comparisons(self, model):
+        rows = ["ANOVA", "MI", "MetaLFI"]
+        meta_models, _, subsets = Parameters.question_5_parameters()
+        self.__meta_models = list()
+        results = list()
+        comps = model.get_results()
+
+        for key in comps:
+            results.append(comps[key])
+            self.__meta_models.append(key)
+
+        for result in results:
+            self.__comparisons = self.matrix_addition(self.__comparisons, result)
+
+        self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
+        self.__parameters = model.get_result_config()
+
+        all_results = {}
+        for _, model, _ in filter(lambda x: x[1] in meta_models, Parameters.meta_models):
+            this_model = {}
+            for subset in subsets:
+                index = 0
+                for a, b, c in self.__parameters:
+                    if a == model and c == subset:
+                        try:
+                            z = this_model[c]
+                        except KeyError:
+                            this_model[c] = dict()
+                        finally:
+                            this_model[c][b] = self.__comparisons[index]
+
+                    index += 1
+
+            all_results[model] = this_model
+
+        for model in all_results:
+            for subset in subsets:
+                Memory.store_data_frame(DataFrame(data=all_results[model][subset], index=rows,
+                                                  columns=[x for x in all_results[model][subset]]),
+                                        model + " x " + subset, "selection", True)
+
+        self.__store_all_comparisons(results, rows, "all_comparisons")
+
     def comparisons(self, models: List[str], targets: List[str], subsets: List[str], renew=False):
         """
         Estimate base-model performances by testing them on their respective cross validation test splits.
@@ -398,6 +442,13 @@ class Evaluation:
     def __store_all_comparisons(self, results: List[List[List[float]]], rows: List[str], name: str):
         data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2]
                 + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": list(map(lambda x: x[i][j], results))
+                for i in range(len(self.__parameters)) for j in range(len(rows))}
+
+        Memory.store_data_frame(DataFrame(data, index=self.__meta_models), name, "selection")
+
+    def __store_all_comparisons_2(self, results: List[List[float]], rows: List[str], name: str):
+        data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2]
+                + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": [results[i][j]]
                 for i in range(len(self.__parameters)) for j in range(len(rows))}
 
         Memory.store_data_frame(DataFrame(data, index=self.__meta_models), name, "selection")

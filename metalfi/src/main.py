@@ -38,7 +38,7 @@ class Main:
         data = Memory.get_contents("model")
         c.estimate(data)
         c.meta_feature_importances()
-        c.compare(data)
+        c.compare_all()
         c.questions(data)
 
         Visualization.performance()

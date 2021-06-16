@@ -101,6 +101,7 @@ class Controller:
             self.__meta_data.append((data_frame, name))
 
     def __select_meta_features(self, meta_model_name="", memory=False):
+        # Selects features for meta-data with `meta_model_name` as test and all other meta-data sets as train
         sets = None
         if memory:
             sets = Memory.load_meta_features()
@@ -142,7 +143,7 @@ class Controller:
         selection_results = [self.__select_meta_features(parameter[1][:-4]) for parameter in parameters]
         args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))
 
-        with mp.Pool(processes=mp.cpu_count() -1, maxtasksperchild=1) as pool:
+        with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(args), desc="Training meta-models")
             _ = [pool.apply_async(self.parallel_training, (arg,), callback=(lambda x: progress_bar.update()))
                  for arg in args]
@@ -192,6 +193,23 @@ class Controller:
         """
         evaluation = Evaluation(names)
         evaluation.questions()
+
+    def compare_all(self):
+        self.__load_meta_data()
+
+        parameters = [(
+            pd.concat([x[0] for x in self.__meta_data]),
+            "Comp",
+            self.__meta_data[0][0],
+            self.__train_data[0][0])]
+
+        selection_results = [self.__select_meta_features("")]
+        args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))
+
+        m = MetaModel(args[0])
+        m.compare_all(self.__train_data[:7])
+        evaluation = Evaluation(["all"])
+        evaluation.new_comparisons(m)
 
     @staticmethod
     def compare(names: List[str]):
