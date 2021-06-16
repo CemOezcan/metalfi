@@ -200,6 +200,12 @@ class MetaModel:
                 return model
 
     def compare_all(self, test_data: List[Tuple[Dataset, str]]):
+        # TODO:
+        #   - Separate training from other methods
+        #   - Parallelization
+        #   - Apply on large data sets
+        #   - Parameterize k
+        #   - Documentation
         k = 33
         meta_target_names = [x for x in Parameters.targets if "SHAP" in x]
         X_1 = self.__train_data.drop(Parameters.targets, axis=1)
