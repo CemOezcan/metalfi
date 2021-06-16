@@ -1,6 +1,13 @@
+import time
 import warnings
 from copy import deepcopy
+from functools import partial
 from typing import List, Tuple, Dict
+
+import numpy as np
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import StratifiedKFold
 
 from pandas import DataFrame
 from sklearn.base import BaseEstimator
@@ -194,94 +201,65 @@ class MetaModel:
 
     def compare_all(self, test_data: List[Tuple[Dataset, str]]):
         k = 33
-        meta_target_names = [x for x in Parameters.targets if "SHAP" in x or "PIMP" in x]
+        meta_target_names = [x for x in Parameters.targets if "SHAP" in x]
         X_1 = self.__train_data.drop(Parameters.targets, axis=1)
+        anova_scores = dict().fromkeys([x[1] for x in test_data])
+        mi_scores = dict().fromkeys([x[1] for x in test_data])
+        cv = KFold(n_splits=5, shuffle=True, random_state=115)
+
+        test_data_sets = [(d.get_data_frame().drop("base-target_variable", axis=1), d.get_data_frame()["base-target_variable"], name) for d, name in test_data]
+
+        for X_test, y_test, name in test_data_sets:
+            anova_scores[name] = dict()
+            mi_scores[name] = dict()
+
+            for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
+                pipeline_anova = make_pipeline(StandardScaler(),
+                                               SelectPercentile(f_classif, percentile=k),
+                                               og_model)
+                pipeline_mi = make_pipeline(StandardScaler(),
+                                            SelectPercentile(mutual_info_classif, percentile=k),
+                                            og_model)
+                warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
+                anova_scores[name][n] = np.mean(cross_val_score(pipeline_anova, X_test, y_test, cv=cv))
+                mi_scores[name][n] = np.mean(cross_val_score(pipeline_mi, X_test, y_test, cv=cv))
+                warnings.filterwarnings("default")
+
+        all_res = dict().fromkeys([x[1] for x in test_data], list())
+
+        def metalfi_classif(X, y, m=None, smf=None, scale=None):
+            df = DataFrame(data=X).assign(target=y)
+            mf = MetaFeatures(Dataset(df.assign(target=y), "target"))
+            mf.calculate_meta_features()
+            X_m = DataFrame(data=scale.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
+            warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
+            return m.predict(X_m[smf])
 
         for meta_model, model_name, _ in Parameters.meta_models:
             for target in meta_target_names:
                 y = self.__train_data[target]
-                i = 0
+                j = 0
                 for feature_set in self.__feature_sets[:4]:
                     X_train, selected_features = self.__feature_selection(model_name, X_1, target) \
                         if feature_set[0] == "Auto" else (X_1[feature_set], feature_set)
                     model = meta_model.fit(X_train, y)
-                    feature_set_name = self.__meta_feature_groups.get(i)
-                    self.__meta_models.append((deepcopy(model), selected_features, [model_name, target, feature_set_name]))
+                    feature_set_name = self.__meta_feature_groups.get(j)
+                    self.__meta_models.append((None, selected_features, [model_name, target, feature_set_name]))
+                    # TODO: Folds-function -> compute splits and their meta-feature vectors beforehand
+                    for X_test, y_test, name in test_data_sets:
+                        pipeline_metalfi = make_pipeline(StandardScaler(),
+                                                         SelectPercentile(partial(metalfi_classif,
+                                                                                  m=model,
+                                                                                  smf=selected_features,
+                                                                                  scale=self.__sc1),
+                                                                          percentile=k),
+                                                         self.__get_original_model(target))
+                        warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
+                        metalfi = np.mean(cross_val_score(pipeline_metalfi, X_test, y_test, cv=cv))
+                        warnings.filterwarnings("default")
+                        all_res[name].append([anova_scores[name][target[:-5]], mi_scores[name][target[:-5]], metalfi])
 
-                    i += 1
-
-        all_res = dict().fromkeys([x[1] for x in test_data])
-        for d, name in test_data:
-            results = {0: list(), 1: list(), 2: list(), 3: list(), 4: list()}
-            data_frame = d.get_data_frame()
-            y_test = data_frame["base-target_variable"]
-            data_frame.drop("base-target_variable", axis=1, inplace=True)
-            X_test = DataFrame(data_frame, columns=data_frame.columns)
-            folds = self.__get_cross_validation_folds(X_test, y_test, k=5)
-            i = 0
-            for X_fit, X_eval, y_fit, y_eval in folds:
-                sc = StandardScaler()
-                sc.fit(X_fit)
-
-                X_fit = DataFrame(data=sc.transform(X_fit), columns=X_test.columns)
-                X_eval = DataFrame(data=sc.transform(X_eval), columns=X_test.columns)
-                whole_train = DataFrame(data=sc.transform(X_fit), columns=X_test.columns)
-                whole_train["target"] = y_fit
-
-                dataset = Dataset(whole_train, "target")
-                meta_features = MetaFeatures(dataset)
-                meta_features.calculate_meta_features()
-                X_meta = meta_features.get_meta_data()
-                X_meta = DataFrame(data=self.__sc1.transform(X_meta), columns=X_meta.columns)
-
-                selector_anova = SelectPercentile(f_classif, percentile=k)
-                selector_anova.fit(X_fit, y_fit)
-                selector_mi = SelectPercentile(mutual_info_classif, percentile=k)
-                selector_mi.fit(X_fit, y_fit)
-
-                X_anova_train = selector_anova.transform(X_fit)
-                X_mi_train = selector_mi.transform(X_fit)
-
-                X_anova_test = selector_anova.transform(X_eval)
-                X_mi_test = selector_mi.transform(X_eval)
-                k_number = len(X_anova_test[0])
-                for model, features, config in self.__meta_models:
-                    X_temp = X_meta[features]
-                    y_pred = model.predict(X_temp)
-                    og_model = self.__get_original_model(config[1])
-                    columns = X_test.columns
-
-                    _, p = self.__get_rankings(X_meta.index, y_pred, y_pred)
-                    predicted = [columns[i] for i in p]
-
-                    warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
-                    X_metalfi_train = X_fit[predicted[:k_number]]
-                    X_metalfi_test = X_eval[predicted[:k_number]]
-
-                    og_model.fit(X_metalfi_train, y_fit)
-                    metalfi = og_model.score(X_metalfi_test, y_eval)
-
-                    og_model.fit(X_anova_train, y_fit)
-                    anova = og_model.score(X_anova_test, y_eval)
-
-                    og_model.fit(X_mi_train, y_fit)
-                    mi = og_model.score(X_mi_test, y_eval)
-                    warnings.filterwarnings("default")
-
-                    results[i].append([anova, mi, metalfi])
-
-                i += 1
-
-            all_res[name] = results
-
-        for key in all_res.keys():
-            results = all_res[key]
-            current_res = list()
-            for i in results:
-                current_res = Evaluation.matrix_addition(current_res, results[i])
-
-            current_res = [list(map(lambda x: x / 5, result)) for result in current_res]
-            all_res[key] = current_res
+                    j += 1
 
         self.__result_configurations += [config for (_, _, config) in self.__meta_models]
         self.__results = all_res
