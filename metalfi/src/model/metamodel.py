@@ -200,18 +200,17 @@ class MetaModel:
                 return model
 
     def compare_all(self, test_data: List[Tuple[Dataset, str]]):
+        start = time.time()
         k = 33
         meta_target_names = [x for x in Parameters.targets if "SHAP" in x]
         X_1 = self.__train_data.drop(Parameters.targets, axis=1)
-        anova_scores = dict().fromkeys([x[1] for x in test_data])
-        mi_scores = dict().fromkeys([x[1] for x in test_data])
-        cv = KFold(n_splits=5, shuffle=True, random_state=115)
+        anova_scores = dict().fromkeys([x[1] for x in test_data], dict())
+        mi_scores = dict().fromkeys([x[1] for x in test_data], dict())
 
         test_data_sets = [(d.get_data_frame().drop("base-target_variable", axis=1), d.get_data_frame()["base-target_variable"], name) for d, name in test_data]
 
         for X_test, y_test, name in test_data_sets:
-            anova_scores[name] = dict()
-            mi_scores[name] = dict()
+            cv = list(self.__indices(X_test, y_test))
 
             for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
                 pipeline_anova = make_pipeline(StandardScaler(),
@@ -227,42 +226,63 @@ class MetaModel:
 
         all_res = dict().fromkeys([x[1] for x in test_data], list())
 
-        def metalfi_classif(X, y, m=None, smf=None, scale=None):
-            df = DataFrame(data=X).assign(target=y)
-            mf = MetaFeatures(Dataset(df.assign(target=y), "target"))
-            mf.calculate_meta_features()
-            X_m = DataFrame(data=scale.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
-            warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
-            return m.predict(X_m[smf])
-
         for meta_model, model_name, _ in Parameters.meta_models:
             for target in meta_target_names:
                 y = self.__train_data[target]
                 j = 0
-                for feature_set in self.__feature_sets[:4]:
+                for feature_set in self.__feature_sets[:2]:
                     X_train, selected_features = self.__feature_selection(model_name, X_1, target) \
                         if feature_set[0] == "Auto" else (X_1[feature_set], feature_set)
                     model = meta_model.fit(X_train, y)
                     feature_set_name = self.__meta_feature_groups.get(j)
-                    self.__meta_models.append((None, selected_features, [model_name, target, feature_set_name]))
-                    # TODO: Folds-function -> compute splits and their meta-feature vectors beforehand
-                    for X_test, y_test, name in test_data_sets:
-                        pipeline_metalfi = make_pipeline(StandardScaler(),
-                                                         SelectPercentile(partial(metalfi_classif,
-                                                                                  m=model,
-                                                                                  smf=selected_features,
-                                                                                  scale=self.__sc1),
-                                                                          percentile=k),
-                                                         self.__get_original_model(target))
-                        warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
-                        metalfi = np.mean(cross_val_score(pipeline_metalfi, X_test, y_test, cv=cv))
-                        warnings.filterwarnings("default")
-                        all_res[name].append([anova_scores[name][target[:-5]], mi_scores[name][target[:-5]], metalfi])
+                    self.__meta_models.append((deepcopy(model), selected_features, [model_name, target, feature_set_name]))
 
                     j += 1
 
+        def metalfi_classif_2(X, y, m=None, smf=None, X_m=None):
+            return m.predict(X_m[smf])
+
+        for X_test, y_test, name in test_data_sets:
+            cv = self.__get_cross_validation_folds(X_test, y_test)
+            i = 0
+            results = {0: list(), 1: list(), 2: list(), 3: list(), 4: list()}
+            for X_tr, X_te, y_tr, y_te in cv:
+                df = DataFrame(data=X_tr).assign(target=y_tr)
+                mf = MetaFeatures(Dataset(df, "target"))
+                mf.calculate_meta_features()
+                X_m = DataFrame(data=self.__sc1.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
+                for model, features, config in self.__meta_models:
+                    pipeline_metalfi = make_pipeline(StandardScaler(),
+                                                     SelectPercentile(partial(metalfi_classif_2,
+                                                                              m=model,
+                                                                              smf=features,
+                                                                              X_m=X_m),
+                                                                      percentile=k),
+                                                     self.__get_original_model(config[1]))
+
+                    warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
+                    pipeline_metalfi.fit(X_tr, y_tr)
+                    metalfi = pipeline_metalfi.score(X_te, y_te)
+                    warnings.filterwarnings("default")
+
+                    results[i].append([anova_scores[name][config[1][:-5]], mi_scores[name][config[1][:-5]], metalfi])
+
+                i += 1
+
+            all_res[name] = results
+
+        for key in all_res.keys():
+            results = all_res[key]
+            current_res = list()
+            for i in results:
+                current_res = Evaluation.matrix_addition(current_res, results[i])
+            current_res = [list(map(lambda x: x / 5, result)) for result in current_res]
+            all_res[key] = current_res
+
         self.__result_configurations += [config for (_, _, config) in self.__meta_models]
         self.__results = all_res
+        end = time.time()
+        print(end - start)
 
     def compare(self, models: List[str], targets: List[str], subsets: List[str], k: int, renew=False) -> List[str]:
         """
@@ -398,3 +418,11 @@ class MetaModel:
             folds.append((X_temp[train_index], X_temp[test_index], y_temp[train_index], y_temp[test_index]))
 
         return folds
+
+    @staticmethod
+    def __indices(X: DataFrame, y: DataFrame, k=5) \
+            -> List[Tuple[DataFrame, DataFrame, DataFrame, DataFrame]]:
+        kf = KFold(n_splits=k, shuffle=True, random_state=115)
+        kf.get_n_splits(X)
+
+        return kf.split(X)
