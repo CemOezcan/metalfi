@@ -138,12 +138,11 @@ class MetaFeatures:
         total_multi = end_multi - start_multi
 
         start_lm = time.time()
-        columns, values = self.__run_pymfe(X.values, y.values, None, ["joint_ent", "mut_inf", "var_importance"])
+        columns, values = self.__run_pymfe(X.values, y.values, None, ["joint_ent", "mut_inf"])
         for feature in X.columns:
             loc = X.columns.get_loc(feature)
             self.__feature_meta_features[loc].append(values[0][loc])
             self.__feature_meta_features[loc].append(values[1][loc])
-            self.__feature_meta_features[loc].append(values[2][loc])
 
         for column in columns:
             self.__feature_meta_feature_names.append("target_" + column)
