@@ -33,7 +33,7 @@ class Memory:
         return pd.read_csv(path / (directory + "/" + name))
 
     @staticmethod
-    def load_open_ml() -> List[Tuple[pd.DataFrame, str, str]]:
+    def load_open_ml(large=False) -> List[Tuple[pd.DataFrame, str, str]]:
         """
         Fetch and preprocess base-data sets from openML:
         Criteria:
@@ -53,16 +53,24 @@ class Memory:
         """
         openml_list = openml.datasets.list_datasets()
         data = pd.DataFrame.from_dict(openml_list, orient="index")
-        data = data[data['NumberOfInstances'] < 501]
-        data = data[data['NumberOfFeatures'] < 11]
-        data = data[data['NumberOfFeatures'] > 4]
+        space = "_"
+        if large:
+            data = data[data['NumberOfInstances'] > 999]
+            data = data[data['NumberOfInstances'] < 10001]
+            data = data[data['NumberOfFeatures'] < 100]
+            data = data[data['NumberOfFeatures'] > 32]
+            space = "_comp_"
+        else:
+            data = data[data['NumberOfInstances'] < 2001]
+            data = data[data['NumberOfFeatures'] < 31]
+            data = data[data['NumberOfFeatures'] > 4]
         data = data[data['NumberOfClasses'] == 2]
         data = data[(data["MajorityClassSize"] / data['NumberOfInstances']) < 0.67]
         data = data[data['NumberOfMissingValues'] == 0].sort_values(["version"])
         data = data.drop_duplicates("name", "last")
 
         target = "base-target_variable"
-        ids = list(filter(lambda x: str(x[0]) + "_" + str(x[1]) + ".csv" not in Memory.get_contents("preprocessed"),
+        ids = list(filter(lambda x: str(x[0]) + space + str(x[1]) + ".csv" not in Memory.get_contents("preprocessed"),
                           [tuple(x) for x in data[["name", "version"]].values]))
 
         for name, version in ids:
@@ -112,9 +120,10 @@ class Memory:
                 ids.remove((name, version))
                 continue
 
-            Memory.store_preprocessed(data_frame, name + "_" + str(version))
-
-        return [(Memory.load(file, "preprocessed"), file[:-4], target) for file in Memory.get_contents("preprocessed")]
+            Memory.store_preprocessed(data_frame, name + space + str(version))
+        return list(filter(lambda x: (space in x[1] and large) or ("_comp_" not in x[1] and not large),
+                           [(Memory.load(file, "preprocessed"), file[:-4], target)
+                            for file in Memory.get_contents("preprocessed")]))
 
     @staticmethod
     def store_meta_features(data):

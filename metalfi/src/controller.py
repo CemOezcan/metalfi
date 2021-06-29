@@ -32,6 +32,7 @@ class Controller:
 
     def __init__(self):
         self.__train_data = None
+        self.__test_data = None
         self.__data_names = None
         self.__meta_data = list()
         self.fetch_data()
@@ -41,8 +42,8 @@ class Controller:
         """
         Fetch base-data sets from openMl and scikit-learn
         """
-        open_ml = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.load_open_ml()]
-        self.__train_data = open_ml
+        self.__train_data = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.load_open_ml()]
+        self.__test_data = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.load_open_ml(large=True)]
         self.__data_names = dict({})
         i = 0
         for _, name in self.__train_data:
@@ -207,7 +208,7 @@ class Controller:
         args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))
 
         m = MetaModel(args[0])
-        m.compare_all(self.__train_data[:7])
+        m.compare_all(self.__test_data)
         evaluation = Evaluation(["all"])
         evaluation.new_comparisons(m)
 
