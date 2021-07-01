@@ -57,12 +57,13 @@ class Memory:
         if large:
             data = data[data['NumberOfInstances'] > 999]
             data = data[data['NumberOfInstances'] < 10001]
-            data = data[data['NumberOfFeatures'] < 100]
-            data = data[data['NumberOfFeatures'] > 32]
+            data = data[data['NumberOfFeatures'] < 101]
+            data = data[data['NumberOfFeatures'] > 20]
             space = "_comp_"
         else:
             data = data[data['NumberOfInstances'] < 2001]
-            data = data[data['NumberOfFeatures'] < 31]
+            data = data[data['NumberOfInstances'] > 99]
+            data = data[data['NumberOfFeatures'] < 21]
             data = data[data['NumberOfFeatures'] > 4]
         data = data[data['NumberOfClasses'] == 2]
         data = data[(data["MajorityClassSize"] / data['NumberOfInstances']) < 0.67]
