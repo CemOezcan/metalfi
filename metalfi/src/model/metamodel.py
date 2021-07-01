@@ -221,7 +221,7 @@ class MetaModel:
                                                SelectPercentile(f_classif, percentile=k),
                                                og_model)
                 pipeline_mi = make_pipeline(StandardScaler(),
-                                            SelectPercentile(mutual_info_classif, percentile=k),
+                                            SelectPercentile(partial(mutual_info_classif, random_state=115), percentile=k),
                                             og_model)
 
                 anova_scores[name][n] = pipeline_anova.fit(X_tr, y_tr).score(X_te, y_te)
@@ -327,7 +327,7 @@ class MetaModel:
 
             selector_anova = SelectPercentile(f_classif, percentile=k)
             selector_anova.fit(X_train, y_train)
-            selector_mi = SelectPercentile(mutual_info_classif, percentile=k)
+            selector_mi = SelectPercentile(partial(mutual_info_classif, random_state=115), percentile=k)
             selector_mi.fit(X_train, y_train)
 
             X_anova_train = selector_anova.transform(X_train)

@@ -34,10 +34,10 @@ class Main:
             Memory.clear_directory(["model", "features", "output/importance"])
 
         c = Controller()
-        c.train_meta_models()
+        #c.train_meta_models()
         data = Memory.get_contents("model")
-        c.estimate(data)
-        c.meta_feature_importances()
+        #c.estimate(data)
+        #c.meta_feature_importances()
         c.compare_all()
         c.questions(data)
 
