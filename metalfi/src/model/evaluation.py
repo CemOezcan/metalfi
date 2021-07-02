@@ -350,11 +350,9 @@ class Evaluation:
         results = list()
         comps = {}
         for model in models:
-            print(model)
             comps.update(Memory.load_model([model])[0][0][3])
 
         for key in comps:
-            print(key)
             results.append(comps[key])
             self.__meta_models.append(key)
 
