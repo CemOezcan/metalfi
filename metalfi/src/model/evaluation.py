@@ -350,7 +350,7 @@ class Evaluation:
         results = list()
         comps = {}
         for model in models:
-            comps.update(Memory.load_model([model])[0][3])
+            comps.update(Memory.load_model([model])[0][0][3])
 
         for key in comps:
             results.append(comps[key])
@@ -360,7 +360,7 @@ class Evaluation:
             self.__comparisons = self.matrix_addition(self.__comparisons, result)
 
         self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
-        self.__parameters = Memory.load_model([models[0]])[0][2]
+        self.__parameters = Memory.load_model([models[0]])[0][0][2]
 
         all_results = {}
         for _, model, _ in filter(lambda x: x[1] in meta_models, Parameters.meta_models):
