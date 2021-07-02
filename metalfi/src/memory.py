@@ -30,7 +30,9 @@ class Memory:
             The .csv file as :py:object:`DataFrame` object.
         """
         path = Memory.get_path()
-        return pd.read_csv(path / (directory + "/" + name))
+        if directory != "":
+            directory += "/"
+        return pd.read_csv(path / (directory + name))
 
     @staticmethod
     def load_open_ml(large=False) -> List[Tuple[pd.DataFrame, str, str]]:
@@ -61,8 +63,7 @@ class Memory:
             data = data[data['NumberOfFeatures'] > 20]
             space = "_comp_"
         else:
-            data = data[data['NumberOfInstances'] < 999]
-            data = data[data['NumberOfInstances'] > 99]
+            data = data[data['NumberOfInstances'] < 501]
             data = data[data['NumberOfFeatures'] < 11]
             data = data[data['NumberOfFeatures'] > 4]
         data = data[data['NumberOfClasses'] == 2]

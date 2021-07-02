@@ -308,6 +308,7 @@ class Evaluation:
                 Memory.store_data_frame(data_frame.round(3), metric + "x" + importance, "predictions")
 
         self.__store_all_results(results)
+        self.new_comparisons(self.__meta_models)
 
     @staticmethod
     def parallel_comparisons(name: str, models: List[str], targets: List[str], subsets: List[str], renew: bool) \
@@ -329,9 +330,9 @@ class Evaluation:
 
         """
         model, _ = Memory.load_model([name])[0]
-        model.compare(models, targets, subsets, 33, renew)
-        results = model.get_results()
-        Memory.renew_model(model, model.get_name()[:-4])
+        # model.compare(models, targets, subsets, 33, renew)
+        results = model.get_results()[name]
+        # Memory.renew_model(model, model.get_name()[:-4])
         return results
 
     def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]):
@@ -342,12 +343,14 @@ class Evaluation:
             data = [tuple(map((lambda x: x[metric_idx]), results[i][0])) for i in range(len(index))]
             Memory.store_data_frame(DataFrame(data, columns=columns, index=index), metric_name, "predictions")
 
-    def new_comparisons(self, model):
+    def new_comparisons(self, models):
         rows = ["ANOVA", "MI", "MetaLFI"]
         meta_models, _, subsets = Parameters.question_5_parameters()
         self.__meta_models = list()
         results = list()
-        comps = model.get_results()
+        comps = {}
+        for model in models:
+            comps.update(model.get_results())
 
         for key in comps:
             results.append(comps[key])
@@ -357,7 +360,7 @@ class Evaluation:
             self.__comparisons = self.matrix_addition(self.__comparisons, result)
 
         self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
-        self.__parameters = model.get_result_config()
+        self.__parameters = models[0].get_result_config()
 
         all_results = {}
         for _, model, _ in filter(lambda x: x[1] in meta_models, Parameters.meta_models):

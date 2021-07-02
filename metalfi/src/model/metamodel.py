@@ -134,7 +134,7 @@ class MetaModel:
                     warnings.filterwarnings("default")
                     feature_set_name = self.__meta_feature_groups.get(i)
 
-                    self.__meta_models.append((None, selected_features,
+                    self.__meta_models.append((deepcopy(model), selected_features,
                                                [base_model_name, target, feature_set_name]))
                     X_test = X_2[selected_features]
                     y_test = self.__test_data[target]
@@ -143,6 +143,17 @@ class MetaModel:
                     self.__stats.append(Parameters.calculate_metrics(y_test=y_test, y_pred=y_pred))
 
                     i -= -1
+
+        results = self.parallel_comparisons((self.__og_X, self.__og_y, self.__file_name))
+
+        all_res = {list(result.keys())[0]: result[list(result.keys())[0]] for result in results}
+        sum_up = lambda x: x[0] if len(x) == 1 else Evaluation.matrix_addition(x[0], sum_up(x[1:]))
+        self.__result_configurations += [config for (_, _, config) in self.__meta_models]
+        self.__results = {key: [list(map(lambda x: x / 5, result)) for result in sum_up(all_res[key])]
+                          for key in all_res.keys()}
+        temp_meta_models = [(None, feat, config) for model, feat, config in self.__meta_models]
+        del self.__meta_models
+        self.__meta_models = temp_meta_models
 
     def __feature_selection(self, name: str, X_train: DataFrame, target_name: str) -> Tuple[DataFrame, List[str]]:
         features = self.__selected[name][target_name]
