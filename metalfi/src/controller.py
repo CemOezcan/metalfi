@@ -144,18 +144,16 @@ class Controller:
         selection_results = [self.__select_meta_features(parameter[1][:-4]) for parameter in parameters]
         # TODO: change
         args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))[:10]
-        for arg in args:
-            self.parallel_training(arg)
 
-        #with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
-        #    progress_bar = tqdm.tqdm(total=len(args), desc="Training meta-models")
-        #    _ = [pool.apply_async(self.parallel_training, (arg,), callback=(lambda x: progress_bar.update()))
-        #         for arg in args]
+        with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
+            progress_bar = tqdm.tqdm(total=len(args), desc="Training meta-models")
+            _ = [pool.apply_async(self.parallel_training, (arg,), callback=(lambda x: progress_bar.update()))
+                 for arg in args]
 
-         #   pool.close()
-         #   pool.join()
+            pool.close()
+            pool.join()
 
-       # progress_bar.close()
+        progress_bar.close()
 
     @staticmethod
     def parallel_training(iterable: Tuple[pd.DataFrame, str, pd.DataFrame, Dataset, Dict[str, Dict[str, List[str]]]]):
