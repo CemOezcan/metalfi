@@ -146,7 +146,7 @@ class MetaModel:
 
         results = self.parallel_comparisons((self.__og_X, self.__og_y, self.__file_name))
 
-        all_res = {list(result.keys())[0]: result[list(result.keys())[0]] for result in results}
+        all_res = {list(results.keys())[0]: results[list(results.keys())[0]]}
         print(all_res)
         sum_up = lambda x: x[0] if len(x) == 1 else Evaluation.matrix_addition(x[0], sum_up(x[1:]))
         print(sum_up)
