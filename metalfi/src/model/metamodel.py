@@ -250,6 +250,7 @@ class MetaModel:
             warnings.filterwarnings("default")
 
         all_res[name] = results
+        print(name)
         return all_res
 
     def compare_all(self, test_data: List[Tuple[Dataset, str]]):
