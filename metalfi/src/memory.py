@@ -171,7 +171,7 @@ class Memory:
             name : Name of the pickle-file.
         """
         path = Memory.get_path() / ("model/" + name)
-        data = (model.get_meta_models(), model.get_stats())
+        data = (model.get_meta_models(), model.get_stats(), model.get_result_config(), model.get_results())
         if not path.is_file():
             with open(path, 'wb') as file:
                 pickle.dump(data, file)
