@@ -142,8 +142,7 @@ class Controller:
             if not (Memory.get_path() / ("model/" + test_name)).is_file()]
 
         selection_results = [self.__select_meta_features(parameter[1][:-4]) for parameter in parameters]
-        # TODO: change
-        args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))[:10]
+        args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))
 
         with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(args), desc="Training meta-models")
