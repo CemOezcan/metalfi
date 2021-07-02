@@ -350,6 +350,7 @@ class Evaluation:
         results = list()
         comps = {}
         for model in models:
+            print(Memory.load_model([model])[0][0])
             comps.update(Memory.load_model([model])[0][0][3])
 
         for key in comps:
