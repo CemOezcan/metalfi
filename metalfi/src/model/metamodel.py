@@ -224,6 +224,7 @@ class MetaModel:
         results = list()
         for X_tr, X_te, y_tr, y_te in self.__get_cross_validation_folds(X_test, y_test):
             warnings.filterwarnings("ignore", category=DeprecationWarning, message="Using.*")
+            warnings.filterwarnings("ignore", message="(Freatures|invalid value).*")
             results.append(list())
             dataset = Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target")
             mf = MetaFeatures(dataset)
