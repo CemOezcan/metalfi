@@ -135,7 +135,7 @@ class Controller:
 
         parameters = [(
             pd.concat([x[0] for x in self.__meta_data if x[1] != test_name]),
-            test_name + "meta",
+            test_name,
             test_data,
             self.__train_data[self.__data_names[test_name]][0])
             for test_data, test_name in self.__meta_data
@@ -180,6 +180,7 @@ class Controller:
         """
         evaluation = Evaluation(names)
         evaluation.predictions()
+        evaluation.new_comparisons()
 
     @staticmethod
     def questions(names: List[str]):

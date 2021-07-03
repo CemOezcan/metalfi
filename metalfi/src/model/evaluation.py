@@ -308,7 +308,6 @@ class Evaluation:
                 Memory.store_data_frame(data_frame.round(3), metric + "x" + importance, "predictions")
 
         self.__store_all_results(results)
-        self.new_comparisons(self.__meta_models)
 
     @staticmethod
     def parallel_comparisons(name: str, models: List[str], targets: List[str], subsets: List[str], renew: bool) \
@@ -343,24 +342,20 @@ class Evaluation:
             data = [tuple(map((lambda x: x[metric_idx]), results[i][0])) for i in range(len(index))]
             Memory.store_data_frame(DataFrame(data, columns=columns, index=index), metric_name, "predictions")
 
-    def new_comparisons(self, models):
+    def new_comparisons(self):
         rows = ["ANOVA", "MI", "PIMP", "Baseline", "MetaLFI"]
         meta_models, _, subsets = Parameters.question_5_parameters()
-        self.__meta_models = list()
         results = list()
-        comps = {}
-        for model in models:
-            comps.update(Memory.load_model([model])[0][0][3])
-
-        for key in comps:
-            results.append(comps[key])
-            self.__meta_models.append(key)
+        for model in self.__meta_models:
+            data = Memory.load_model([model])[0][0][3]
+            key = list(data.keys())[0]
+            results.append(data[key])
 
         for result in results:
             self.__comparisons = self.matrix_addition(self.__comparisons, result)
 
         self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
-        self.__parameters = Memory.load_model([models[0]])[0][0][2]
+        self.__parameters = Memory.load_model([self.__meta_models[0]])[0][0][2]
 
         all_results = {}
         for _, model, _ in filter(lambda x: x[1] in meta_models, Parameters.meta_models):
