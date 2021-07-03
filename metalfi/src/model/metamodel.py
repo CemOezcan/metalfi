@@ -223,6 +223,7 @@ class MetaModel:
 
         results = list()
         for X_tr, X_te, y_tr, y_te in self.__get_cross_validation_folds(X_test, y_test):
+            warnings.filterwarnings("ignore", category=DeprecationWarning, message="Using.*")
             results.append(list())
             dataset = Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target")
             mf = MetaFeatures(dataset)
@@ -248,7 +249,6 @@ class MetaModel:
                 mi_scores[name][n] = pipeline_mi.fit(X_tr, y_tr).score(X_te, y_te)
                 pimp_scores[name][n] = pipeline_pimp.fit(X_tr, y_tr).score(X_te, y_te)
                 baseline_scores[name][n] = pipeline_baseline.fit(X_tr, y_tr).score(X_te, y_te)
-
             for model, features, config in used_models:
                 pipeline_metalfi = make_pipeline(StandardScaler(),
                                                  SelectPercentile(lambda x, y: model.predict(X_m[features]),
