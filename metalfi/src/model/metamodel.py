@@ -224,7 +224,6 @@ class MetaModel:
         results = list()
         for X_tr, X_te, y_tr, y_te in self.__get_cross_validation_folds(X_test, y_test):
             warnings.filterwarnings("ignore", category=DeprecationWarning, message="Using.*")
-            warnings.filterwarnings("ignore", message="(Freatures|invalid value).*")
             results.append(list())
             dataset = Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target")
             mf = MetaFeatures(dataset)
@@ -234,6 +233,9 @@ class MetaModel:
             mf.add_target(PermutationImportance(dataset))
 
             warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
+            warnings.filterwarnings("ignore", message="(invalid value.*|"
+                                                      "Features.* are constant.*|"
+                                                      "Input data for shapiro has range zero.*)")
             for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
                 pipeline_anova = make_pipeline(StandardScaler(),
                                                SelectPercentile(f_classif, percentile=k),
