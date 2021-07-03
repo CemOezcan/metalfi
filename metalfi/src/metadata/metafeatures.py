@@ -70,7 +70,7 @@ class MetaFeatures:
         warnings.filterwarnings("ignore", message="(It is not possible make equal discretization|"
                                                   "(divide by zero|invalid value) encountered in .*|"
                                                   "Can't summarize feature 'cor' with .*|"
-                                                  "Features.* are constant.*|"
+                                                  "Features.*|"
                                                   "Input data for shapiro has range zero.*)")
         mfe = MFE(summary=summary, features=features)
         mfe.fit(X, y)

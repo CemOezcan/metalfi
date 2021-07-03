@@ -234,7 +234,7 @@ class MetaModel:
 
             warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
             warnings.filterwarnings("ignore", message="(invalid value.*|"
-                                                      "Features.* are constant.*|"
+                                                      "Features.*|"
                                                       "Input data for shapiro has range zero.*)")
             for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
                 pipeline_anova = make_pipeline(StandardScaler(),
