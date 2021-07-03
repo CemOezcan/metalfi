@@ -1,4 +1,7 @@
+import warnings
+warnings.filterwarnings("ignore", message="IPython could not be loaded!")
 import sys
+
 
 from metalfi.src.controller import Controller
 from metalfi.src.memory import Memory
