@@ -100,20 +100,22 @@ class Visualization:
         data = [(Memory.load(name, directory).set_index("Index"), name) for name in file_names]
 
         for frame, name in data:
-            width = 0.2
+            width = 0.1
             _, ax = plt.subplots()
 
             anova = frame.loc["ANOVA"].values
             mi = frame.loc["MI"].values
-            #fi = frame.loc["FI"].values
+            pimp = frame.loc["PIMP"].values
+            baseline = frame.loc["Baseline"].values
             meta = frame.loc["MetaLFI"].values
 
             x = np.arange(len(anova))
 
-            ax.bar(x - 1.5 * width, anova, width, label="ANOVA")
-            ax.bar(x - width / 2, mi, width, label="MI")
-            #ax.bar(x + width / 2, fi, width, label="FI")
-            ax.bar(x + 1.5 * width, meta, width, label="MetaLFI")
+            ax.bar(x - 2 * width, anova, width, label="ANOVA")
+            ax.bar(x - width, mi, width, label="MI")
+            ax.bar(x, pimp, width, label="PIMP")
+            ax.bar(x + width, baseline, width, label="Baseline")
+            ax.bar(x + 2 * width, meta, width, label="MetaLFI")
 
             ax.set_ylabel("Acc. Scores")
             ax.set_yticks([0.55, 0.6, 0.65, 0.7, 0.75, 0.775, 0.8, 0.825, 0.85])

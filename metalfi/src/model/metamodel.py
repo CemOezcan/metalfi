@@ -148,12 +148,10 @@ class MetaModel:
 
         all_res = {list(results.keys())[0]: results[list(results.keys())[0]]}
         sum_up = lambda x: x[0] if len(x) == 1 else Evaluation.matrix_addition(x[0], sum_up(x[1:]))
-        self.__result_configurations += [config for (_, _, config) in self.__meta_models]
+        #self.__result_configurations += [config for (_, _, config) in self.__meta_models]
         self.__results = {key: [list(map(lambda x: x / 5, result)) for result in sum_up(all_res[key])]
                           for key in all_res.keys()}
-        temp_meta_models = [(None, feat, config) for model, feat, config in self.__meta_models]
-        del self.__meta_models
-        self.__meta_models = temp_meta_models
+        self.__meta_models = [(None, feat, config) for model, feat, config in self.__meta_models]
 
     def __feature_selection(self, name: str, X_train: DataFrame, target_name: str) -> Tuple[DataFrame, List[str]]:
         features = self.__selected[name][target_name]
@@ -213,18 +211,25 @@ class MetaModel:
     def parallel_comparisons(self, args):
         k = 33
         meta_target_names = [x for x in Parameters.targets if "SHAP" in x]
+        used_models = [(model, features, config) for model, features, config in self.__meta_models if config[1] in meta_target_names]
+        self.__result_configurations = [config for (_, _, config) in used_models]
         X_test, y_test, name = args
 
         anova_scores = {name: dict()}
         mi_scores = {name: dict()}
+        pimp_scores = {name: dict()}
+        baseline_scores = {name: dict()}
         all_res = {name: dict()}
 
         results = list()
         for X_tr, X_te, y_tr, y_te in self.__get_cross_validation_folds(X_test, y_test):
             results.append(list())
-            mf = MetaFeatures(Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target"))
+            dataset = Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target")
+            mf = MetaFeatures(dataset)
             mf.calculate_meta_features()
+
             X_m = DataFrame(data=self.__sc1.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
+            mf.add_target(PermutationImportance(dataset))
 
             warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
             for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
@@ -234,18 +239,25 @@ class MetaModel:
                 pipeline_mi = make_pipeline(StandardScaler(),
                                             SelectPercentile(partial(mutual_info_classif, random_state=115), percentile=k),
                                             og_model)
+                pipeline_pimp = make_pipeline(StandardScaler(),
+                                              SelectPercentile(lambda x, y: np.asarray(mf.get_meta_data()[n + "_PIMP"]), percentile=k),
+                                              og_model)
+                pipeline_baseline = make_pipeline(StandardScaler(), og_model)
 
                 anova_scores[name][n] = pipeline_anova.fit(X_tr, y_tr).score(X_te, y_te)
                 mi_scores[name][n] = pipeline_mi.fit(X_tr, y_tr).score(X_te, y_te)
+                pimp_scores[name][n] = pipeline_pimp.fit(X_tr, y_tr).score(X_te, y_te)
+                baseline_scores[name][n] = pipeline_baseline.fit(X_tr, y_tr).score(X_te, y_te)
 
-            for model, features, config in self.__meta_models:
+            for model, features, config in used_models:
                 pipeline_metalfi = make_pipeline(StandardScaler(),
                                                  SelectPercentile(lambda x, y: model.predict(X_m[features]),
                                                                   percentile=k),
                                                  self.__get_original_model(config[1]))
 
                 metalfi = pipeline_metalfi.fit(X_tr, y_tr).score(X_te, y_te)
-                results[-1].append([anova_scores[name][config[1][:-5]], mi_scores[name][config[1][:-5]], metalfi])
+                results[-1].append([anova_scores[name][config[1][:-5]], mi_scores[name][config[1][:-5]],
+                                    pimp_scores[name][config[1][:-5]], baseline_scores[name][config[1][:-5]], metalfi])
 
             warnings.filterwarnings("default")
 
@@ -425,6 +437,6 @@ class MetaModel:
 
         folds = list()
         for train_index, test_index in kf.split(X, y):
-            folds.append((X_temp[train_index], X_temp[test_index], y_temp[train_index], y_temp[test_index]))
+            folds.append((DataFrame(X_temp[train_index], columns=X.columns), DataFrame(X_temp[test_index], columns=X.columns), y_temp[train_index], y_temp[test_index]))
 
         return folds

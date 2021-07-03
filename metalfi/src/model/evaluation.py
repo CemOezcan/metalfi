@@ -344,7 +344,7 @@ class Evaluation:
             Memory.store_data_frame(DataFrame(data, columns=columns, index=index), metric_name, "predictions")
 
     def new_comparisons(self, models):
-        rows = ["ANOVA", "MI", "MetaLFI"]
+        rows = ["ANOVA", "MI", "PIMP", "Baseline", "MetaLFI"]
         meta_models, _, subsets = Parameters.question_5_parameters()
         self.__meta_models = list()
         results = list()
