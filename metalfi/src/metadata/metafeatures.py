@@ -75,7 +75,6 @@ class MetaFeatures:
         mfe = MFE(summary=summary, features=features)
         mfe.fit(X, y)
         vector = mfe.extract()
-        warnings.filterwarnings("default")
 
         return vector
 
