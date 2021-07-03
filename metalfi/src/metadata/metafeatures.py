@@ -267,25 +267,10 @@ class MetaFeatures:
         shap = ShapImportance(self.__dataset)
         lime = LimeImportance(self.__dataset)
 
-        start_perm = time.time()
-        self.add_target(perm)
-        end_perm = time.time()
-        total_perm = end_perm - start_perm
-
-        start_dCol = time.time()
-        self.add_target(dCol)
-        end_dCol = time.time()
-        total_dCol = end_dCol - start_dCol
-
-        start_shap = time.time()
-        self.add_target(shap)
-        end_shap = time.time()
-        total_shap = end_shap - start_shap
-
-        start_lime = time.time()
-        self.add_target(lime)
-        end_lime = time.time()
-        total_lime = end_lime - start_lime
+        total_perm = self.add_target(perm)
+        total_dCol = self.add_target(dCol)
+        total_shap = self.add_target(shap)
+        total_lime = self.add_target(lime)
 
         return self.__targets, total_dCol, total_perm, total_lime, total_shap
 
@@ -297,6 +282,7 @@ class MetaFeatures:
         ----------
         target : The underlying feature importance measure.
         """
+        start = time.time()
         target.calculate_scores()
         imp = target.get_feature_importances()
         name = target.get_name()
@@ -309,6 +295,9 @@ class MetaFeatures:
                 self.__meta_data.at[x, target.get_model_names()[i] + name] = imp[i].loc[x].iat[0]
 
         self.__targets = self.__targets + target_names
+        end = time.time()
+        total = end - start
+        return total
 
     def __symmetrical_uncertainty(self, X: DataFrame, y: DataFrame, matrix=False) -> Union[float, DataFrame]:
         if matrix:
