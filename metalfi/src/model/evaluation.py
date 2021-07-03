@@ -342,14 +342,29 @@ class Evaluation:
             data = [tuple(map((lambda x: x[metric_idx]), results[i][0])) for i in range(len(index))]
             Memory.store_data_frame(DataFrame(data, columns=columns, index=index), metric_name, "predictions")
 
+    @staticmethod
+    def new_parallel_comparisons(model):
+        data = Memory.load_model([model])[0][0][3]
+        key = list(data.keys())[0]
+        return data[key]
+
     def new_comparisons(self):
         rows = ["ANOVA", "MI", "PIMP", "Baseline", "MetaLFI"]
         meta_models, _, subsets = Parameters.question_5_parameters()
-        results = list()
-        for model in self.__meta_models:
-            data = Memory.load_model([model])[0][0][3]
-            key = list(data.keys())[0]
-            results.append(data[key])
+        with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
+            progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
+            results = [
+                pool.map_async(
+                    self.new_parallel_comparisons,
+                    (meta_model, ),
+                    callback=(lambda x: progress_bar.update(n=1)))
+                for meta_model in self.__meta_models]
+
+            results = [x.get()[0] for x in results]
+            pool.close()
+            pool.join()
+
+        progress_bar.close()
 
         for result in results:
             self.__comparisons = self.matrix_addition(self.__comparisons, result)
