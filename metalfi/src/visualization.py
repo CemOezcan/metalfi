@@ -91,14 +91,10 @@ class Visualization:
         Memory.store_visual(plt, name + "_box", "runtime")
 
     @staticmethod
-    def performance():
+    def performance(data):
         """
         Create and save bar charts. Visualizes the performances of different feature selection approaches.
         """
-        directory = "output/selection"
-        file_names = list(filter(lambda x: x.endswith(".csv") and "_" not in x, Memory.get_contents(directory)))
-        data = [(Memory.load(name, directory).set_index("Index"), name) for name in file_names]
-
         for frame, name in data:
             width = 0.1
             _, ax = plt.subplots()
@@ -124,7 +120,7 @@ class Visualization:
             ax.legend()
             plt.ylim([0.5, 0.85])
 
-            Memory.store_visual(plt, name[:-4], "selection")
+            Memory.store_visual(plt, name, "selection")
 
     @staticmethod
     def meta_feature_importance():

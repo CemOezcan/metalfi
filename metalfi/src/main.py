@@ -40,11 +40,9 @@ class Main:
         c.train_meta_models()
         data = Memory.get_contents("model")
         c.estimate(data)
-        #c.meta_feature_importances()
-        #c.compare_all()
+        c.meta_feature_importances()
         c.questions(data)
 
-        Visualization.performance()
         Visualization.create_histograms()
         Visualization.correlate_targets()
         Visualization.meta_feature_importance()

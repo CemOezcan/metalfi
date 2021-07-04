@@ -407,13 +407,18 @@ class Evaluation:
 
             all_results[model] = this_model
 
-        for model in all_results:
-            for subset in subsets:
-                Memory.store_data_frame(DataFrame(data=all_results[model][subset], index=rows,
-                                                  columns=[x for x in all_results[model][subset]]),
-                                        model + " x " + subset, "selection", True)
-
+        self.plot_accuracies(all_results, rows)
         self.__store_all_comparisons(results, rows, "all_comparisons")
+
+    @staticmethod
+    def plot_accuracies(results, rows):
+        data = list()
+        for model in results:
+            for subset in results[model]:
+                data.append((DataFrame(data=results[model][subset], index=rows,
+                                       columns=[x for x in results[model][subset]]), model + " x " + subset))
+        Visualization.performance(data)
+
 
     def comparisons(self, models: List[str], targets: List[str], subsets: List[str], renew=False):
         """
