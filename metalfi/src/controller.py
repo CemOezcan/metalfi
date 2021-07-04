@@ -59,13 +59,21 @@ class Controller:
 
         with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(data), desc="Computing meta-data")
-            _ = [pool.apply_async(self.parallel_meta_computation, (args,), callback=(lambda x: progress_bar.update()))
-                 for args in data]
+            results = [pool.map_async(self.parallel_meta_computation, (args,),
+                                      callback=(lambda x: progress_bar.update())) for args in data]
 
+            results = [x.get()[0] for x in results]
             pool.close()
             pool.join()
 
         progress_bar.close()
+        d_times = list()
+        t_times = list()
+        for d_time, t_time, name in results:
+            d_times.append(pd.DataFrame(data=d_time, index=[name], columns=[x for x in d_times]))
+            t_times.append(pd.DataFrame(data=d_time, index=[name], columns=[x for x in t_times]))
+        Memory.store_data_frame(pd.concat(d_times), "meta-features", "runtime")
+        Memory.store_data_frame(pd.concat(t_times), "meta-targets", "runtime")
 
     @staticmethod
     def parallel_meta_computation(data: Tuple[pd.DataFrame, str]):
@@ -83,10 +91,7 @@ class Controller:
         nr_feat, nr_inst = result.get_nrs()
 
         Memory.store_input(meta_data, name)
-        Memory.store_data_frame(pd.DataFrame(data=d_times, index=["Time"], columns=[x for x in d_times]),
-                                name + "XmetaX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
-        Memory.store_data_frame(pd.DataFrame(data=t_times, index=["Time"], columns=[x for x in t_times]),
-                                name + "XtargetX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
+        return d_times, t_times, name
 
     def __load_meta_data(self):
         for _, name in self.__train_data:
