@@ -233,15 +233,15 @@ class Memory:
     @staticmethod
     def store_visual(plt, name, directory):
         """
-        Save `plt` as .png file in a subdirectory of metalfi/data.
+        Save `plt` as .pdf file in a subdirectory of metalfi/data.
 
         Parameters
         ----------
             plt : Matplotlib-plot.
-            name : Name of the .png file.
+            name : Name of the .pdf file.
             directory : Subdirectory of metalfi/data.
         """
-        plt.savefig(Memory.get_path() / ("output/" + directory + "/" + name + ".png"))
+        plt.savefig(Memory.get_path() / ("output/" + directory + "/" + name + ".pdf"))
         plt.close()
 
     @staticmethod

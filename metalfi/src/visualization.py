@@ -293,4 +293,4 @@ class Visualization:
             axs[x, y].set_title(name)
             axs[x, y].set_xlim(np.quantile(values, 0.05), np.quantile(values, 0.75))
 
-        Memory.store_visual(plt, "Histograms", "")
+        Memory.store_visual(plt, "Histograms", "tables")
