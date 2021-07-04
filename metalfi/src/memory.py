@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import multiprocessing as mp
 import pickle
 from typing import List, Tuple
 
@@ -13,7 +14,13 @@ from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, LabelEncoder
 class Memory:
     """
     Provides methods for saving and loading data and files from the metalfi/data directory.
+
+    Global variables
+    ----------
+        lock : (Lock)
+            Mutex lock.
     """
+    lock = mp.Lock()
 
     @staticmethod
     def load(name: str, directory) -> pd.DataFrame:
@@ -63,7 +70,7 @@ class Memory:
             data = data[data['NumberOfFeatures'] > 20]
             space = "_comp_"
         else:
-            data = data[data['NumberOfInstances'] < 501]
+            data = data[data['NumberOfInstances'] < 101]
             data = data[data['NumberOfFeatures'] < 11]
             data = data[data['NumberOfFeatures'] > 4]
         data = data[data['NumberOfClasses'] == 2]
@@ -229,6 +236,21 @@ class Memory:
             if data.index.name is None:
                 data.index.name = "Index"
             data.to_csv(path, header=True)
+
+    @staticmethod
+    def update_runtimes(data, index):
+        Memory.lock.acquire()
+        try:
+            try:
+                runtimes = Memory.load("runtimes.csv", "output/runtime").set_index("Index")
+            except (FileNotFoundError, KeyError):
+                Memory.store_data_frame(pd.DataFrame(), "runtimes", "runtime")
+                runtimes = pd.DataFrame()
+
+            runtimes.drop([index], inplace=True, errors="ignore")
+            Memory.store_data_frame(runtimes.append(pd.DataFrame(data=data, index=[index])), "runtimes", "runtime")
+        finally:
+            Memory.lock.release()
 
     @staticmethod
     def store_visual(plt, name, directory):

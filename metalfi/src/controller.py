@@ -59,24 +59,13 @@ class Controller:
 
         with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(data), desc="Computing meta-data")
-            results = [pool.map_async(self.parallel_meta_computation, (args,),
-                                      callback=(lambda x: progress_bar.update())) for args in data]
+            _ = [pool.apply_async(self.parallel_meta_computation, (args,), callback=(lambda x: progress_bar.update()))
+                 for args in data]
 
-            results = [x.get()[0] for x in results]
             pool.close()
             pool.join()
 
         progress_bar.close()
-
-        if len(results) != 0:
-            try:
-                meta_features = Memory.load("runtimes.csv", "output/runtime").set_index("Index")
-            except Exception:
-                meta_features = pd.DataFrame()
-
-            names_features = [name for _, name in results if name not in meta_features.index]
-            times = {key: [time[key] for time, name in results if name in names_features] for key in results[0][0].keys()}
-            Memory.store_data_frame(meta_features.append(pd.DataFrame(data=times, index=names_features)), "runtimes", "runtime")
 
     @staticmethod
     def parallel_meta_computation(data: Tuple[pd.DataFrame, str]):
@@ -94,9 +83,8 @@ class Controller:
         del d_times["total"]
         del t_times["total"]
         d_times.update(t_times)
-
         Memory.store_input(meta_data, name)
-        return d_times, name
+        Memory.update_runtimes(d_times, name)
 
     def __load_meta_data(self):
         for _, name in self.__train_data:
