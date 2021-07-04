@@ -101,27 +101,14 @@ class Controller:
             data_frame = pd.concat([X_d, X_f], axis=1)
             self.__meta_data.append((data_frame, name))
 
-    def __select_meta_features(self, meta_model_name="", memory=False):
+    def __select_meta_features(self, meta_model_name=""):
         # Selects features for meta-data with `meta_model_name` as test and all other meta-data sets as train
-        sets = None
-        if memory:
-            sets = Memory.load_meta_features()
+        data = [d for d, n in self.__meta_data if n != meta_model_name]
+        fs = MetaFeatureSelection(pd.concat(data))
+        sets = {}
 
-        if sets is None:
-            data = [d for d, n in self.__meta_data if n != meta_model_name]
-            fs = MetaFeatureSelection(pd.concat(data))
-            sets = {}
-
-            for meta_model, name, _ in Parameters.meta_models:
-                tree = (name == "RF")
-                percentiles = [10]
-                if memory:
-                    tree = False
-                    percentiles = [25]
-                sets[name] = fs.select(meta_model, f_regression, percentiles, k=5, tree=tree)
-
-        if memory:
-            Memory.store_meta_features(sets)
+        for meta_model, name, _ in Parameters.meta_models:
+            sets[name] = fs.select(meta_model, f_regression, [10], k=5)
 
         return sets
 
