@@ -52,4 +52,4 @@ if __name__ == '__main__':
     args = sys.argv[1:]
     fst = "True" in [x[12:] for x in args if "delete_meta=" in x]
     snd = "True" in [x[14:] for x in args if "delete_models=" in x]
-    Main().main(delete_meta=True, delete_models=True)
+    Main().main(delete_meta=fst, delete_models=snd)
