@@ -67,13 +67,16 @@ class Controller:
             pool.join()
 
         progress_bar.close()
-        # TODO: add new columns etc.
-        """d_times = {key: [d_time[key] for d_time, _, _ in results] for key in results[0][0].keys()}
-        t_times = {key: [t_time[key] for _, t_time, _ in results] for key in results[0][1].keys()}
-        names = [name for _, _, name in results]
 
-        Memory.store_data_frame(pd.DataFrame(data=d_times, index=names), "meta-features", "runtime")
-        Memory.store_data_frame(pd.DataFrame(data=t_times, index=names), "meta-targets", "runtime")"""
+        if len(results) != 0:
+            try:
+                meta_features = Memory.load("runtimes.csv", "output/runtime").set_index("Index")
+            except Exception:
+                meta_features = pd.DataFrame()
+
+            names_features = [name for _, name in results if name not in meta_features.index]
+            times = {key: [time[key] for time, name in results if name in names_features] for key in results[0][0].keys()}
+            Memory.store_data_frame(meta_features.append(pd.DataFrame(data=times, index=names_features)), "runtimes", "runtime")
 
     @staticmethod
     def parallel_meta_computation(data: Tuple[pd.DataFrame, str]):
@@ -88,10 +91,12 @@ class Controller:
         meta_data = result.get_meta_data()
         name = result.get_name()
         d_times, t_times = result.get_times()
-        nr_feat, nr_inst = result.get_nrs()
+        del d_times["total"]
+        del t_times["total"]
+        d_times.update(t_times)
 
         Memory.store_input(meta_data, name)
-        return d_times, t_times, name
+        return d_times, name
 
     def __load_meta_data(self):
         for _, name in self.__train_data:
