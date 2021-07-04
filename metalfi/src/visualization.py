@@ -260,7 +260,7 @@ class Visualization:
         d = {'lofo': [__f(lofo), __f_2(lofo)], 'shap': [__f(shap), __f_2(shap)],
              'lime': [__f(lime), __f_2(lime)], 'pimp': [__f(pimp), __f_2(pimp)]}
         data_frame = pd.DataFrame(data=d, index=["mean", "max"], columns=["lofo", "shap", "lime", "pimp"])
-        Memory.store_data_frame(data_frame, "target_corr", "", True)
+        Memory.store_data_frame(data_frame, "target_corr", "tables", True)
 
     @staticmethod
     def create_histograms():
@@ -294,30 +294,3 @@ class Visualization:
             axs[x, y].set_xlim(np.quantile(values, 0.05), np.quantile(values, 0.75))
 
         Memory.store_visual(plt, "Histograms", "")
-
-    @staticmethod
-    def clean_up():
-        directory = "output/predictions"
-        file_names = list(filter(lambda x: "x" in x and x.endswith(".csv"), Memory.get_contents(directory)))
-        data = list()
-
-        for name in file_names:
-            file = Memory.load(name, directory)
-            data.append((file, name))
-
-        for data_frame, name in data:
-            for i in range(len(data_frame.index)):
-                for j in range(1, len(data_frame.columns)):
-                    string = str(data_frame.iloc[i].iloc[j])
-                    if abs(data_frame.iloc[i].iloc[j]) > 10:
-                        d = '%.2e' % Decimal(string)
-                        data_frame.iloc[i, j] = d
-                    elif "e" in string:
-                        match = re.split(r'e', string)
-                        match[0] = str(round(float(match[0]), 2))
-                        data_frame.iloc[i, j] = float(match[0] + "e" + match[1])
-                    else:
-                        data_frame.iloc[i, j] = round(data_frame.iloc[i].iloc[j], 3)
-
-            data_frame = data_frame.set_index("Index")
-            Memory.store_data_frame(data_frame, name[:-4], "predictions", True)

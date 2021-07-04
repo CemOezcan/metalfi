@@ -1,3 +1,4 @@
+from decimal import Decimal
 from functools import partial
 import multiprocessing as mp
 import re
@@ -301,13 +302,29 @@ class Evaluation:
 
             all_results[metric_name] = metric
 
-        for metric in all_results:
-            for importance in all_results[metric]:
-                data_frame = DataFrame(data=all_results[metric][importance], index=rows,
-                                       columns=[x for x in all_results[metric][importance]])
-                Memory.store_data_frame(data_frame.round(3), metric + "x" + importance, "predictions")
-
+        self.create_tables(all_results, rows)
         self.__store_all_results(results)
+
+    @staticmethod
+    def create_tables(results, rows):
+        for metric in results:
+            for importance in results[metric]:
+                data_frame = DataFrame(data=results[metric][importance], index=rows,
+                                       columns=[x for x in results[metric][importance]]).round(3)
+                for i in range(len(data_frame.index)):
+                    for j in range(len(data_frame.columns)):
+                        string = str(data_frame.iloc[i].iloc[j])
+                        if abs(data_frame.iloc[i].iloc[j]) > 10:
+                            d = '%.2e' % Decimal(string)
+                            data_frame.iloc[i, j] = d
+                        elif "e" in string:
+                            match = re.split(r'e', string)
+                            match[0] = str(round(float(match[0]), 2))
+                            data_frame.iloc[i, j] = float(match[0] + "e" + match[1])
+                        else:
+                            data_frame.iloc[i, j] = round(data_frame.iloc[i].iloc[j], 3)
+
+                Memory.store_data_frame(data_frame, metric + "x" + importance, "tables", True)
 
     @staticmethod
     def parallel_comparisons(name: str, models: List[str], targets: List[str], subsets: List[str], renew: bool) \

@@ -45,14 +45,8 @@ class Main:
         c.questions(data)
 
         Visualization.performance()
-        Visualization.clean_up()
-        Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["landmarking", "univariate", "data"], "fast")
-        Visualization.runtime_boxplot(100000000, ["LOFO"], ["multivariate"], "fast_multi")
-        Visualization.runtime_boxplot(100000000, ["SHAP", "LIME"], ["total"], "slow")
-        Visualization.runtime_graph("fast_graph")
         Visualization.create_histograms()
         Visualization.correlate_targets()
-        Visualization.correlate_metrics()
         Visualization.meta_feature_importance()
 
 
