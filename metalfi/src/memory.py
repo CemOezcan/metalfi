@@ -63,7 +63,7 @@ class Memory:
             data = data[data['NumberOfFeatures'] > 20]
             space = "_comp_"
         else:
-            data = data[data['NumberOfInstances'] < 101]
+            data = data[data['NumberOfInstances'] < 501]
             data = data[data['NumberOfFeatures'] < 11]
             data = data[data['NumberOfFeatures'] > 4]
         data = data[data['NumberOfClasses'] == 2]
