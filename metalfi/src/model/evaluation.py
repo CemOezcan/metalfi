@@ -84,7 +84,7 @@ class Evaluation:
         (across cross validation splits) are significant. Visualize the results.
         """
         directory = "output/predictions"
-        file_names = list(filter(lambda x: "x" not in x and x.endswith(".csv"), Memory.get_contents(directory)))
+        file_names = list(filter(lambda x: "x" not in x and "long" not in x and x.endswith(".csv"), Memory.get_contents(directory)))
 
         data = {name[:-4]: Memory.load(name, directory) for name in file_names}
         pattern = re.compile(r"\$(?P<meta>.+)\_\{(?P<features>.+)\}\((?P<target>.+)\)\$")
@@ -352,6 +352,20 @@ class Evaluation:
         return results
 
     def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]):
+        data = {key: list() for key in ["base_data_set", "meta_model", "meta_features", "base_model", "importance_measure", "r^2"]}
+        for i in range(len(self.__meta_models)):
+            base_data_set = self.__meta_models[i]
+            for j in range(len(self.__config)):
+                meta, target, features = self.__config[j]
+                data["base_data_set"].append(base_data_set)
+                data["meta_model"].append(meta)
+                data["meta_features"].append(features)
+                data["base_model"].append(target[:-5])
+                data["importance_measure"].append(target[-4:])
+                data["r^2"].append(results[i][0][j][0])
+
+        Memory.store_data_frame(DataFrame(data=data), "longPred", "predictions")
+
         columns = ["$" + meta + "_{" + features + "}(" + target + ")$" for meta, target, features in self.__config]
         index = self.__meta_models
 
@@ -475,6 +489,21 @@ class Evaluation:
         self.__store_all_comparisons(results, rows, "all_comparisons")
 
     def __store_all_comparisons(self, results: List[List[List[float]]], rows: List[str], name: str):
+        data = {key: list() for key in ["base_data_set", "meta_model", "meta_features", "feature_selection_approach",
+                                        "base_model", "importance_measure", "accuracy"]}
+        for i in range(len(self.__parameters)):
+            for j in range(len(rows)):
+                for k in range(len(self.__meta_models)):
+                    data["base_data_set"].append(self.__meta_models[k])
+                    data["meta_model"].append(self.__parameters[i][0])
+                    data["meta_features"].append(self.__parameters[i][2])
+                    data["feature_selection_approach"].append(rows[j])
+                    data["base_model"].append(self.__parameters[i][1][:-5])
+                    data["importance_measure"].append(self.__parameters[i][1][-4:])
+                    data["accuracy"].append(results[k][i][j])
+
+        Memory.store_data_frame(DataFrame(data=data), "longComps", "selection")
+
         data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2]
                 + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": list(map(lambda x: x[i][j], results))
                 for i in range(len(self.__parameters)) for j in range(len(rows))}

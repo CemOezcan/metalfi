@@ -67,12 +67,13 @@ class Controller:
             pool.join()
 
         progress_bar.close()
-        d_times = {key: [d_time[key] for d_time, _, _ in results] for key in results[0][0].keys()}
+        # TODO: add new columns etc.
+        """d_times = {key: [d_time[key] for d_time, _, _ in results] for key in results[0][0].keys()}
         t_times = {key: [t_time[key] for _, t_time, _ in results] for key in results[0][1].keys()}
         names = [name for _, _, name in results]
 
         Memory.store_data_frame(pd.DataFrame(data=d_times, index=names), "meta-features", "runtime")
-        Memory.store_data_frame(pd.DataFrame(data=t_times, index=names), "meta-targets", "runtime")
+        Memory.store_data_frame(pd.DataFrame(data=t_times, index=names), "meta-targets", "runtime")"""
 
     @staticmethod
     def parallel_meta_computation(data: Tuple[pd.DataFrame, str]):
