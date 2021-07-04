@@ -227,7 +227,7 @@ class Controller:
 
         targets = list(filter(lambda x: x.endswith("_SHAP") and x not in computed, Parameters.targets))
         importance = MetaFeatureSelection.meta_feature_importance(pd.concat(data), models, targets,
-                                                                  self.__select_meta_features(memory=True))
+                                                                  self.__select_meta_features())
 
         meta_features = {}
         for target in targets:
