@@ -67,13 +67,12 @@ class Controller:
             pool.join()
 
         progress_bar.close()
-        d_times = list()
-        t_times = list()
-        for d_time, t_time, name in results:
-            d_times.append(pd.DataFrame(data=d_time, index=[name], columns=[x for x in d_times]))
-            t_times.append(pd.DataFrame(data=d_time, index=[name], columns=[x for x in t_times]))
-        Memory.store_data_frame(pd.concat(d_times), "meta-features", "runtime")
-        Memory.store_data_frame(pd.concat(t_times), "meta-targets", "runtime")
+        d_times = {key: [d_time[key] for d_time, _, _ in results] for key in results[0][0].keys()}
+        t_times = {key: [t_time[key] for _, t_time, _ in results] for key in results[0][1].keys()}
+        names = [name for _, _, name in results]
+
+        Memory.store_data_frame(pd.DataFrame(data=d_times, index=names), "meta-features", "runtime")
+        Memory.store_data_frame(pd.DataFrame(data=t_times, index=names), "meta-targets", "runtime")
 
     @staticmethod
     def parallel_meta_computation(data: Tuple[pd.DataFrame, str]):

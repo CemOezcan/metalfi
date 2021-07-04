@@ -20,6 +20,7 @@ class Visualization:
 
     @staticmethod
     def fetch_runtime_data(substring, threshold: int = 1000000):
+        # Deprecated
         directory = "output/runtime"
         file_names = list(filter(lambda x: x.endswith('.csv') and substring in x, Memory.get_contents(directory)))
         data = list()
@@ -49,6 +50,7 @@ class Visualization:
 
     @staticmethod
     def runtime_graph(name):
+        # Deprecated
         target_data = Visualization.fetch_runtime_data("XtargetX")
         meta_data = Visualization.fetch_runtime_data("XmetaX")
         for x in target_data:
@@ -67,6 +69,7 @@ class Visualization:
 
     @staticmethod
     def runtime_boxplot(threshold, targets, meta, name):
+        # Deprecated
         target_data = Visualization.fetch_runtime_data("XtargetX", threshold)
         meta_data = Visualization.fetch_runtime_data("XmetaX", threshold)
 

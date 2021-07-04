@@ -32,9 +32,9 @@ class Main:
                 Whether to delete meta-models.
         """
         if delete_meta:
-            Memory.clear_directory(["input", "preprocessed", "output/runtime", "model", "features"])
+            Memory.clear_directory(["input", "preprocessed", "output/runtime", "model"])
         if delete_models:
-            Memory.clear_directory(["model", "features", "output/importance"])
+            Memory.clear_directory(["model", "output/importance"])
 
         c = Controller()
         c.train_meta_models()
@@ -52,4 +52,4 @@ if __name__ == '__main__':
     args = sys.argv[1:]
     fst = "True" in [x[12:] for x in args if "delete_meta=" in x]
     snd = "True" in [x[14:] for x in args if "delete_models=" in x]
-    Main().main(delete_meta=fst, delete_models=snd)
+    Main().main(delete_meta=True, delete_models=True)
