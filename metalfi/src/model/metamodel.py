@@ -249,7 +249,7 @@ class MetaModel:
                             "Multi": metalfi_time_tuple[2], "Uni": metalfi_time_tuple[1]}
 
             X_m = DataFrame(data=self.__sc1.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
-            pimp_time = mf.add_target(PermutationImportance(dataset)) # TODO: Modify: Return Dict[str, float], keys are base-models
+            mf.add_target(PermutationImportance(dataset))
 
             warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
             warnings.filterwarnings("ignore", message="(invalid value.*|"
@@ -259,7 +259,7 @@ class MetaModel:
             anova_time = self.measure_time(f_classif, X_tr, y_tr)
             mi_time = self.measure_time(partial(mutual_info_classif, random_state=115), X_tr, y_tr)
 
-            for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
+            for og_model, n in targets:
                 pipeline_anova = make_pipeline(StandardScaler(),
                                                SelectPercentile(f_classif, percentile=k),
                                                og_model)
@@ -278,7 +278,9 @@ class MetaModel:
 
                 anova_times[name][n] = anova_time
                 mi_times[name][n] = mi_time
-                pimp_times[name][n] = pimp_time / 6 # pimp_time[n]
+                pimp_times[name][n] = self.measure_time(partial(PermutationImportance.data_permutation_importance,
+                                                                model=og_model), X_tr, y_tr)
+
             for model, features, config in used_models:
                 metalfi_prediction_time = self.measure_time(lambda x, y: model.predict(x), X_m[features], None)
                 pipeline_metalfi = make_pipeline(StandardScaler(),
