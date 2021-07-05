@@ -259,7 +259,7 @@ class MetaModel:
             anova_time = self.measure_time(f_classif, X_tr, y_tr)
             mi_time = self.measure_time(partial(mutual_info_classif, random_state=115), X_tr, y_tr)
 
-            for og_model, n in targets:
+            for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
                 pipeline_anova = make_pipeline(StandardScaler(),
                                                SelectPercentile(f_classif, percentile=k),
                                                og_model)
