@@ -133,12 +133,14 @@ class Visualization:
         directory = "output/importance"
         file_names = Memory.get_contents(directory)
         data = [(Memory.load(name, directory), name) for name in file_names if ".csv" in name]
-
-        for frame, name in data:
-            frame = frame.sort_values(by="mean absolute SHAP")
-            plt.barh(list(frame["meta-features"])[-15:], list(frame["mean absolute SHAP"])[-15:])
-            plt.yticks(list(frame["meta-features"])[-15:])
-            Memory.store_visual(plt, name[:-4], "importance")
+        frame = data[0][0].sort_values(by="PIMP")
+        for base_model in set(frame["base_model"]):
+            for imp in set(frame["importance_measure"]):
+                new_frame = frame[frame["base_model"] == base_model]
+                new_frame = new_frame[new_frame["importance_measure"] == imp]
+                plt.barh(list(new_frame["meta-features"])[-15:], list(new_frame["PIMP"])[-15:])
+                plt.yticks(list(new_frame["meta-features"])[-15:])
+                Memory.store_visual(plt, base_model + "x" + imp, "importance")
 
     @staticmethod
     def compare_means(data: List[Tuple[pd.DataFrame, str]], folder: str):
