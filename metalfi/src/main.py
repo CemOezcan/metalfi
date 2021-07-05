@@ -1,4 +1,7 @@
+import warnings
+warnings.filterwarnings("ignore", message="IPython could not be loaded!")
 import sys
+
 
 from metalfi.src.controller import Controller
 from metalfi.src.memory import Memory
@@ -29,27 +32,19 @@ class Main:
                 Whether to delete meta-models.
         """
         if delete_meta:
-            Memory.clear_directory(["input", "preprocessed", "output/runtime", "model", "features"])
+            Memory.clear_directory(["input", "preprocessed", "output/runtime", "model"])
         if delete_models:
-            Memory.clear_directory(["model", "features", "output/importance"])
+            Memory.clear_directory(["model", "output/importance"])
 
         c = Controller()
         c.train_meta_models()
         data = Memory.get_contents("model")
         c.estimate(data)
         c.meta_feature_importances()
-        c.compare_all()
         c.questions(data)
 
-        Visualization.performance()
-        Visualization.clean_up()
-        Visualization.runtime_boxplot(100000000, ["LOFO", "PIMP"], ["landmarking", "univariate", "data"], "fast")
-        Visualization.runtime_boxplot(100000000, ["LOFO"], ["multivariate"], "fast_multi")
-        Visualization.runtime_boxplot(100000000, ["SHAP", "LIME"], ["total"], "slow")
-        Visualization.runtime_graph("fast_graph")
         Visualization.create_histograms()
         Visualization.correlate_targets()
-        Visualization.correlate_metrics()
         Visualization.meta_feature_importance()
 
 

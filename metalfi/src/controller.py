@@ -32,6 +32,7 @@ class Controller:
 
     def __init__(self):
         self.__train_data = None
+        self.__test_data = None
         self.__data_names = None
         self.__meta_data = list()
         self.fetch_data()
@@ -41,8 +42,8 @@ class Controller:
         """
         Fetch base-data sets from openMl and scikit-learn
         """
-        open_ml = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.load_open_ml()]
-        self.__train_data = open_ml
+        self.__train_data = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.load_open_ml()]
+        self.__test_data = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.load_open_ml(large=True)]
         self.__data_names = dict({})
         i = 0
         for _, name in self.__train_data:
@@ -79,13 +80,11 @@ class Controller:
         meta_data = result.get_meta_data()
         name = result.get_name()
         d_times, t_times = result.get_times()
-        nr_feat, nr_inst = result.get_nrs()
-
+        del d_times["total"]
+        del t_times["total"]
+        d_times.update(t_times)
         Memory.store_input(meta_data, name)
-        Memory.store_data_frame(pd.DataFrame(data=d_times, index=["Time"], columns=[x for x in d_times]),
-                                name + "XmetaX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
-        Memory.store_data_frame(pd.DataFrame(data=t_times, index=["Time"], columns=[x for x in t_times]),
-                                name + "XtargetX" + str(nr_feat) + "X" + str(nr_inst), "runtime")
+        Memory.update_runtimes(d_times, name)
 
     def __load_meta_data(self):
         for _, name in self.__train_data:
@@ -100,27 +99,14 @@ class Controller:
             data_frame = pd.concat([X_d, X_f], axis=1)
             self.__meta_data.append((data_frame, name))
 
-    def __select_meta_features(self, meta_model_name="", memory=False):
+    def __select_meta_features(self, meta_model_name="", percentiles=[10]):
         # Selects features for meta-data with `meta_model_name` as test and all other meta-data sets as train
-        sets = None
-        if memory:
-            sets = Memory.load_meta_features()
+        data = [d for d, n in self.__meta_data if n != meta_model_name]
+        fs = MetaFeatureSelection(pd.concat(data))
+        sets = {}
 
-        if sets is None:
-            data = [d for d, n in self.__meta_data if n != meta_model_name]
-            fs = MetaFeatureSelection(pd.concat(data))
-            sets = {}
-
-            for meta_model, name, _ in Parameters.meta_models:
-                tree = (name == "RF")
-                percentiles = [10]
-                if memory:
-                    tree = False
-                    percentiles = [25]
-                sets[name] = fs.select(meta_model, f_regression, percentiles, k=5, tree=tree)
-
-        if memory:
-            Memory.store_meta_features(sets)
+        for meta_model, name, _ in Parameters.meta_models:
+            sets[name] = fs.select(meta_model, f_regression, percentiles, k=5)
 
         return sets
 
@@ -134,7 +120,7 @@ class Controller:
 
         parameters = [(
             pd.concat([x[0] for x in self.__meta_data if x[1] != test_name]),
-            test_name + "meta",
+            test_name,
             test_data,
             self.__train_data[self.__data_names[test_name]][0])
             for test_data, test_name in self.__meta_data
@@ -164,7 +150,7 @@ class Controller:
         """
         model = MetaModel(iterable)
         model.fit()
-        Memory.store_model(model, iterable[1][:-4])
+        Memory.store_model(model, iterable[1])
 
     @staticmethod
     def estimate(names: List[str]):
@@ -179,6 +165,7 @@ class Controller:
         """
         evaluation = Evaluation(names)
         evaluation.predictions()
+        evaluation.new_comparisons()
 
     @staticmethod
     def questions(names: List[str]):
@@ -207,7 +194,7 @@ class Controller:
         args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))
 
         m = MetaModel(args[0])
-        m.compare_all(self.__train_data[:7])
+        m.compare_all(self.__test_data)
         evaluation = Evaluation(["all"])
         evaluation.new_comparisons(m)
 
@@ -233,12 +220,9 @@ class Controller:
         """
         data = [d for d, _ in self.__meta_data]
         models = Parameters.meta_models
-        computed = list(map(lambda x: x[:-4], filter(lambda x: x.endswith(".csv"),
-                                                     Memory.get_contents("output/importance"))))
-
-        targets = list(filter(lambda x: x.endswith("_SHAP") and x not in computed, Parameters.targets))
+        targets = Parameters.targets
         importance = MetaFeatureSelection.meta_feature_importance(pd.concat(data), models, targets,
-                                                                  self.__select_meta_features(memory=True))
+                                                                  self.__select_meta_features(percentiles=[100]))
 
         meta_features = {}
         for target in targets:
@@ -246,6 +230,7 @@ class Controller:
             for data_frame in importance[target]:
                 meta_features[target].update(data_frame.index)
 
+        data_frames = list()
         for target in targets:
             this_target = {}
             index = []
@@ -260,7 +245,11 @@ class Controller:
                 this_meta_feature /= len(importance[target])
                 imp.append(this_meta_feature)
 
-            this_target["mean absolute SHAP"] = imp
-            data = pd.DataFrame(data=this_target, index=index, columns=["mean absolute SHAP"])
+            this_target["PIMP"] = imp
+            data = pd.DataFrame(data=this_target, index=index, columns=["PIMP"])
             data.index.name = "meta-features"
-            Memory.store_data_frame(data, target, "importance")
+            data["base_model"] = [target[:-5]] * len(index)
+            data["importance_measure"] = [target[-4:]] * len(index)
+            data_frames.append(data)
+
+        Memory.store_data_frame(pd.concat(data_frames), "all_importances", "importance")

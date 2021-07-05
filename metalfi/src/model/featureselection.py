@@ -1,4 +1,5 @@
 import multiprocessing as mp
+import warnings
 from statistics import mean
 from typing import Dict, List, Tuple
 
@@ -9,7 +10,7 @@ from sklearn.feature_selection import VarianceThreshold, SelectPercentile
 from sklearn.model_selection import cross_val_score
 import tqdm
 
-from metalfi.src.metadata.shap import ShapImportance
+from metalfi.src.metadata.permutation import PermutationImportance
 from metalfi.src.parameters import Parameters
 
 
@@ -152,17 +153,12 @@ class MetaFeatureSelection:
             SHAP-importance values
         """
         target, model, X, y, category = iterable
-        s = ShapImportance(None)
+        p = PermutationImportance(None)
+        warnings.filterwarnings("ignore", message="Liblinear failed to converge, increase the number of iterations.")
+        imp = p.regression_permutation_importance(model, X, y)
+        warnings.filterwarnings("default")
 
-        with s.ignore_progress_bars():
-            if category == "linear":
-                imp = s.linear_shap(model, X, y)
-            elif category == "tree":
-                imp = s.tree_regression_shap(model, X, y)
-            else:
-                imp = s.kernel_shap(model, X, y)
-
-        array = imp["Importances"].values
+        array = imp["Importance"].values
         array = list(np.interp(array, (array.min(), array.max()), (0, 1)))
 
         for i in range(len(imp.index)):

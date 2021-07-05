@@ -67,11 +67,14 @@ class MetaFeatures:
     @staticmethod
     def __run_pymfe(X: Union[DataFrame, np.ndarray], y: Union[DataFrame, np.ndarray], summary: Union[List[str], None],
                     features: List[str]) -> (List[str], List[str]):
-        warnings.filterwarnings("ignore", message="(It is not possible make equal discretization|(divide by zero|invalid value) encountered in .*|Can't summarize feature 'cor' with .*)")
+        warnings.filterwarnings("ignore", message="(It is not possible make equal discretization|"
+                                                  "(divide by zero|invalid value) encountered in .*|"
+                                                  "Can't summarize feature 'cor' with .*|"
+                                                  "Features.*|"
+                                                  "Input data for shapiro has range zero.*)")
         mfe = MFE(summary=summary, features=features)
         mfe.fit(X, y)
         vector = mfe.extract()
-        warnings.filterwarnings("default")
 
         return vector
 
@@ -138,12 +141,11 @@ class MetaFeatures:
         total_multi = end_multi - start_multi
 
         start_lm = time.time()
-        columns, values = self.__run_pymfe(X.values, y.values, None, ["joint_ent", "mut_inf", "var_importance"])
+        columns, values = self.__run_pymfe(X.values, y.values, None, ["joint_ent", "mut_inf"])
         for feature in X.columns:
             loc = X.columns.get_loc(feature)
             self.__feature_meta_features[loc].append(values[0][loc])
             self.__feature_meta_features[loc].append(values[1][loc])
-            self.__feature_meta_features[loc].append(values[2][loc])
 
         for column in columns:
             self.__feature_meta_feature_names.append("target_" + column)
@@ -191,7 +193,6 @@ class MetaFeatures:
         # TODO: Better solution
         f_values = list(map((lambda x: 500 if x == float("inf") else x), f_values))
         log_anova_p = list(map((lambda x: -500 if x == float("-inf") else x), [np.log(x) for x in anova_p_values]))
-        warnings.filterwarnings("default")
         log_anova_p = list(map((lambda x: 1 if math.isnan(x) else x), log_anova_p))
         log_chi2_p = [np.log(x) for x in chi2_p_values]
 
@@ -266,25 +267,10 @@ class MetaFeatures:
         shap = ShapImportance(self.__dataset)
         lime = LimeImportance(self.__dataset)
 
-        start_perm = time.time()
-        self.add_target(perm)
-        end_perm = time.time()
-        total_perm = end_perm - start_perm
-
-        start_dCol = time.time()
-        self.add_target(dCol)
-        end_dCol = time.time()
-        total_dCol = end_dCol - start_dCol
-
-        start_shap = time.time()
-        self.add_target(shap)
-        end_shap = time.time()
-        total_shap = end_shap - start_shap
-
-        start_lime = time.time()
-        self.add_target(lime)
-        end_lime = time.time()
-        total_lime = end_lime - start_lime
+        total_perm = self.add_target(perm)
+        total_dCol = self.add_target(dCol)
+        total_shap = self.add_target(shap)
+        total_lime = self.add_target(lime)
 
         return self.__targets, total_dCol, total_perm, total_lime, total_shap
 
@@ -296,6 +282,7 @@ class MetaFeatures:
         ----------
         target : The underlying feature importance measure.
         """
+        start = time.time()
         target.calculate_scores()
         imp = target.get_feature_importances()
         name = target.get_name()
@@ -308,6 +295,9 @@ class MetaFeatures:
                 self.__meta_data.at[x, target.get_model_names()[i] + name] = imp[i].loc[x].iat[0]
 
         self.__targets = self.__targets + target_names
+        end = time.time()
+        total = end - start
+        return total
 
     def __symmetrical_uncertainty(self, X: DataFrame, y: DataFrame, matrix=False) -> Union[float, DataFrame]:
         if matrix:

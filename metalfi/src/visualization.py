@@ -20,6 +20,7 @@ class Visualization:
 
     @staticmethod
     def fetch_runtime_data(substring, threshold: int = 1000000):
+        # Deprecated
         directory = "output/runtime"
         file_names = list(filter(lambda x: x.endswith('.csv') and substring in x, Memory.get_contents(directory)))
         data = list()
@@ -49,6 +50,7 @@ class Visualization:
 
     @staticmethod
     def runtime_graph(name):
+        # Deprecated
         target_data = Visualization.fetch_runtime_data("XtargetX")
         meta_data = Visualization.fetch_runtime_data("XmetaX")
         for x in target_data:
@@ -67,6 +69,7 @@ class Visualization:
 
     @staticmethod
     def runtime_boxplot(threshold, targets, meta, name):
+        # Deprecated
         target_data = Visualization.fetch_runtime_data("XtargetX", threshold)
         meta_data = Visualization.fetch_runtime_data("XmetaX", threshold)
 
@@ -91,29 +94,27 @@ class Visualization:
         Memory.store_visual(plt, name + "_box", "runtime")
 
     @staticmethod
-    def performance():
+    def performance(data):
         """
         Create and save bar charts. Visualizes the performances of different feature selection approaches.
         """
-        directory = "output/selection"
-        file_names = list(filter(lambda x: x.endswith(".csv") and "_" not in x, Memory.get_contents(directory)))
-        data = [(Memory.load(name, directory).set_index("Index"), name) for name in file_names]
-
         for frame, name in data:
-            width = 0.2
+            width = 0.1
             _, ax = plt.subplots()
 
             anova = frame.loc["ANOVA"].values
             mi = frame.loc["MI"].values
-            #fi = frame.loc["FI"].values
+            pimp = frame.loc["PIMP"].values
+            baseline = frame.loc["Baseline"].values
             meta = frame.loc["MetaLFI"].values
 
             x = np.arange(len(anova))
 
-            ax.bar(x - 1.5 * width, anova, width, label="ANOVA")
-            ax.bar(x - width / 2, mi, width, label="MI")
-            #ax.bar(x + width / 2, fi, width, label="FI")
-            ax.bar(x + 1.5 * width, meta, width, label="MetaLFI")
+            ax.bar(x - 2 * width, anova, width, label="ANOVA")
+            ax.bar(x - width, mi, width, label="MI")
+            ax.bar(x, pimp, width, label="PIMP")
+            ax.bar(x + width, baseline, width, label="Baseline")
+            ax.bar(x + 2 * width, meta, width, label="MetaLFI")
 
             ax.set_ylabel("Acc. Scores")
             ax.set_yticks([0.55, 0.6, 0.65, 0.7, 0.75, 0.775, 0.8, 0.825, 0.85])
@@ -122,7 +123,7 @@ class Visualization:
             ax.legend()
             plt.ylim([0.5, 0.85])
 
-            Memory.store_visual(plt, name[:-4], "selection")
+            Memory.store_visual(plt, name, "selection")
 
     @staticmethod
     def meta_feature_importance():
@@ -132,12 +133,14 @@ class Visualization:
         directory = "output/importance"
         file_names = Memory.get_contents(directory)
         data = [(Memory.load(name, directory), name) for name in file_names if ".csv" in name]
-
-        for frame, name in data:
-            frame = frame.sort_values(by="mean absolute SHAP")
-            plt.barh(list(frame["meta-features"])[-15:], list(frame["mean absolute SHAP"])[-15:])
-            plt.yticks(list(frame["meta-features"])[-15:])
-            Memory.store_visual(plt, name[:-4], "importance")
+        frame = data[0][0].sort_values(by="PIMP")
+        for base_model in set(frame["base_model"]):
+            for imp in set(frame["importance_measure"]):
+                new_frame = frame[frame["base_model"] == base_model]
+                new_frame = new_frame[new_frame["importance_measure"] == imp]
+                plt.barh(list(new_frame["meta-features"])[-15:], list(new_frame["PIMP"])[-15:])
+                plt.yticks(list(new_frame["meta-features"])[-15:])
+                Memory.store_visual(plt, base_model + "x" + imp, "importance")
 
     @staticmethod
     def compare_means(data: List[Tuple[pd.DataFrame, str]], folder: str):
@@ -258,7 +261,7 @@ class Visualization:
         d = {'lofo': [__f(lofo), __f_2(lofo)], 'shap': [__f(shap), __f_2(shap)],
              'lime': [__f(lime), __f_2(lime)], 'pimp': [__f(pimp), __f_2(pimp)]}
         data_frame = pd.DataFrame(data=d, index=["mean", "max"], columns=["lofo", "shap", "lime", "pimp"])
-        Memory.store_data_frame(data_frame, "target_corr", "", True)
+        Memory.store_data_frame(data_frame, "target_corr", "tables", True)
 
     @staticmethod
     def create_histograms():
@@ -291,31 +294,4 @@ class Visualization:
             axs[x, y].set_title(name)
             axs[x, y].set_xlim(np.quantile(values, 0.05), np.quantile(values, 0.75))
 
-        Memory.store_visual(plt, "Histograms", "")
-
-    @staticmethod
-    def clean_up():
-        directory = "output/predictions"
-        file_names = list(filter(lambda x: "x" in x and x.endswith(".csv"), Memory.get_contents(directory)))
-        data = list()
-
-        for name in file_names:
-            file = Memory.load(name, directory)
-            data.append((file, name))
-
-        for data_frame, name in data:
-            for i in range(len(data_frame.index)):
-                for j in range(1, len(data_frame.columns)):
-                    string = str(data_frame.iloc[i].iloc[j])
-                    if abs(data_frame.iloc[i].iloc[j]) > 10:
-                        d = '%.2e' % Decimal(string)
-                        data_frame.iloc[i, j] = d
-                    elif "e" in string:
-                        match = re.split(r'e', string)
-                        match[0] = str(round(float(match[0]), 2))
-                        data_frame.iloc[i, j] = float(match[0] + "e" + match[1])
-                    else:
-                        data_frame.iloc[i, j] = round(data_frame.iloc[i].iloc[j], 3)
-
-            data_frame = data_frame.set_index("Index")
-            Memory.store_data_frame(data_frame, name[:-4], "predictions", True)
+        Memory.store_visual(plt, "Histograms", "tables")

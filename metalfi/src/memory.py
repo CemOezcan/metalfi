@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import multiprocessing as mp
 import pickle
 from typing import List, Tuple
 
@@ -13,7 +14,13 @@ from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, LabelEncoder
 class Memory:
     """
     Provides methods for saving and loading data and files from the metalfi/data directory.
+
+    Global variables
+    ----------
+        lock : (Lock)
+            Mutex lock.
     """
+    lock = mp.Lock()
 
     @staticmethod
     def load(name: str, directory) -> pd.DataFrame:
@@ -30,10 +37,12 @@ class Memory:
             The .csv file as :py:object:`DataFrame` object.
         """
         path = Memory.get_path()
-        return pd.read_csv(path / (directory + "/" + name))
+        if directory != "":
+            directory += "/"
+        return pd.read_csv(path / (directory + name))
 
     @staticmethod
-    def load_open_ml() -> List[Tuple[pd.DataFrame, str, str]]:
+    def load_open_ml(large=False) -> List[Tuple[pd.DataFrame, str, str]]:
         """
         Fetch and preprocess base-data sets from openML:
         Criteria:
@@ -53,16 +62,24 @@ class Memory:
         """
         openml_list = openml.datasets.list_datasets()
         data = pd.DataFrame.from_dict(openml_list, orient="index")
-        data = data[data['NumberOfInstances'] < 501]
-        data = data[data['NumberOfFeatures'] < 11]
-        data = data[data['NumberOfFeatures'] > 4]
+        space = "_"
+        if large:
+            data = data[data['NumberOfInstances'] > 999]
+            data = data[data['NumberOfInstances'] < 2001]
+            data = data[data['NumberOfFeatures'] < 51]
+            data = data[data['NumberOfFeatures'] > 20]
+            space = "_comp_"
+        else:
+            data = data[data['NumberOfInstances'] < 501]
+            data = data[data['NumberOfFeatures'] < 11]
+            data = data[data['NumberOfFeatures'] > 4]
         data = data[data['NumberOfClasses'] == 2]
         data = data[(data["MajorityClassSize"] / data['NumberOfInstances']) < 0.67]
         data = data[data['NumberOfMissingValues'] == 0].sort_values(["version"])
         data = data.drop_duplicates("name", "last")
 
         target = "base-target_variable"
-        ids = list(filter(lambda x: str(x[0]) + "_" + str(x[1]) + ".csv" not in Memory.get_contents("preprocessed"),
+        ids = list(filter(lambda x: str(x[0]) + space + str(x[1]) + ".csv" not in Memory.get_contents("preprocessed"),
                           [tuple(x) for x in data[["name", "version"]].values]))
 
         for name, version in ids:
@@ -112,9 +129,10 @@ class Memory:
                 ids.remove((name, version))
                 continue
 
-            Memory.store_preprocessed(data_frame, name + "_" + str(version))
-
-        return [(Memory.load(file, "preprocessed"), file[:-4], target) for file in Memory.get_contents("preprocessed")]
+            Memory.store_preprocessed(data_frame, name + space + str(version))
+        return list(filter(lambda x: (space in x[1] and large) or ("_comp_" not in x[1] and not large),
+                           [(Memory.load(file, "preprocessed"), file[:-4], target)
+                            for file in Memory.get_contents("preprocessed")]))
 
     @staticmethod
     def store_meta_features(data):
@@ -160,7 +178,7 @@ class Memory:
             name : Name of the pickle-file.
         """
         path = Memory.get_path() / ("model/" + name)
-        data = (model.get_meta_models(), model.get_stats())
+        data = (model.get_meta_models(), model.get_stats(), model.get_result_config(), model.get_results())
         if not path.is_file():
             with open(path, 'wb') as file:
                 pickle.dump(data, file)
@@ -220,17 +238,32 @@ class Memory:
             data.to_csv(path, header=True)
 
     @staticmethod
+    def update_runtimes(data, index):
+        Memory.lock.acquire()
+        try:
+            try:
+                runtimes = Memory.load("runtimes.csv", "output/runtime").set_index("Index")
+            except (FileNotFoundError, KeyError):
+                Memory.store_data_frame(pd.DataFrame(), "runtimes", "runtime")
+                runtimes = pd.DataFrame()
+
+            runtimes.drop([index], inplace=True, errors="ignore")
+            Memory.store_data_frame(runtimes.append(pd.DataFrame(data=data, index=[index])), "runtimes", "runtime")
+        finally:
+            Memory.lock.release()
+
+    @staticmethod
     def store_visual(plt, name, directory):
         """
-        Save `plt` as .png file in a subdirectory of metalfi/data.
+        Save `plt` as .pdf file in a subdirectory of metalfi/data.
 
         Parameters
         ----------
             plt : Matplotlib-plot.
-            name : Name of the .png file.
+            name : Name of the .pdf file.
             directory : Subdirectory of metalfi/data.
         """
-        plt.savefig(Memory.get_path() / ("output/" + directory + "/" + name + ".png"))
+        plt.savefig(Memory.get_path() / ("output/" + directory + "/" + name + ".pdf"))
         plt.close()
 
     @staticmethod

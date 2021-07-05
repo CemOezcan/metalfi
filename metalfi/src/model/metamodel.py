@@ -134,7 +134,7 @@ class MetaModel:
                     warnings.filterwarnings("default")
                     feature_set_name = self.__meta_feature_groups.get(i)
 
-                    self.__meta_models.append((None, selected_features,
+                    self.__meta_models.append((deepcopy(model), selected_features,
                                                [base_model_name, target, feature_set_name]))
                     X_test = X_2[selected_features]
                     y_test = self.__test_data[target]
@@ -143,6 +143,15 @@ class MetaModel:
                     self.__stats.append(Parameters.calculate_metrics(y_test=y_test, y_pred=y_pred))
 
                     i -= -1
+
+        results = self.parallel_comparisons((self.__og_X, self.__og_y, self.__file_name))
+
+        all_res = {list(results.keys())[0]: results[list(results.keys())[0]]}
+        sum_up = lambda x: x[0] if len(x) == 1 else Evaluation.matrix_addition(x[0], sum_up(x[1:]))
+        #self.__result_configurations += [config for (_, _, config) in self.__meta_models]
+        self.__results = {key: [list(map(lambda x: x / 5, result)) for result in sum_up(all_res[key])]
+                          for key in all_res.keys()}
+        self.__meta_models = [(None, feat, config) for model, feat, config in self.__meta_models]
 
     def __feature_selection(self, name: str, X_train: DataFrame, target_name: str) -> Tuple[DataFrame, List[str]]:
         features = self.__selected[name][target_name]
@@ -202,39 +211,59 @@ class MetaModel:
     def parallel_comparisons(self, args):
         k = 33
         meta_target_names = [x for x in Parameters.targets if "SHAP" in x]
+        used_models = [(model, features, config) for model, features, config in self.__meta_models if config[1] in meta_target_names]
+        self.__result_configurations = [config for (_, _, config) in used_models]
         X_test, y_test, name = args
 
         anova_scores = {name: dict()}
         mi_scores = {name: dict()}
+        pimp_scores = {name: dict()}
+        baseline_scores = {name: dict()}
         all_res = {name: dict()}
 
         results = list()
         for X_tr, X_te, y_tr, y_te in self.__get_cross_validation_folds(X_test, y_test):
+            warnings.filterwarnings("ignore", category=DeprecationWarning, message="Using.*")
+            warnings.filterwarnings("ignore", message="(invalid value.*|"
+                                                      "Features.*|"
+                                                      "Input data for shapiro has range zero.*)")
             results.append(list())
-            mf = MetaFeatures(Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target"))
+            dataset = Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target")
+            mf = MetaFeatures(dataset)
             mf.calculate_meta_features()
+
             X_m = DataFrame(data=self.__sc1.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
+            mf.add_target(PermutationImportance(dataset))
 
             warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
+            warnings.filterwarnings("ignore", message="(invalid value.*|"
+                                                      "Features.*|"
+                                                      "Input data for shapiro has range zero.*)")
             for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
                 pipeline_anova = make_pipeline(StandardScaler(),
                                                SelectPercentile(f_classif, percentile=k),
                                                og_model)
                 pipeline_mi = make_pipeline(StandardScaler(),
-                                            SelectPercentile(mutual_info_classif, percentile=k),
+                                            SelectPercentile(partial(mutual_info_classif, random_state=115), percentile=k),
                                             og_model)
+                pipeline_pimp = make_pipeline(StandardScaler(),
+                                              SelectPercentile(lambda x, y: np.asarray(mf.get_meta_data()[n + "_PIMP"]), percentile=k),
+                                              og_model)
+                pipeline_baseline = make_pipeline(StandardScaler(), og_model)
 
                 anova_scores[name][n] = pipeline_anova.fit(X_tr, y_tr).score(X_te, y_te)
                 mi_scores[name][n] = pipeline_mi.fit(X_tr, y_tr).score(X_te, y_te)
-
-            for model, features, config in self.__meta_models:
+                pimp_scores[name][n] = pipeline_pimp.fit(X_tr, y_tr).score(X_te, y_te)
+                baseline_scores[name][n] = pipeline_baseline.fit(X_tr, y_tr).score(X_te, y_te)
+            for model, features, config in used_models:
                 pipeline_metalfi = make_pipeline(StandardScaler(),
                                                  SelectPercentile(lambda x, y: model.predict(X_m[features]),
                                                                   percentile=k),
                                                  self.__get_original_model(config[1]))
 
                 metalfi = pipeline_metalfi.fit(X_tr, y_tr).score(X_te, y_te)
-                results[-1].append([anova_scores[name][config[1][:-5]], mi_scores[name][config[1][:-5]], metalfi])
+                results[-1].append([anova_scores[name][config[1][:-5]], mi_scores[name][config[1][:-5]],
+                                    pimp_scores[name][config[1][:-5]], baseline_scores[name][config[1][:-5]], metalfi])
 
             warnings.filterwarnings("default")
 
@@ -327,7 +356,7 @@ class MetaModel:
 
             selector_anova = SelectPercentile(f_classif, percentile=k)
             selector_anova.fit(X_train, y_train)
-            selector_mi = SelectPercentile(mutual_info_classif, percentile=k)
+            selector_mi = SelectPercentile(partial(mutual_info_classif, random_state=115), percentile=k)
             selector_mi.fit(X_train, y_train)
 
             X_anova_train = selector_anova.transform(X_train)
@@ -414,6 +443,6 @@ class MetaModel:
 
         folds = list()
         for train_index, test_index in kf.split(X, y):
-            folds.append((X_temp[train_index], X_temp[test_index], y_temp[train_index], y_temp[test_index]))
+            folds.append((DataFrame(X_temp[train_index], columns=X.columns), DataFrame(X_temp[test_index], columns=X.columns), y_temp[train_index], y_temp[test_index]))
 
         return folds

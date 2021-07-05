@@ -1,3 +1,4 @@
+from decimal import Decimal
 from functools import partial
 import multiprocessing as mp
 import re
@@ -83,7 +84,7 @@ class Evaluation:
         (across cross validation splits) are significant. Visualize the results.
         """
         directory = "output/predictions"
-        file_names = list(filter(lambda x: "x" not in x and x.endswith(".csv"), Memory.get_contents(directory)))
+        file_names = list(filter(lambda x: "x" not in x and "long" not in x and x.endswith(".csv"), Memory.get_contents(directory)))
 
         data = {name[:-4]: Memory.load(name, directory) for name in file_names}
         pattern = re.compile(r"\$(?P<meta>.+)\_\{(?P<features>.+)\}\((?P<target>.+)\)\$")
@@ -301,13 +302,29 @@ class Evaluation:
 
             all_results[metric_name] = metric
 
-        for metric in all_results:
-            for importance in all_results[metric]:
-                data_frame = DataFrame(data=all_results[metric][importance], index=rows,
-                                       columns=[x for x in all_results[metric][importance]])
-                Memory.store_data_frame(data_frame.round(3), metric + "x" + importance, "predictions")
-
+        self.create_tables(all_results, rows)
         self.__store_all_results(results)
+
+    @staticmethod
+    def create_tables(results, rows):
+        for metric in results:
+            for importance in results[metric]:
+                data_frame = DataFrame(data=results[metric][importance], index=rows,
+                                       columns=[x for x in results[metric][importance]]).round(3)
+                for i in range(len(data_frame.index)):
+                    for j in range(len(data_frame.columns)):
+                        string = str(data_frame.iloc[i].iloc[j])
+                        if abs(data_frame.iloc[i].iloc[j]) > 10:
+                            d = '%.2e' % Decimal(string)
+                            data_frame.iloc[i, j] = d
+                        elif "e" in string:
+                            match = re.split(r'e', string)
+                            match[0] = str(round(float(match[0]), 2))
+                            data_frame.iloc[i, j] = float(match[0] + "e" + match[1])
+                        else:
+                            data_frame.iloc[i, j] = round(data_frame.iloc[i].iloc[j], 3)
+
+                Memory.store_data_frame(data_frame, metric + "x" + importance, "tables", True)
 
     @staticmethod
     def parallel_comparisons(name: str, models: List[str], targets: List[str], subsets: List[str], renew: bool) \
@@ -329,12 +346,26 @@ class Evaluation:
 
         """
         model, _ = Memory.load_model([name])[0]
-        model.compare(models, targets, subsets, 33, renew)
-        results = model.get_results()
-        Memory.renew_model(model, model.get_name()[:-4])
+        # model.compare(models, targets, subsets, 33, renew)
+        results = model.get_results()[name]
+        # Memory.renew_model(model, model.get_name()[:-4])
         return results
 
     def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]):
+        data = {key: list() for key in ["base_data_set", "meta_model", "meta_features", "base_model", "importance_measure", "r^2"]}
+        for i in range(len(self.__meta_models)):
+            base_data_set = self.__meta_models[i]
+            for j in range(len(self.__config)):
+                meta, target, features = self.__config[j]
+                data["base_data_set"].append(base_data_set)
+                data["meta_model"].append(meta)
+                data["meta_features"].append(features)
+                data["base_model"].append(target[:-5])
+                data["importance_measure"].append(target[-4:])
+                data["r^2"].append(results[i][0][j][0])
+
+        Memory.store_data_frame(DataFrame(data=data), "longPred", "predictions")
+
         columns = ["$" + meta + "_{" + features + "}(" + target + ")$" for meta, target, features in self.__config]
         index = self.__meta_models
 
@@ -342,22 +373,35 @@ class Evaluation:
             data = [tuple(map((lambda x: x[metric_idx]), results[i][0])) for i in range(len(index))]
             Memory.store_data_frame(DataFrame(data, columns=columns, index=index), metric_name, "predictions")
 
-    def new_comparisons(self, model):
-        rows = ["ANOVA", "MI", "MetaLFI"]
-        meta_models, _, subsets = Parameters.question_5_parameters()
-        self.__meta_models = list()
-        results = list()
-        comps = model.get_results()
+    @staticmethod
+    def new_parallel_comparisons(model):
+        data = Memory.load_model([model])[0][0][3]
+        key = list(data.keys())[0]
+        return data[key]
 
-        for key in comps:
-            results.append(comps[key])
-            self.__meta_models.append(key)
+    def new_comparisons(self):
+        rows = ["ANOVA", "MI", "PIMP", "Baseline", "MetaLFI"]
+        meta_models, _, subsets = Parameters.question_5_parameters()
+        with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
+            progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
+            results = [
+                pool.map_async(
+                    self.new_parallel_comparisons,
+                    (meta_model, ),
+                    callback=(lambda x: progress_bar.update(n=1)))
+                for meta_model in self.__meta_models]
+
+            results = [x.get()[0] for x in results]
+            pool.close()
+            pool.join()
+
+        progress_bar.close()
 
         for result in results:
             self.__comparisons = self.matrix_addition(self.__comparisons, result)
 
         self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
-        self.__parameters = model.get_result_config()
+        self.__parameters = Memory.load_model([self.__meta_models[0]])[0][0][2]
 
         all_results = {}
         for _, model, _ in filter(lambda x: x[1] in meta_models, Parameters.meta_models):
@@ -377,13 +421,18 @@ class Evaluation:
 
             all_results[model] = this_model
 
-        for model in all_results:
-            for subset in subsets:
-                Memory.store_data_frame(DataFrame(data=all_results[model][subset], index=rows,
-                                                  columns=[x for x in all_results[model][subset]]),
-                                        model + " x " + subset, "selection", True)
-
+        self.plot_accuracies(all_results, rows)
         self.__store_all_comparisons(results, rows, "all_comparisons")
+
+    @staticmethod
+    def plot_accuracies(results, rows):
+        data = list()
+        for model in results:
+            for subset in results[model]:
+                data.append((DataFrame(data=results[model][subset], index=rows,
+                                       columns=[x for x in results[model][subset]]), model + " x " + subset))
+        Visualization.performance(data)
+
 
     def comparisons(self, models: List[str], targets: List[str], subsets: List[str], renew=False):
         """
@@ -440,6 +489,21 @@ class Evaluation:
         self.__store_all_comparisons(results, rows, "all_comparisons")
 
     def __store_all_comparisons(self, results: List[List[List[float]]], rows: List[str], name: str):
+        data = {key: list() for key in ["base_data_set", "meta_model", "meta_features", "feature_selection_approach",
+                                        "base_model", "importance_measure", "accuracy"]}
+        for i in range(len(self.__parameters)):
+            for j in range(len(rows)):
+                for k in range(len(self.__meta_models)):
+                    data["base_data_set"].append(self.__meta_models[k])
+                    data["meta_model"].append(self.__parameters[i][0])
+                    data["meta_features"].append(self.__parameters[i][2])
+                    data["feature_selection_approach"].append(rows[j])
+                    data["base_model"].append(self.__parameters[i][1][:-5])
+                    data["importance_measure"].append(self.__parameters[i][1][-4:])
+                    data["accuracy"].append(results[k][i][j])
+
+        Memory.store_data_frame(DataFrame(data=data), "longComps", "selection")
+
         data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2]
                 + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": list(map(lambda x: x[i][j], results))
                 for i in range(len(self.__parameters)) for j in range(len(rows))}
