@@ -69,6 +69,7 @@ class MetaModel:
         self.__meta_models = list()
         self.__stats = list()
         self.__results = list()
+        self.__times = list()
         self.__result_configurations = list()
         self.__was_compared = False
 
@@ -111,6 +112,9 @@ class MetaModel:
     def get_results(self):
         return self.__results
 
+    def get_times(self):
+        return self.__times
+
     def get_result_config(self):
         return self.__result_configurations
 
@@ -144,13 +148,15 @@ class MetaModel:
 
                     i -= -1
 
-        results = self.parallel_comparisons((self.__og_X, self.__og_y, self.__file_name))
+        results, times = self.parallel_comparisons((self.__og_X, self.__og_y, self.__file_name))
 
         all_res = {list(results.keys())[0]: results[list(results.keys())[0]]}
+        all_times = {list(times.keys())[0]: times[list(times.keys())[0]]}
         sum_up = lambda x: x[0] if len(x) == 1 else Evaluation.matrix_addition(x[0], sum_up(x[1:]))
-        #self.__result_configurations += [config for (_, _, config) in self.__meta_models]
         self.__results = {key: [list(map(lambda x: x / 5, result)) for result in sum_up(all_res[key])]
                           for key in all_res.keys()}
+        self.__times = {key: [list(map(lambda x: x / 5, result)) for result in sum_up(all_times[key])]
+                        for key in all_times.keys()}
         self.__meta_models = [(None, feat, config) for model, feat, config in self.__meta_models]
 
     def __feature_selection(self, name: str, X_train: DataFrame, target_name: str) -> Tuple[DataFrame, List[str]]:
@@ -221,24 +227,38 @@ class MetaModel:
         baseline_scores = {name: dict()}
         all_res = {name: dict()}
 
+        anova_times = {name: dict()}
+        mi_times = {name: dict()}
+        pimp_times = {name: dict()}
+        all_times = {name: dict()}
+
         results = list()
+        times = list()
         for X_tr, X_te, y_tr, y_te in self.__get_cross_validation_folds(X_test, y_test):
             warnings.filterwarnings("ignore", category=DeprecationWarning, message="Using.*")
             warnings.filterwarnings("ignore", message="(invalid value.*|"
                                                       "Features.*|"
                                                       "Input data for shapiro has range zero.*)")
             results.append(list())
+            times.append(list())
             dataset = Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target")
             mf = MetaFeatures(dataset)
-            mf.calculate_meta_features()
+            metalfi_time_tuple = mf.calculate_meta_features()
+            metalfi_time = {"Auto": sum(metalfi_time_tuple[2:]), "All": sum(metalfi_time_tuple),
+                            "FMF": sum(metalfi_time_tuple[1:]), "LM": metalfi_time_tuple[3],
+                            "Multi": metalfi_time_tuple[2], "Uni": metalfi_time_tuple[1]}
 
             X_m = DataFrame(data=self.__sc1.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
-            mf.add_target(PermutationImportance(dataset))
+            pimp_time = mf.add_target(PermutationImportance(dataset)) # TODO: Modify: Return Dict[str, float], keys are base-models
 
             warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
             warnings.filterwarnings("ignore", message="(invalid value.*|"
                                                       "Features.*|"
                                                       "Input data for shapiro has range zero.*)")
+
+            anova_time = self.measure_time(f_classif, X_tr, y_tr)
+            mi_time = self.measure_time(partial(mutual_info_classif, random_state=115), X_tr, y_tr)
+
             for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
                 pipeline_anova = make_pipeline(StandardScaler(),
                                                SelectPercentile(f_classif, percentile=k),
@@ -255,7 +275,12 @@ class MetaModel:
                 mi_scores[name][n] = pipeline_mi.fit(X_tr, y_tr).score(X_te, y_te)
                 pimp_scores[name][n] = pipeline_pimp.fit(X_tr, y_tr).score(X_te, y_te)
                 baseline_scores[name][n] = pipeline_baseline.fit(X_tr, y_tr).score(X_te, y_te)
+
+                anova_times[name][n] = anova_time
+                mi_times[name][n] = mi_time
+                pimp_times[name][n] = pimp_time / 6 # pimp_time[n]
             for model, features, config in used_models:
+                metalfi_prediction_time = self.measure_time(lambda x, y: model.predict(x), X_m[features], None)
                 pipeline_metalfi = make_pipeline(StandardScaler(),
                                                  SelectPercentile(lambda x, y: model.predict(X_m[features]),
                                                                   percentile=k),
@@ -263,12 +288,23 @@ class MetaModel:
 
                 metalfi = pipeline_metalfi.fit(X_tr, y_tr).score(X_te, y_te)
                 results[-1].append([anova_scores[name][config[1][:-5]], mi_scores[name][config[1][:-5]],
-                                    pimp_scores[name][config[1][:-5]], baseline_scores[name][config[1][:-5]], metalfi])
+                                    pimp_scores[name][config[1][:-5]], metalfi, baseline_scores[name][config[1][:-5]]])
+
+                times[-1].append([anova_times[name][config[1][:-5]], mi_times[name][config[1][:-5]],
+                                  pimp_times[name][config[1][:-5]], metalfi_prediction_time + metalfi_time[config[2]]])
 
             warnings.filterwarnings("default")
 
         all_res[name] = results
-        return all_res
+        all_times[name] = times
+        return all_res, all_times
+
+    @staticmethod
+    def measure_time(func, X, y):
+        start = time.time()
+        func(X, y)
+        end = time.time()
+        return end - start
 
     def compare_all(self, test_data: List[Tuple[Dataset, str]]):
         # TODO:
