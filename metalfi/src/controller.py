@@ -99,14 +99,14 @@ class Controller:
             data_frame = pd.concat([X_d, X_f], axis=1)
             self.__meta_data.append((data_frame, name))
 
-    def __select_meta_features(self, meta_model_name=""):
+    def __select_meta_features(self, meta_model_name="", percentiles=[10]):
         # Selects features for meta-data with `meta_model_name` as test and all other meta-data sets as train
         data = [d for d, n in self.__meta_data if n != meta_model_name]
         fs = MetaFeatureSelection(pd.concat(data))
         sets = {}
 
         for meta_model, name, _ in Parameters.meta_models:
-            sets[name] = fs.select(meta_model, f_regression, [10], k=5)
+            sets[name] = fs.select(meta_model, f_regression, percentiles, k=5)
 
         return sets
 
@@ -220,12 +220,9 @@ class Controller:
         """
         data = [d for d, _ in self.__meta_data]
         models = Parameters.meta_models
-        computed = list(map(lambda x: x[:-4], filter(lambda x: x.endswith(".csv"),
-                                                     Memory.get_contents("output/importance"))))
-
-        targets = list(filter(lambda x: x.endswith("_SHAP") and x not in computed, Parameters.targets))
+        targets = Parameters.targets
         importance = MetaFeatureSelection.meta_feature_importance(pd.concat(data), models, targets,
-                                                                  self.__select_meta_features())
+                                                                  self.__select_meta_features(percentiles=[100]))
 
         meta_features = {}
         for target in targets:
@@ -233,6 +230,7 @@ class Controller:
             for data_frame in importance[target]:
                 meta_features[target].update(data_frame.index)
 
+        data_frames = list()
         for target in targets:
             this_target = {}
             index = []
@@ -247,7 +245,11 @@ class Controller:
                 this_meta_feature /= len(importance[target])
                 imp.append(this_meta_feature)
 
-            this_target["mean absolute SHAP"] = imp
-            data = pd.DataFrame(data=this_target, index=index, columns=["mean absolute SHAP"])
+            this_target["PIMP"] = imp
+            data = pd.DataFrame(data=this_target, index=index, columns=["PIMP"])
             data.index.name = "meta-features"
-            Memory.store_data_frame(data, target, "importance")
+            data["base_model"] = [target[:-5]] * len(index)
+            data["importance_measure"] = [target[-4:]] * len(index)
+            data_frames.append(data)
+
+        Memory.store_data_frame(pd.concat(data_frames), "all_importances", "importance")
