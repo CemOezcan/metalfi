@@ -37,6 +37,7 @@ class Evaluation:
         self.__config = list()
 
         self.__comparisons = list()
+        self.__comparison_times = list()
         self.__parameters = list()
 
     @staticmethod
@@ -375,12 +376,14 @@ class Evaluation:
 
     @staticmethod
     def new_parallel_comparisons(model):
-        data = Memory.load_model([model])[0][0][3]
-        key = list(data.keys())[0]
-        return data[key]
+        data = Memory.load_model([model])
+        results = data[0][0][3]
+        times = data[0][0][4]
+        key = list(results.keys())[0]
+        return results[key], times[key]
 
     def new_comparisons(self):
-        rows = ["ANOVA", "MI", "PIMP", "Baseline", "MetaLFI"]
+        rows = ["ANOVA", "MI", "PIMP", "MetaLFI", "Baseline"]
         meta_models, _, subsets = Parameters.question_5_parameters()
         with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
@@ -397,10 +400,12 @@ class Evaluation:
 
         progress_bar.close()
 
-        for result in results:
+        for result, time in results:
             self.__comparisons = self.matrix_addition(self.__comparisons, result)
+            self.__comparison_times = self.matrix_addition(self.__comparison_times, time)
 
         self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
+        self.__comparison_times = [list(map(lambda x: x / len(self.__meta_models), time)) for time in self.__comparison_times]
         self.__parameters = Memory.load_model([self.__meta_models[0]])[0][0][2]
 
         all_results = {}
@@ -421,8 +426,9 @@ class Evaluation:
 
             all_results[model] = this_model
 
+        # TODO: change
         self.plot_accuracies(all_results, rows)
-        self.__store_all_comparisons(results, rows, "all_comparisons")
+        self.__store_all_comparisons([result for result, _ in results], [time for _, time in results], rows, "all_comparisons")
 
     @staticmethod
     def plot_accuracies(results, rows):
@@ -488,9 +494,9 @@ class Evaluation:
 
         self.__store_all_comparisons(results, rows, "all_comparisons")
 
-    def __store_all_comparisons(self, results: List[List[List[float]]], rows: List[str], name: str):
+    def __store_all_comparisons(self, results: List[List[List[float]]], times: List[List[List[float]]], rows: List[str], name: str):
         data = {key: list() for key in ["base_data_set", "meta_model", "meta_features", "feature_selection_approach",
-                                        "base_model", "importance_measure", "accuracy"]}
+                                        "base_model", "importance_measure", "accuracy", "time"]}
         for i in range(len(self.__parameters)):
             for j in range(len(rows)):
                 for k in range(len(self.__meta_models)):
@@ -501,6 +507,10 @@ class Evaluation:
                     data["base_model"].append(self.__parameters[i][1][:-5])
                     data["importance_measure"].append(self.__parameters[i][1][-4:])
                     data["accuracy"].append(results[k][i][j])
+                    if j != 4:
+                        data["time"].append(times[k][i][j])
+                    else:
+                        data["time"].append(0)
 
         Memory.store_data_frame(DataFrame(data=data), "longComps", "selection")
 
