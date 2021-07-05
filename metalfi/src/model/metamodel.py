@@ -279,7 +279,7 @@ class MetaModel:
                 anova_times[name][n] = anova_time
                 mi_times[name][n] = mi_time
                 pimp_times[name][n] = self.measure_time(partial(PermutationImportance.data_permutation_importance,
-                                                                model=og_model), X_tr, y_tr)
+                                                                og_model), X_tr, y_tr)
 
             for model, features, config in used_models:
                 metalfi_prediction_time = self.measure_time(lambda x, y: model.predict(x), X_m[features], None)

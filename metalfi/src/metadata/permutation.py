@@ -34,7 +34,7 @@ class PermutationImportance(FeatureImportance):
     @staticmethod
     def data_permutation_importance(model: BaseEstimator, X, y) -> DataFrame:
         sc = StandardScaler()
-        X_sc = sc.fit_transform(X)
+        X_sc = DataFrame(data=sc.fit_transform(X), columns=X.columns)
         model.fit(X_sc, y)
         np.random.seed(115)
         return rfpimp.importances(model, X_sc, y)
