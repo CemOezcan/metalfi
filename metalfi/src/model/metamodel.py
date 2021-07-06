@@ -13,7 +13,7 @@ from pandas import DataFrame
 from sklearn.base import BaseEstimator
 from sklearn.feature_selection import f_classif, mutual_info_classif, SelectPercentile
 from sklearn.model_selection import StratifiedKFold
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, Normalizer
 
 from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.metadata.dropcolumn import DropColumnImportance
@@ -224,6 +224,7 @@ class MetaModel:
         anova_scores = {name: dict()}
         mi_scores = {name: dict()}
         pimp_scores = {name: dict()}
+        bagging_scores = {name: dict()}
         baseline_scores = {name: dict()}
         all_res = {name: dict()}
 
@@ -255,9 +256,10 @@ class MetaModel:
             warnings.filterwarnings("ignore", message="(invalid value.*|"
                                                       "Features.*|"
                                                       "Input data for shapiro has range zero.*)")
-
+            normalizer = Normalizer()
             anova_time = self.measure_time(f_classif, X_tr, y_tr)
             mi_time = self.measure_time(partial(mutual_info_classif, random_state=115), X_tr, y_tr)
+            bagging_time = self.measure_time(lambda x, y: [x.mean() for x in normalizer.fit_transform(X_m[self.__feature_sets[3]])], X_tr, y_tr)
 
             for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
                 pipeline_anova = make_pipeline(StandardScaler(),
@@ -269,11 +271,15 @@ class MetaModel:
                 pipeline_pimp = make_pipeline(StandardScaler(),
                                               SelectPercentile(lambda x, y: np.asarray(mf.get_meta_data()[n + "_PIMP"]), percentile=k),
                                               og_model)
+                pipeline_bagging = make_pipeline(StandardScaler(),
+                                                 SelectPercentile(lambda x, y: np.asarray([x.mean() for x in normalizer.fit_transform(X_m[self.__feature_sets[3]])]),
+                                                                  percentile=k), og_model)
                 pipeline_baseline = make_pipeline(StandardScaler(), og_model)
 
                 anova_scores[name][n] = pipeline_anova.fit(X_tr, y_tr).score(X_te, y_te)
                 mi_scores[name][n] = pipeline_mi.fit(X_tr, y_tr).score(X_te, y_te)
                 pimp_scores[name][n] = pipeline_pimp.fit(X_tr, y_tr).score(X_te, y_te)
+                bagging_scores[name][n] = pipeline_bagging.fit(X_tr, y_tr).score(X_te, y_te)
                 baseline_scores[name][n] = pipeline_baseline.fit(X_tr, y_tr).score(X_te, y_te)
 
                 anova_times[name][n] = anova_time
@@ -289,11 +295,18 @@ class MetaModel:
                                                  self.__get_original_model(config[1]))
 
                 metalfi = pipeline_metalfi.fit(X_tr, y_tr).score(X_te, y_te)
-                results[-1].append([anova_scores[name][config[1][:-5]], mi_scores[name][config[1][:-5]],
-                                    pimp_scores[name][config[1][:-5]], metalfi, baseline_scores[name][config[1][:-5]]])
+                results[-1].append([anova_scores[name][config[1][:-5]],
+                                    mi_scores[name][config[1][:-5]],
+                                    bagging_scores[name][config[1][:-5]],
+                                    pimp_scores[name][config[1][:-5]],
+                                    metalfi,
+                                    baseline_scores[name][config[1][:-5]]])
 
-                times[-1].append([anova_times[name][config[1][:-5]], mi_times[name][config[1][:-5]],
-                                  pimp_times[name][config[1][:-5]], metalfi_prediction_time + metalfi_time[config[2]]])
+                times[-1].append([anova_times[name][config[1][:-5]],
+                                  mi_times[name][config[1][:-5]],
+                                  metalfi_time["LM"] + bagging_time,
+                                  pimp_times[name][config[1][:-5]],
+                                  metalfi_prediction_time + metalfi_time[config[2]]])
 
             warnings.filterwarnings("default")
 

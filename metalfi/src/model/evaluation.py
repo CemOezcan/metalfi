@@ -383,7 +383,7 @@ class Evaluation:
         return results[key], times[key]
 
     def new_comparisons(self):
-        rows = ["ANOVA", "MI", "PIMP", "MetaLFI", "Baseline"]
+        rows = ["ANOVA", "MI", "Bagging", "PIMP", "MetaLFI", "Baseline"]
         meta_models, _, subsets = Parameters.question_5_parameters()
         with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
@@ -507,7 +507,7 @@ class Evaluation:
                     data["base_model"].append(self.__parameters[i][1][:-5])
                     data["importance_measure"].append(self.__parameters[i][1][-4:])
                     data["accuracy"].append(results[k][i][j])
-                    if j != 4:
+                    if j != 5:
                         data["time"].append(times[k][i][j])
                     else:
                         data["time"].append(0)
