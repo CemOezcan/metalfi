@@ -71,7 +71,7 @@ class Memory:
             space = "_comp_"
         else:
             data = data[data['NumberOfInstances'] < 10001]
-            data = data[data['NumberOfFeatures'] < 51]
+            data = data[data['NumberOfFeatures'] < 101]
             data = data[data['NumberOfFeatures'] > 4]
         data = data[data['NumberOfClasses'] == 2]
         data = data[(data["MajorityClassSize"] / data['NumberOfInstances']) < 0.67]
