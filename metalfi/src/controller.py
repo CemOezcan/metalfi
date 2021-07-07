@@ -56,6 +56,8 @@ class Controller:
         """
         data = [(dataset, name) for dataset, name in self.__train_data
                 if not (Memory.get_path() / ("input/" + name + "meta.csv")).is_file()]
+        print(data)
+        return
 
         with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(data), desc="Computing meta-data")

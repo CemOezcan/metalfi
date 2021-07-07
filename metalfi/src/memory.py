@@ -77,8 +77,6 @@ class Memory:
         data = data[(data["MajorityClassSize"] / data['NumberOfInstances']) < 0.67]
         data = data[data['NumberOfMissingValues'] == 0].sort_values(["version"])
         data = data.drop_duplicates("name", "last")
-        data["sorting"] = [a * b for a, b in zip(list(data["NumberOfInstances"]), list(data["NumberOfFeatures"]))]
-        data.sort_values(axis=0, by="sorting", ascending=False, inplace=True)
 
         target = "base-target_variable"
         ids = list(filter(lambda x: str(x[0]) + space + str(x[1]) + ".csv" not in Memory.get_contents("preprocessed"),
