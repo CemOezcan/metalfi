@@ -55,8 +55,7 @@ class Controller:
         Parallel computation of meta-data sets from base-data sets.
         """
         data = [(dataset, name) for dataset, name in self.__train_data
-                if not (Memory.get_path() / ("input/" + name + "meta.csv")).is_file() and name not in
-                ['fri_c0_500_25_2', 'hutsof99_child_witness_2', 'puma32H_2', 'white-clover_2']]
+                if not (Memory.get_path() / ("input/" + name + "meta.csv")).is_file()]
 
         with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(data), desc="Computing meta-data")

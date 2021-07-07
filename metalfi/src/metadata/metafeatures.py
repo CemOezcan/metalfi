@@ -194,7 +194,7 @@ class MetaFeatures:
         f_values = list(map((lambda x: 500 if x == float("inf") else x), f_values))
         log_anova_p = list(map((lambda x: -500 if x == float("-inf") else x), [np.log(x) for x in anova_p_values]))
         log_anova_p = list(map((lambda x: 1 if math.isnan(x) else x), log_anova_p))
-        log_chi2_p = [np.log(x) for x in chi2_p_values]
+        log_chi2_p = list(map((lambda x: -500 if x == float("-inf") else x), [np.log(x) for x in chi2_p_values]))
 
         for feature in X.columns:
             loc = X.columns.get_loc(feature)
