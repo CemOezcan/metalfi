@@ -153,7 +153,6 @@ class MetaFeatureSelection:
             SHAP-importance values
         """
         target, model, X, y, category = iterable
-        print(y)
         warnings.filterwarnings("ignore", message="Liblinear failed to converge, increase the number of iterations.")
         imp = PermutationImportance.data_permutation_importance(model, X, y)
         warnings.filterwarnings("default")

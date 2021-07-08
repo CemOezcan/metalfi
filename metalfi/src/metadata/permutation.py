@@ -36,7 +36,7 @@ class PermutationImportance(FeatureImportance):
         sc = StandardScaler()
         X_sc = DataFrame(data=sc.fit_transform(X), columns=X.columns)
         y_df = DataFrame(data=y, columns=["target"])
-        print(y_df)
+        print(DataFrame(data=y))
         y_d = y_df["target"]
         model.fit(X_sc, y_d)
         np.random.seed(115)
