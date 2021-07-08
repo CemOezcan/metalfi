@@ -5,7 +5,6 @@ from functools import partial
 from typing import List, Tuple, Dict
 
 import numpy as np
-import pandas as pd
 from sklearn.pipeline import make_pipeline
 import multiprocessing as mp
 import tqdm
@@ -249,8 +248,6 @@ class MetaModel:
             metalfi_time = {"Auto": sum(metalfi_time_tuple[2:]), "All": sum(metalfi_time_tuple),
                             "FMF": sum(metalfi_time_tuple[1:]), "LM": metalfi_time_tuple[3],
                             "Multi": metalfi_time_tuple[2], "Uni": metalfi_time_tuple[1]}
-            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-                print(mf.get_meta_data())
             X_m = DataFrame(data=self.__sc1.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
             mf.add_target(PermutationImportance(dataset))
 
