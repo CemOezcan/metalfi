@@ -127,6 +127,8 @@ class Controller:
             for test_data, test_name in self.__meta_data
             if not (Memory.get_path() / ("model/" + test_name)).is_file()]
 
+        print(parameters)
+
         selection_results = [self.__select_meta_features(parameter[1][:-4]) for parameter in parameters]
         args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))
 
@@ -152,7 +154,7 @@ class Controller:
         """
         model = MetaModel(iterable)
         model.fit()
-        Memory.store_model(model, iterable[1])
+        #Memory.store_model(model, iterable[1])
 
     @staticmethod
     def estimate(names: List[str]):
