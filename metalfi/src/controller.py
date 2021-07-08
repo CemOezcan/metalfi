@@ -57,12 +57,11 @@ class Controller:
         data = [(dataset, name) for dataset, name in self.__train_data
                 if not (Memory.get_path() / ("input/" + name + "meta.csv")).is_file()]
 
-        print(data)
-
         with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(data), desc="Computing meta-data")
-            _ = [pool.apply_async(self.parallel_meta_computation, (args,), callback=(lambda x: progress_bar.update()))
-                 for args in data]
+            results = [pool.apply_async(self.parallel_meta_computation, (args,),
+                                        callback=(lambda x: progress_bar.update())) for args in data]
+            _ = [x.get() for x in results]
 
             pool.close()
             pool.join()
@@ -133,8 +132,9 @@ class Controller:
 
         with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(args), desc="Training meta-models")
-            _ = [pool.apply_async(self.parallel_training, (arg,), callback=(lambda x: progress_bar.update()))
-                 for arg in args]
+            results = [pool.apply_async(self.parallel_training, (arg,), callback=(lambda x: progress_bar.update()))
+                       for arg in args]
+            _ = [x.get() for x in results]
 
             pool.close()
             pool.join()
