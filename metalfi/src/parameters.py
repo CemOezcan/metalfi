@@ -43,9 +43,7 @@ class Parameters:
                    (GaussianNB(), "NB", "kernel")]
 
     meta_models = [
-                   (SVR(), "SVR", "kernel"),
-                   (LinearRegression(), "LIN", "linear"),
-                   (LinearRegression(), "linSVR", "linear")]
+                   (LinearRegression(), "LIN", "linear")]
 
     @staticmethod
     def calculate_metrics(y_test: List[float], y_pred: List[float]) -> List[float]:
