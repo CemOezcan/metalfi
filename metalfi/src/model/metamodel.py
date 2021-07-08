@@ -495,6 +495,6 @@ class MetaModel:
         folds = list()
         for train_index, test_index in kf.split(X, y):
             folds.append((DataFrame(X_temp[train_index], columns=X.columns), DataFrame(X_temp[test_index], columns=X.columns),
-                          DataFrame(y_temp[train_index], columns=y.columns), DataFrame(y_temp[test_index], columns=y.columns)))
+                          y_temp[train_index].to_frame(), y_temp[test_index].to_frame()))
 
         return folds
