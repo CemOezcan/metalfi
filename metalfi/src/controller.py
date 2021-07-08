@@ -152,6 +152,9 @@ class Controller:
         ----------
             iterable : Parameters for the instance of :py:class:`MetaModel`.
         """
+        if "cor" in iterable[1]:
+            return
+
         model = MetaModel(iterable)
         model.fit()
         #Memory.store_model(model, iterable[1])
