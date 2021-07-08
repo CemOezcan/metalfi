@@ -38,6 +38,7 @@ class Main:
 
         c = Controller()
         c.train_meta_models()
+        return
         data = Memory.get_contents("model")
         c.estimate(data)
         c.meta_feature_importances()
