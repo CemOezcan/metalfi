@@ -241,7 +241,7 @@ class Evaluation:
         return data
 
     @staticmethod
-    def parallelize_predictions(name: str) -> Tuple[List[List[float]], List[List[str]], List[str]]:
+    def parallelize_predictions(name: str, progress_bar) -> Tuple[List[List[float]], List[List[str]], List[str]]:
         """
         Compute performance estimates for meta-models.
 
@@ -258,6 +258,7 @@ class Evaluation:
         stats = model[1]
         config = [c for (a, b, c) in model[0]]
         targets = Parameters.targets
+        progress_bar.update(n=1)
         return stats, config, targets
 
     def predictions(self):
@@ -265,19 +266,8 @@ class Evaluation:
         Estimate meta-model performances by testing them on their respective cross validation test splits.
         Save the results as .csv files in the `metalfi/data/output/predictions` directory.
         """
-        with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
-            progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Evaluating meta-models")
-            results = [
-                pool.map_async(
-                    self.parallelize_predictions,
-                    (meta_model, ),
-                    callback=(lambda x: progress_bar.update(n=1)))
-                for meta_model in self.__meta_models]
-
-            results = [x.get()[0] for x in results]
-            pool.close()
-            pool.join()
-
+        progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Evaluating meta-models")
+        results = [self.parallelize_predictions(meta_model, progress_bar) for meta_model in self.__meta_models]
         progress_bar.close()
         for stats, _, _ in results:
             self.__tests = self.matrix_addition(self.__tests, stats)
@@ -375,28 +365,20 @@ class Evaluation:
             Memory.store_data_frame(DataFrame(data, columns=columns, index=index), metric_name, "predictions")
 
     @staticmethod
-    def new_parallel_comparisons(model):
+    def new_parallel_comparisons(model, progress_bar):
         data = Memory.load_model([model])
         results = data[0][0][3]
         times = data[0][0][4]
         key = list(results.keys())[0]
+        progress_bar.update(n=1)
         return results[key], times[key]
 
     def new_comparisons(self):
         rows = ["ANOVA", "MI", "Bagging", "PIMP", "MetaLFI", "Baseline"]
         meta_models, _, subsets = Parameters.question_5_parameters()
-        with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
-            progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
-            results = [
-                pool.map_async(
-                    self.new_parallel_comparisons,
-                    (meta_model, ),
-                    callback=(lambda x: progress_bar.update(n=1)))
-                for meta_model in self.__meta_models]
 
-            results = [x.get()[0] for x in results]
-            pool.close()
-            pool.join()
+        progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
+        results = [self.new_parallel_comparisons(meta_model, progress_bar) for meta_model in self.__meta_models]
 
         progress_bar.close()
 
