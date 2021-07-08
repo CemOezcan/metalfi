@@ -37,7 +37,7 @@ class Main:
             Memory.clear_directory(["model", "output/importance"])
 
         c = Controller()
-        c.train_meta_models()
+        # c.train_meta_models()
         data = Memory.get_contents("model")
         c.estimate(data)
         c.meta_feature_importances()
