@@ -152,7 +152,7 @@ class Controller:
         """
         model = MetaModel(iterable)
         model.fit()
-        #Memory.store_model(model, iterable[1])
+        Memory.store_model(model, iterable[1])
 
     @staticmethod
     def estimate(names: List[str]):
