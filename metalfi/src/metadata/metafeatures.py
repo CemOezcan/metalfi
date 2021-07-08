@@ -75,7 +75,9 @@ class MetaFeatures:
         mfe = MFE(summary=summary, features=features)
         mfe.fit(X, y)
         vector = mfe.extract()
-
+        print(vector[1])
+        vector = (vector[0], [x.real for x in vector[1]])
+        print(vector[1])
         return vector
 
     def __compute_data_meta_features(self) -> float:
