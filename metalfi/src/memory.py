@@ -67,9 +67,9 @@ class Memory:
         data = data[(data["MajorityClassSize"] / data['NumberOfInstances']) < 0.67]
 
         target = "base-target_variable"
-        Memory.filter_data_frames(data, (99, 2001), (4, 11), 20, target)
-        Memory.filter_data_frames(data, (99, 2001), (10, 21), 20, target)
-        Memory.filter_data_frames(data, (99, 2001), (20, 51), 20, target)
+        Memory.filter_data_frames(data, (0, 501), (4, 11), 62, target)
+        #Memory.filter_data_frames(data, (99, 2001), (10, 21), 20, target)
+        #Memory.filter_data_frames(data, (99, 2001), (20, 51), 20, target)
 
         return [(Memory.load(file, "preprocessed"), file[:-4], target) for file in Memory.get_contents("preprocessed")]
 

@@ -234,6 +234,6 @@ class Controller:
             data.index.name = "meta-features"
             data["base_model"] = [target[:-5]] * len(index)
             data["importance_measure"] = [target[-4:]] * len(index)
-            data_frames.append(data)
+            data_frames.append(data.sort_values(["PIMP", "base_model", "importance_measure"]))
 
         Memory.store_data_frame(pd.concat(data_frames), "all_importances", "importance")
