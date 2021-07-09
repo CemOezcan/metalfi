@@ -47,12 +47,23 @@ class Memory:
         """
         Fetch and preprocess base-data sets from openML:
         Criteria:
-            - Number of instances <= 500
-            - Number of features in [5, 10]
+            - Number of base-data sets: 60 (20 small, medium sized and large base-data sets)
+            - Number of instances in [100, 2000]
             - Number of classes = 2
             - Number of missing values = 0
             - Number of zero-variance features = 0
             - Majority class ratio < 0.67
+
+        We categorize base-data sets based on their complexity.
+        We randomly choose 20 base-data sets from each of the following categories:
+
+        Small base-data sets:
+            - Number of features in [5, 10]
+        Medium base-data sets:
+            - Number of features in [11, 20]
+        Large base-data sets:
+            - Number of features in [21, 50]
+
         Apply ordinal encoding on categorical features and target variables.
         Binarize target variables if necessary.
 
@@ -68,8 +79,9 @@ class Memory:
 
         target = "base-target_variable"
         Memory.filter_data_frames(data, (0, 501), (4, 11), 62, target)
-        #Memory.filter_data_frames(data, (99, 2001), (10, 21), 20, target)
-        #Memory.filter_data_frames(data, (99, 2001), (20, 51), 20, target)
+        # Memory.filter_data_frames(data, 99, 2001), (4, 11), 20, target)
+        # Memory.filter_data_frames(data, (99, 2001), (10, 21), 20, target)
+        # Memory.filter_data_frames(data, (99, 2001), (20, 51), 20, target)
 
         return [(Memory.load(file, "preprocessed"), file[:-4], target) for file in Memory.get_contents("preprocessed")]
 
