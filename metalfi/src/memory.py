@@ -62,8 +62,8 @@ class Memory:
         """
         openml_list = openml.datasets.list_datasets()
         data = pd.DataFrame.from_dict(openml_list, orient="index")
-        data = data[data['NumberOfInstances'] < 5001]
-        data = data[data['NumberOfFeatures'] < 51]
+        data = data[data['NumberOfInstances'] < 501]
+        data = data[data['NumberOfFeatures'] < 11]
         data = data[data['NumberOfFeatures'] > 4]
         data = data[data['NumberOfClasses'] == 2]
         data = data[(data["MajorityClassSize"] / data['NumberOfInstances']) < 0.67]
@@ -122,7 +122,7 @@ class Memory:
                 continue
 
             Memory.store_preprocessed(data_frame, name + "_" + str(version))
-            
+
         return [(Memory.load(file, "preprocessed"), file[:-4], target) for file in Memory.get_contents("preprocessed")]
 
     @staticmethod
