@@ -1,6 +1,4 @@
 from decimal import Decimal
-from functools import partial
-import multiprocessing as mp
 import re
 from typing import List, Dict, Tuple
 
@@ -317,31 +315,6 @@ class Evaluation:
 
                 Memory.store_data_frame(data_frame, metric + "x" + importance, "tables", True)
 
-    @staticmethod
-    def parallel_comparisons(name: str, models: List[str], targets: List[str], subsets: List[str], renew: bool) \
-            -> List[List[float]]:
-        """
-        Load a trained instance of :py:class:`MetaModel` and call its compare method.
-
-        Parameters
-        ----------
-            name : Name of the file, in which said instance is saved.
-            models : meta-model names.
-            targets : Meta-target names.
-            subsets : Meta-feature subset names.
-            renew : Whether to recalculate or not.
-
-        Returns
-        -------
-            Base-model performance estimates.
-
-        """
-        model, _ = Memory.load_model([name])[0]
-        # model.compare(models, targets, subsets, 33, renew)
-        results = model.get_results()[name]
-        # Memory.renew_model(model, model.get_name()[:-4])
-        return results
-
     def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]):
         data = {key: list() for key in ["base_data_set", "meta_model", "meta_features", "base_model", "importance_measure", "r^2"]}
         for i in range(len(self.__meta_models)):
@@ -408,7 +381,6 @@ class Evaluation:
 
             all_results[model] = this_model
 
-        # TODO: change
         self.plot_accuracies(all_results, rows)
         self.__store_all_comparisons([result for result, _ in results], [time for _, time in results], rows, "all_comparisons")
 
@@ -420,61 +392,6 @@ class Evaluation:
                 data.append((DataFrame(data=results[model][subset], index=rows,
                                        columns=[x for x in results[model][subset]]), model + " x " + subset))
         Visualization.performance(data)
-
-
-    def comparisons(self, models: List[str], targets: List[str], subsets: List[str], renew=False):
-        """
-        Estimate base-model performances by testing them on their respective cross validation test splits.
-        The base-models are trained on different base-feature subsets, which are determined by different feature
-        selection approaches. Save the results as .csv files in the `metalfi/data/output/selection` directory.
-
-        Parameters
-        ----------
-            models : Meta-model names.
-            targets : Meta-target names.
-            subsets : Meta-feature subsets.
-            renew : Whether to recompute the results, if they have already been computed.
-        """
-        with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
-            progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
-
-            results = [pool.map_async(
-                partial(self.parallel_comparisons, models=models, targets=targets, subsets=subsets, renew=renew),
-                (model, ), callback=(lambda x: progress_bar.update(n=1))) for model in self.__meta_models]
-
-            results = [x.get()[0] for x in results]
-            pool.close()
-            pool.join()
-
-        progress_bar.close()
-        model, _ = Memory.load_model([self.__meta_models[0]])[0]
-        rows = model.compare(models, targets, subsets, 33, False)
-        for result in results:
-            self.__comparisons = self.matrix_addition(self.__comparisons, result)
-
-        self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
-        self.__parameters = model.get_result_config()
-
-        all_results = {}
-        for model in models:
-            this_model = {}
-            for subset in subsets:
-                index = 0
-                for a, b, c in self.__parameters:
-                    if a == model and c == subset:
-                        this_model[b] = self.__comparisons[index]
-
-                    index += 1
-
-            all_results[model] = this_model
-
-        for model in all_results:
-            for subset in subsets:
-                Memory.store_data_frame(DataFrame(data=all_results[model], index=rows,
-                                                  columns=[x for x in all_results[model]]),
-                                        model + " x " + subset, "selection", True)
-
-        self.__store_all_comparisons(results, rows, "all_comparisons")
 
     def __store_all_comparisons(self, results: List[List[List[float]]], times: List[List[List[float]]], rows: List[str], name: str):
         data = {key: list() for key in ["base_data_set", "meta_model", "meta_features", "feature_selection_approach",
@@ -498,13 +415,6 @@ class Evaluation:
 
         data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2]
                 + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": list(map(lambda x: x[i][j], results))
-                for i in range(len(self.__parameters)) for j in range(len(rows))}
-
-        Memory.store_data_frame(DataFrame(data, index=self.__meta_models), name, "selection")
-
-    def __store_all_comparisons_2(self, results: List[List[float]], rows: List[str], name: str):
-        data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2]
-                + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": [results[i][j]]
                 for i in range(len(self.__parameters)) for j in range(len(rows))}
 
         Memory.store_data_frame(DataFrame(data, index=self.__meta_models), name, "selection")

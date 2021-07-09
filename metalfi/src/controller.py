@@ -21,7 +21,6 @@ class Controller:
 
     Attributes
     ----------
-        # TODO: Adjust
         __train_data : (List[Tuple[Dataset, str]])
             Base-data sets and their names
         __data_names : (Dict[str, int])
@@ -32,7 +31,6 @@ class Controller:
 
     def __init__(self):
         self.__train_data = None
-        self.__test_data = None
         self.__data_names = None
         self.__meta_data = list()
         self.fetch_data()
@@ -43,7 +41,6 @@ class Controller:
         Fetch base-data sets from openMl and scikit-learn
         """
         self.__train_data = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.load_open_ml()]
-        self.__test_data = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.load_open_ml(large=True)]
         self.__data_names = dict({})
         i = 0
         for _, name in self.__train_data:
@@ -184,6 +181,7 @@ class Controller:
         evaluation.questions()
 
     def compare_all(self):
+        # Deprecated
         self.__load_meta_data()
 
         parameters = [(
@@ -196,25 +194,9 @@ class Controller:
         args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))
 
         m = MetaModel(args[0])
-        m.compare_all(self.__test_data)
+        m.compare_all(self.__train_data)
         evaluation = Evaluation(["all"])
         evaluation.new_comparisons(m)
-
-    @staticmethod
-    def compare(names: List[str]):
-        """
-        Compare MetaLFI to other feature selection approaches on base-data sets.
-        Use file names in `names` to identify these base-data sets.
-
-        Parameters
-        ----------
-            names :
-                File names referring to instances of class :py:class:`MetaModel`,
-                whose underlying base-data set is supposed to be used to compare feature selection approaches.
-        """
-        evaluation = Evaluation(names)
-        meta_model, meta_targets, meta_features = Parameters.question_5_parameters()
-        evaluation.comparisons(meta_model, meta_targets, meta_features, True)
 
     def meta_feature_importances(self):
         """

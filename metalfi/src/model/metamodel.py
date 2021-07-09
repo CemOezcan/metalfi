@@ -48,8 +48,6 @@ class MetaModel:
         __result_configurations : (List[List[str]])
             Configurations for feature selection approach comparisons:
             meta-model name, meta-target name and feature selection approach.
-        __was_compared : (bool)
-            Whether the feature selection approaches have been compared or not.
         __train_data : (DataFrame)
             Meta-data set, on which the meta-models are trained.
         __test_data : (DataFrame)
@@ -71,7 +69,6 @@ class MetaModel:
         self.__results = list()
         self.__times = list()
         self.__result_configurations = list()
-        self.__was_compared = False
 
         self.__sc1 = StandardScaler()
         self.__sc1.fit(train)
@@ -93,9 +90,6 @@ class MetaModel:
 
         self.__feature_sets = [["Auto"], train.columns, fmf, lm, multi, uni]
         self.__meta_feature_groups = {0: "Auto", 1: "All", 2: "FMF", 3: "LM", 4: "Multi", 5: "Uni"}
-
-    def was_compared(self):
-        return self.__was_compared
 
     def get_name(self):
         return self.__file_name
@@ -188,16 +182,6 @@ class MetaModel:
             self.__stats.append(Parameters.calculate_metrics(y_test=y_test, y_pred=y_pred))
 
     @staticmethod
-    def __get_rankings(columns: List[str], prediction: List[float], actual: List[float]) \
-            -> Tuple[List[float], List[float]]:
-        pred_data = {"target": prediction, "names": columns}
-        act_data = {"target": actual, "names": columns}
-        pred = DataFrame(pred_data).sort_values(by=["target"], ascending=False)["names"].values
-        act = DataFrame(act_data).sort_values(by=["target"], ascending=False)["names"].values
-
-        return act, pred
-
-    @staticmethod
     def __get_original_model(name: str) -> BaseEstimator:
         """
         Identifies and returns the base-model, given the its name.
@@ -215,6 +199,20 @@ class MetaModel:
                 return model
 
     def parallel_comparisons(self, args):
+        """
+        Apply different feature selection approaches to the base-data set `__og_X`, `__og_y`.
+        Estimate the performances of different base-models in combination with all feature selection approaches.
+        Save the results at `__results` and set `__was_compared` to True.
+
+        Parameters
+        ----------
+            args :
+
+        Returns
+        -------
+            Accuracy scores and computation times.
+        """
+
         k = 33
         meta_target_names = [x for x in Parameters.targets if "PIMP" in x]
         used_models = [(model, features, config) for model, features, config in self.__meta_models if config[1] in meta_target_names]
@@ -321,11 +319,7 @@ class MetaModel:
         return end - start
 
     def compare_all(self, test_data: List[Tuple[Dataset, str]]):
-        # TODO:
-        #   - Apply on large data sets
-        #   - Separate training from other methods
-        #   - Parameterize k and meta-model configurations
-        #   - Documentation
+        # Deprecated
         X_1 = self.__train_data.drop(Parameters.targets, axis=1)
         meta_model_names, meta_target_names, meta_feature_subsets = Parameters.question_5_parameters()
         test_data_sets = [(d.get_data_frame().drop("base-target_variable", axis=1),
@@ -361,103 +355,6 @@ class MetaModel:
         self.__result_configurations += [config for (_, _, config) in self.__meta_models]
         self.__results = {key: [list(map(lambda x: x / 5, result)) for result in sum_up(all_res[key])]
                           for key in all_res.keys()}
-
-    def compare(self, models: List[str], targets: List[str], subsets: List[str], k: int, renew=False) -> List[str]:
-        """
-        Apply different feature selection approaches to the base-data set `__og_X`, `__og_y`.
-        Estimate the performances of different base-models in combination with all feature selection approaches.
-        Save the results at `__results` and set `__was_compared` to True.
-
-        Parameters
-        ----------
-            models : Meta-model names.
-            targets : Meta-targets to predict.
-            subsets : Meta-feature subset names.
-            k : Parameter for k-fold cross-validation.
-            renew : (bool) Whether to recalculate the results.
-
-        Returns
-        -------
-            List of feature selection approaches.
-        """
-        if renew:
-            self.__results = list()
-            self.__result_configurations = list()
-            self.__was_compared = False
-
-        if self.__was_compared:
-            return ["ANOVA", "MI", "FI", "MetaLFI"]
-
-        meta_models = [(model, features, config[1], config) for (model, features, config) in self.__meta_models
-                       if ((config[0] in models) and (config[1] in targets) and (config[2] in subsets))]
-        self.__result_configurations += [config for (_, _, _, config) in meta_models]
-        results = {0: list(), 1: list(), 2: list(), 3: list(), 4: list()}
-
-        folds = self.__get_cross_validation_folds(self.__og_X, self.__og_y, k=5)
-        i = 0
-        for X_train, X_test, y_train, y_test in folds:
-            sc = StandardScaler()
-
-            X_train = DataFrame(data=sc.fit_transform(X_train), columns=self.__og_X.columns)
-            X_test = DataFrame(data=sc.fit_transform(X_test), columns=self.__og_X.columns)
-            whole_train = DataFrame(data=sc.transform(X_train), columns=self.__og_X.columns)
-            whole_train["target"] = y_train
-            X_meta, y_meta = self.__get_meta(whole_train, "target", targets)
-
-            selector_anova = SelectPercentile(f_classif, percentile=k)
-            selector_anova.fit(X_train, y_train)
-            selector_mi = SelectPercentile(partial(mutual_info_classif, random_state=115), percentile=k)
-            selector_mi.fit(X_train, y_train)
-
-            X_anova_train = selector_anova.transform(X_train)
-            X_mi_train = selector_mi.transform(X_train)
-
-            X_anova_test = selector_anova.transform(X_test)
-            X_mi_test = selector_mi.transform(X_test)
-            k_number = len(X_anova_test[0])
-
-            for model, features, target, config in meta_models:
-                X_temp = X_meta[features]
-                y_temp = y_meta[target]
-                y_pred = model.predict(X_temp)
-                og_model = self.__get_original_model(target)
-                columns = self.__og_X.columns
-
-                a, p = self.__get_rankings(self.__test_data.index, y_pred, y_temp)
-                predicted = [columns[i] for i in p]
-                actual = [columns[i] for i in a]
-
-                warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
-                X_fi_train = X_train[actual[:k_number]]
-                X_metalfi_train = X_train[predicted[:k_number]]
-
-                X_fi_test = X_test[actual[:k_number]]
-                X_metalfi_test = X_test[predicted[:k_number]]
-
-                og_model.fit(X_fi_train, y_train)
-                fi = og_model.score(X_fi_test, y_test)
-
-                og_model.fit(X_metalfi_train, y_train)
-                metalfi = og_model.score(X_metalfi_test, y_test)
-
-                og_model.fit(X_anova_train, y_train)
-                anova = og_model.score(X_anova_test, y_test)
-
-                og_model.fit(X_mi_train, y_train)
-                mi = og_model.score(X_mi_test, y_test)
-                warnings.filterwarnings("default")
-
-                results[i].append([anova, mi, fi, metalfi])
-
-            i += 1
-
-        for i in results:
-            self.__results = Evaluation.matrix_addition(self.__results, results[i])
-
-        self.__results = [list(map(lambda x: x / 5, result)) for result in self.__results]
-        self.__was_compared = True
-
-        return ["ANOVA", "MI", "FI", "MetaLFI"]
 
     @staticmethod
     def __get_meta(data_frame: DataFrame, target: str, targets: List[str]) -> Tuple[DataFrame, DataFrame]:
