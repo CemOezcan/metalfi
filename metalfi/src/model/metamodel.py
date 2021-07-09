@@ -214,7 +214,7 @@ class MetaModel:
         """
 
         k = 33
-        meta_target_names = [x for x in Parameters.targets if "PIMP" in x]
+        meta_target_names = [x for x in Parameters.targets if "SHAP" in x]
         used_models = [(model, features, config) for model, features, config in self.__meta_models if config[1] in meta_target_names]
         self.__result_configurations = [config for (_, _, config) in used_models]
         X_test, y_test, name = args
