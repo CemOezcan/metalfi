@@ -87,5 +87,5 @@ class Parameters:
             Experimental parameters for research question 5.
 
         """
-        return ["linSVR", "RF", "DT", "SVR", "LIN"], list(filter(lambda x: x.endswith("_SHAP"), Parameters.targets)), \
+        return ["linSVR", "RF", "DT", "SVR", "LIN"], list(filter(lambda x: x.endswith("_PIMP"), Parameters.targets)), \
                ["LM", "FMF", "All", "Auto"]

@@ -64,18 +64,18 @@ class Evaluation:
     def questions(self):
         """
         Provides answers to our research questions:
-        (Q_1, Q_2, Q_3, Q_4):
+        (Q_1, Q_2, Q_3):
             Fetch the performance estimates of all meta-models from `metalfi/data/output/predictions`.
-            (Q_1 & Q_2):
+            (Q_1):
                 Group performance estimates by meta-feature subsets and differentiate
                 between linear and non-linear meta-models. Examine the differences between meta-models,
                 trained on different meta-feature subsets, for linear and non-linear meta-models respectively.
-            (Q_3):
+            (Q_2):
                 Group performance estimates by meta-targets. Examine the differences between meta-models,
                 trained to predict different meta-targets, based on their respective performances.
-            (Q_4):
+            (Q_3):
                 Group performance estimates by meta-models. Examine the differences between meta-model performances.
-        (Q_5):
+        (Q_4):
             Fetch the performance estimates of all base-models, trained on different base-feature subsets,
             from `metalfi/data/output/selection`. The base-feature subsets are the results of different
             feature selection approaches, including metaLFI. Group performance estimates by feature selection approaches
@@ -95,33 +95,33 @@ class Evaluation:
                    pattern.match(column).group("features")]
                   for column in data[file_names[0][:-4]].columns if "Index" not in column]
 
-        # Q_5
+        # Q_4
         directory = "output/selection"
         file_name = list(filter(lambda x: x.endswith(".csv") and "_" in x, Memory.get_contents(directory)))[0]
         comparison_data = {file_name[:-4]: Memory.load(file_name, directory)}
         pattern = re.compile(r"\$(?P<meta>.+)\_\{(?P<features>.+) \\times (?P<selection>.+)\}\((?P<target>.+)\)\$")
 
-        config_5 = [[pattern.match(column).group("meta"), pattern.match(column).group("target"),
+        config_4 = [[pattern.match(column).group("meta"), pattern.match(column).group("target"),
                      pattern.match(column).group("features"), pattern.match(column).group("selection")]
                     for column in comparison_data[file_name[:-4]].columns if "Index" not in column]
 
-        # Q_2
+        # Q_1
         subset_names_lin = list(dict.fromkeys([c[2] for c in config if c[2] != "All"]))
         subset_names_non = list(dict.fromkeys([c[2] for c in config]))
-        data_2_lin = {metric: {key: list() for key in subset_names_lin} for metric in Parameters.metrics}
-        data_2_non = {metric: {key: list() for key in subset_names_non} for metric in Parameters.metrics}
+        data_1_lin = {metric: {key: list() for key in subset_names_lin} for metric in Parameters.metrics}
+        data_1_non = {metric: {key: list() for key in subset_names_non} for metric in Parameters.metrics}
+
+        # Q_2
+        target_names = list(dict.fromkeys([c[1] for c in config]))
+        data_2 = {metric: {key: list() for key in target_names} for metric in Parameters.metrics}
 
         # Q_3
-        target_names = list(dict.fromkeys([c[1] for c in config]))
-        data_3 = {metric: {key: list() for key in target_names} for metric in Parameters.metrics}
+        meta_model_names = list(dict.fromkeys([c[0] for c in config]))
+        data_3 = {metric: {key: list() for key in meta_model_names} for metric in Parameters.metrics}
 
         # Q_4
-        meta_model_names = list(dict.fromkeys([c[0] for c in config]))
-        data_4 = {metric: {key: list() for key in meta_model_names} for metric in Parameters.metrics}
-
-        # Q_5
-        selection_names = list(set(c[3] for c in config_5))
-        data_5 = {meta_target: {key: list() for key in selection_names}
+        selection_names = list(set(c[3] for c in config_4))
+        data_4 = {meta_target: {key: list() for key in selection_names}
                   for meta_target in Parameters.question_5_parameters()[1]}
 
         rows = list()
@@ -130,36 +130,36 @@ class Evaluation:
             stats = list(map(lambda x: list(x), zip(*[data_set.iloc[i][1:] for data_set in data.values()])))
             performances = list(zip(config, stats))
             rows.append(base_data_sets.iloc[i])
-            data_2_lin = self.__create_question_csv(performances, subset_names_lin, data_2_lin, 2, question=2, linear=True)
-            data_2_non = self.__create_question_csv(performances, subset_names_non, data_2_non, 2, question=2, linear=False)
-            data_3 = self.__create_question_csv(performances, target_names, data_3, 1, question=3)
-            data_4 = self.__create_question_csv(performances, meta_model_names, data_4, 0, question=4)
+            data_1_lin = self.__create_question_csv(performances, subset_names_lin, data_1_lin, 2, question=1, linear=True)
+            data_1_non = self.__create_question_csv(performances, subset_names_non, data_1_non, 2, question=1, linear=False)
+            data_2 = self.__create_question_csv(performances, target_names, data_2, 1, question=2)
+            data_3 = self.__create_question_csv(performances, meta_model_names, data_3, 0, question=3)
 
         comp_rows = list()
         base_data_sets = list(comparison_data.values())[0]["Index"]
         for i in range(len(base_data_sets)):
             comp_rows.append(base_data_sets.iloc[i])
             comps = list(map(lambda x: list(x), zip(*[data_set.iloc[i][1:] for data_set in comparison_data.values()])))
-            comparisons = list(zip(config_5, comps))
-            data_5 = self.__create_question_5_csv(comparisons, data_5)
+            comparisons = list(zip(config_4, comps))
+            data_4 = self.__create_question_4_csv(comparisons, data_4)
 
         def __question_data(data: Dict[str, Dict[str, List[float]]], rows: List[str], suffix: str) \
                 -> List[Tuple[DataFrame, str]]:
             return [(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]), metric + suffix)
                     for metric in data]
 
-        q_2_lin = __question_data(data_2_lin, rows, "_LIN")
-        q_2_non = __question_data(data_2_non, rows, "_NON")
-        q_3 = self.__q_3(data_3, rows)
-        q_4 = __question_data(data_4, rows, "")
-        q_5 = __question_data(data_5, comp_rows, "")
+        q_1_lin = __question_data(data_1_lin, rows, "_LIN")
+        q_1_non = __question_data(data_1_non, rows, "_NON")
+        q_2 = self.__q_2(data_2, rows)
+        q_3 = __question_data(data_3, rows, "")
+        q_4 = __question_data(data_4, comp_rows, "")
 
-        Visualization.compare_means(q_2_lin + q_2_non, "groups")
-        Visualization.compare_means(q_3, "targets")
-        Visualization.compare_means(q_4, "models")
-        Visualization.compare_means(q_5, "selection")
+        Visualization.compare_means(q_1_lin + q_1_non, "groups")
+        Visualization.compare_means(q_2, "targets")
+        Visualization.compare_means(q_3, "models")
+        Visualization.compare_means(q_4, "selection")
 
-    def __q_3(self, data: Dict[str, Dict[str, List[float]]], rows: List[str]) -> List[Tuple[DataFrame, str]]:
+    def __q_2(self, data: Dict[str, Dict[str, List[float]]], rows: List[str]) -> List[Tuple[DataFrame, str]]:
         data_frames = list()
         for metric in data:
             data_frame = DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]])
@@ -167,13 +167,13 @@ class Evaluation:
             base_models = {name: [0] * len(rows) for _, name, _ in Parameters.base_models}
 
             data_frames.append((data_frame, metric))
-            data_frames.append(self.__helper_q_3(fi_measures, data_frame, rows, metric, "targets_", targets=True))
-            data_frames.append(self.__helper_q_3(base_models, data_frame, rows, metric, "base_"))
+            data_frames.append(self.__helper_q_2(fi_measures, data_frame, rows, metric, "targets_", targets=True))
+            data_frames.append(self.__helper_q_2(base_models, data_frame, rows, metric, "base_"))
 
         return data_frames
 
     @staticmethod
-    def __helper_q_3(dictionary: Dict[str, List[float]], data_frame: DataFrame, rows: List[str],
+    def __helper_q_2(dictionary: Dict[str, List[float]], data_frame: DataFrame, rows: List[str],
                      metric: str, name: str, targets=False) -> Tuple[DataFrame, str]:
         for key in dictionary:
             if targets:
@@ -195,16 +195,16 @@ class Evaluation:
         linear_meta_models = [name for _, name, _ in filter(lambda x: x[2] == "linear", Parameters.meta_models)]
         non_linear_meta_models = [name for _, name, _ in filter(lambda x: x[2] != "linear", Parameters.meta_models)]
 
-        if question == 2:
+        if question == 1:
             if linear:
                 tuples = [t for t in performances if t[0][0] in linear_meta_models]
             else:
                 tuples = [t for t in performances if t[0][0] in non_linear_meta_models]
-        elif question == 3:
+        elif question == 2:
             tuples = [t for t in performances
                       if ((t[0][0] in linear_meta_models) and (t[0][2] == "LM"))
                       or ((t[0][0] in non_linear_meta_models) and (t[0][2] == "Auto"))]
-        elif question == 4:
+        elif question == 3:
             tuples = [t for t in performances if (t[0][1][:-4] != "LOFO")
                       and ((t[0][0] in linear_meta_models and (t[0][2] == "LM"))
                            or ((t[0][0] in non_linear_meta_models) and (t[0][2] == "Auto")))]
@@ -226,7 +226,7 @@ class Evaluation:
         return data
 
     @staticmethod
-    def __create_question_5_csv(comparisons: List[Tuple[List[str], List[float]]],
+    def __create_question_4_csv(comparisons: List[Tuple[List[str], List[float]]],
                                 data: Dict[str, Dict[str, List[float]]]) -> Dict[str, Dict[str, List[float]]]:
         for key in data:
             tuples = list(filter(lambda x: x[0][1] == key, comparisons))
@@ -241,7 +241,7 @@ class Evaluation:
         return data
 
     @staticmethod
-    def parallelize_predictions(name: str) -> Tuple[List[List[float]], List[List[str]], List[str]]:
+    def parallelize_predictions(name: str, progress_bar) -> Tuple[List[List[float]], List[List[str]], List[str]]:
         """
         Compute performance estimates for meta-models.
 
@@ -258,6 +258,7 @@ class Evaluation:
         stats = model[1]
         config = [c for (a, b, c) in model[0]]
         targets = Parameters.targets
+        progress_bar.update(n=1)
         return stats, config, targets
 
     def predictions(self):
@@ -265,19 +266,8 @@ class Evaluation:
         Estimate meta-model performances by testing them on their respective cross validation test splits.
         Save the results as .csv files in the `metalfi/data/output/predictions` directory.
         """
-        with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
-            progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Evaluating meta-models")
-            results = [
-                pool.map_async(
-                    self.parallelize_predictions,
-                    (meta_model, ),
-                    callback=(lambda x: progress_bar.update(n=1)))
-                for meta_model in self.__meta_models]
-
-            results = [x.get()[0] for x in results]
-            pool.close()
-            pool.join()
-
+        progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Evaluating meta-models")
+        results = [self.parallelize_predictions(meta_model, progress_bar) for meta_model in self.__meta_models]
         progress_bar.close()
         for stats, _, _ in results:
             self.__tests = self.matrix_addition(self.__tests, stats)
@@ -375,28 +365,20 @@ class Evaluation:
             Memory.store_data_frame(DataFrame(data, columns=columns, index=index), metric_name, "predictions")
 
     @staticmethod
-    def new_parallel_comparisons(model):
+    def new_parallel_comparisons(model, progress_bar):
         data = Memory.load_model([model])
         results = data[0][0][3]
         times = data[0][0][4]
         key = list(results.keys())[0]
+        progress_bar.update(n=1)
         return results[key], times[key]
 
     def new_comparisons(self):
-        rows = ["ANOVA", "MI", "PIMP", "MetaLFI", "Baseline"]
+        rows = ["ANOVA", "MI", "Bagging", "PIMP", "MetaLFI", "Baseline"]
         meta_models, _, subsets = Parameters.question_5_parameters()
-        with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
-            progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
-            results = [
-                pool.map_async(
-                    self.new_parallel_comparisons,
-                    (meta_model, ),
-                    callback=(lambda x: progress_bar.update(n=1)))
-                for meta_model in self.__meta_models]
 
-            results = [x.get()[0] for x in results]
-            pool.close()
-            pool.join()
+        progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
+        results = [self.new_parallel_comparisons(meta_model, progress_bar) for meta_model in self.__meta_models]
 
         progress_bar.close()
 
@@ -507,7 +489,7 @@ class Evaluation:
                     data["base_model"].append(self.__parameters[i][1][:-5])
                     data["importance_measure"].append(self.__parameters[i][1][-4:])
                     data["accuracy"].append(results[k][i][j])
-                    if j != 4:
+                    if j != 5:
                         data["time"].append(times[k][i][j])
                     else:
                         data["time"].append(0)

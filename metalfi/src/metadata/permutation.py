@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from pandas import DataFrame
 import rfpimp
 from sklearn.base import BaseEstimator
@@ -35,6 +36,7 @@ class PermutationImportance(FeatureImportance):
     def data_permutation_importance(model: BaseEstimator, X, y) -> DataFrame:
         sc = StandardScaler()
         X_sc = DataFrame(data=sc.fit_transform(X), columns=X.columns)
-        model.fit(X_sc, y)
+        y_series = y if isinstance(y, pd.Series) else pd.Series(data=y)
+        model.fit(X_sc, y_series)
         np.random.seed(115)
-        return rfpimp.importances(model, X_sc, y)
+        return rfpimp.importances(model, X_sc, y_series)
