@@ -381,16 +381,16 @@ class Evaluation:
 
             all_results[model] = this_model
 
-        filter = {"models": ["LIN", "linSVP", "SVR"], "subsets": ["Auto", "LM"]}
-        self.plot_accuracies(all_results, rows, filter)
+        plotting = {"models": ["LIN", "linSVP", "SVR"], "subsets": ["Auto", "LM"]}
+        self.plot_accuracies(all_results, rows, plotting)
         self.__store_all_comparisons([result for result, _ in results], [time for _, time in results], rows, "all_comparisons")
 
     @staticmethod
-    def plot_accuracies(results, rows, filter):
+    def plot_accuracies(results, rows, plotting):
         data = list()
         for model in results:
             for subset in results[model]:
-                if model in filter["models"] and subset in filter["subsets"]:
+                if model in plotting["models"] and subset in plotting["subsets"]:
                     data.append((DataFrame(data=results[model][subset], index=rows,
                                            columns=[x for x in results[model][subset]]), "featureSelectionAcc x " + model + " x " + subset))
         Visualization.performance(data)
