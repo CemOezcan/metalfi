@@ -152,10 +152,10 @@ class Evaluation:
         q_3 = __question_data(data_3, rows, "_metaModels")
         q_4 = __question_data(data_4, comp_rows, "_featureSelection")
 
-        Visualization.compare_means(q_1_lin + q_1_non, "groups")
-        Visualization.compare_means(q_2, "targets")
-        Visualization.compare_means(q_3, "models")
-        Visualization.compare_means(q_4, "selection")
+        Visualization.compare_means(q_1_lin + q_1_non, "predictions")
+        Visualization.compare_means(q_2, "predictions")
+        Visualization.compare_means(q_3, "predictions")
+        # Visualization.compare_means(q_4, "selection")
 
     def __q_2(self, data: Dict[str, Dict[str, List[float]]], rows: List[str]) -> List[Tuple[DataFrame, str]]:
         data_frames = list()
@@ -381,7 +381,7 @@ class Evaluation:
 
             all_results[model] = this_model
 
-        plotting = {"models": ["LIN", "linSVP", "SVR"], "subsets": ["Auto", "LM"]}
+        plotting = {"models": ["LIN", "linSVR", "SVR"], "subsets": ["Auto", "LM"]}
         self.plot_accuracies(all_results, rows, plotting)
         self.__store_all_comparisons([result for result, _ in results], [time for _, time in results], rows, "all_comparisons")
 
