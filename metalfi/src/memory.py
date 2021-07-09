@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import multiprocessing as mp
 import pickle
+from sklearn.utils import shuffle
 from typing import List, Tuple
 
 import numpy as np
@@ -42,16 +43,27 @@ class Memory:
         return pd.read_csv(path / (directory + name))
 
     @staticmethod
-    def load_open_ml(large=False) -> List[Tuple[pd.DataFrame, str, str]]:
+    def load_open_ml() -> List[Tuple[pd.DataFrame, str, str]]:
         """
         Fetch and preprocess base-data sets from openML:
         Criteria:
-            - Number of instances <= 500
-            - Number of features in [5, 10]
+            - Number of base-data sets: 60 (20 small, medium sized and large base-data sets)
+            - Number of instances in [100, 2000]
             - Number of classes = 2
             - Number of missing values = 0
             - Number of zero-variance features = 0
             - Majority class ratio < 0.67
+
+        We categorize base-data sets based on their complexity.
+        We randomly choose 20 base-data sets from each of the following categories:
+
+        Small base-data sets:
+            - Number of features in [5, 10]
+        Medium base-data sets:
+            - Number of features in [11, 20]
+        Large base-data sets:
+            - Number of features in [21, 50]
+
         Apply ordinal encoding on categorical features and target variables.
         Binarize target variables if necessary.
 
@@ -62,27 +74,36 @@ class Memory:
         """
         openml_list = openml.datasets.list_datasets()
         data = pd.DataFrame.from_dict(openml_list, orient="index")
-        space = "_"
-        if large:
-            data = data[data['NumberOfInstances'] > 999]
-            data = data[data['NumberOfInstances'] < 2001]
-            data = data[data['NumberOfFeatures'] < 51]
-            data = data[data['NumberOfFeatures'] > 20]
-            space = "_comp_"
-        else:
-            data = data[data['NumberOfInstances'] < 5001]
-            data = data[data['NumberOfFeatures'] < 51]
-            data = data[data['NumberOfFeatures'] > 4]
         data = data[data['NumberOfClasses'] == 2]
         data = data[(data["MajorityClassSize"] / data['NumberOfInstances']) < 0.67]
-        data = data[data['NumberOfMissingValues'] == 0].sort_values(["version"])
-        data = data.drop_duplicates("name", "last")
 
         target = "base-target_variable"
-        ids = list(filter(lambda x: str(x[0]) + space + str(x[1]) + ".csv" not in Memory.get_contents("preprocessed"),
-                          [tuple(x) for x in data[["name", "version"]].values]))
+        Memory.filter_data_frames(data, (99, 2001), (4, 11), 20, target)
+        Memory.filter_data_frames(data, (99, 2001), (10, 21), 20, target)
+        Memory.filter_data_frames(data, (99, 2001), (20, 51), 20, target)
+
+        return [(Memory.load(file, "preprocessed"), file[:-4], target) for file in Memory.get_contents("preprocessed")]
+
+    @staticmethod
+    def filter_data_frames(data, instances, features, limit, target):
+        data_frames = data
+        data_frames = data_frames[data_frames['NumberOfInstances'] > instances[0]]
+        data_frames = data_frames[data_frames['NumberOfInstances'] < instances[1]]
+        data_frames = data_frames[data_frames['NumberOfFeatures'] > features[0]]
+        data_frames = data_frames[data_frames['NumberOfFeatures'] < features[1]]
+        data_frames = data_frames[data_frames['NumberOfMissingValues'] == 0].sort_values(["version"])
+        data_frames = data_frames.drop_duplicates("name", "last")
+        data_frames = shuffle(data_frames, random_state=115)
+
+        ids = list(filter(lambda x: str(x[0]) + "_" + str(x[1]) + ".csv" not in Memory.get_contents("preprocessed"),
+                          [tuple(x) for x in data_frames[["name", "version"]].values]))
+
+        ctr = len(list(filter(lambda x: str(x[0]) + "_" + str(x[1]) + ".csv" in Memory.get_contents("preprocessed"),
+                              [tuple(x) for x in data_frames[["name", "version"]].values])))
 
         for name, version in ids:
+            if ctr >= limit:
+                return
             try:
                 dataset = fetch_openml(name=name, version=version, as_frame=True)
                 categories = fetch_openml(name=name, version=version, as_frame=False)["categories"]
@@ -129,10 +150,8 @@ class Memory:
                 ids.remove((name, version))
                 continue
 
-            Memory.store_preprocessed(data_frame, name + space + str(version))
-        return list(filter(lambda x: (space in x[1] and large) or ("_comp_" not in x[1] and not large),
-                           [(Memory.load(file, "preprocessed"), file[:-4], target)
-                            for file in Memory.get_contents("preprocessed")]))
+            Memory.store_preprocessed(data_frame, name + "_" + str(version))
+            ctr += 1
 
     @staticmethod
     def store_meta_features(data):

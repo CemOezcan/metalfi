@@ -1,6 +1,4 @@
 from decimal import Decimal
-from functools import partial
-import multiprocessing as mp
 import re
 from typing import List, Dict, Tuple
 
@@ -148,11 +146,11 @@ class Evaluation:
             return [(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]), metric + suffix)
                     for metric in data]
 
-        q_1_lin = __question_data(data_1_lin, rows, "_LIN")
-        q_1_non = __question_data(data_1_non, rows, "_NON")
+        q_1_lin = __question_data(data_1_lin, rows, "_featureGroups_linearMetaModels")
+        q_1_non = __question_data(data_1_non, rows, "_featureGroups_nonlinearMetaModels")
         q_2 = self.__q_2(data_2, rows)
-        q_3 = __question_data(data_3, rows, "")
-        q_4 = __question_data(data_4, comp_rows, "")
+        q_3 = __question_data(data_3, rows, "_metaModels")
+        q_4 = __question_data(data_4, comp_rows, "_featureSelection")
 
         Visualization.compare_means(q_1_lin + q_1_non, "groups")
         Visualization.compare_means(q_2, "targets")
@@ -166,9 +164,9 @@ class Evaluation:
             fi_measures = {fi_measure: [0] * len(rows) for fi_measure in Parameters.fi_measures()}
             base_models = {name: [0] * len(rows) for _, name, _ in Parameters.base_models}
 
-            data_frames.append((data_frame, metric))
-            data_frames.append(self.__helper_q_2(fi_measures, data_frame, rows, metric, "targets_", targets=True))
-            data_frames.append(self.__helper_q_2(base_models, data_frame, rows, metric, "base_"))
+            data_frames.append((data_frame, metric + "_allMetaTargets"))
+            data_frames.append(self.__helper_q_2(fi_measures, data_frame, rows, metric, "_impMeasures", targets=True))
+            data_frames.append(self.__helper_q_2(base_models, data_frame, rows, metric, "_baseModels"))
 
         return data_frames
 
@@ -186,7 +184,7 @@ class Evaluation:
 
             dictionary[key] = [element / len(subset) for element in dictionary[key]]
 
-        return DataFrame(data=dictionary, index=rows, columns=[x for x in dictionary]), name + metric
+        return DataFrame(data=dictionary, index=rows, columns=[x for x in dictionary]), metric + name
 
     @staticmethod
     def __create_question_csv(performances: List[Tuple[List[str], List[float]]], names: List[str],
@@ -317,31 +315,6 @@ class Evaluation:
 
                 Memory.store_data_frame(data_frame, metric + "x" + importance, "tables", True)
 
-    @staticmethod
-    def parallel_comparisons(name: str, models: List[str], targets: List[str], subsets: List[str], renew: bool) \
-            -> List[List[float]]:
-        """
-        Load a trained instance of :py:class:`MetaModel` and call its compare method.
-
-        Parameters
-        ----------
-            name : Name of the file, in which said instance is saved.
-            models : meta-model names.
-            targets : Meta-target names.
-            subsets : Meta-feature subset names.
-            renew : Whether to recalculate or not.
-
-        Returns
-        -------
-            Base-model performance estimates.
-
-        """
-        model, _ = Memory.load_model([name])[0]
-        # model.compare(models, targets, subsets, 33, renew)
-        results = model.get_results()[name]
-        # Memory.renew_model(model, model.get_name()[:-4])
-        return results
-
     def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]):
         data = {key: list() for key in ["base_data_set", "meta_model", "meta_features", "base_model", "importance_measure", "r^2"]}
         for i in range(len(self.__meta_models)):
@@ -408,73 +381,19 @@ class Evaluation:
 
             all_results[model] = this_model
 
-        # TODO: change
-        self.plot_accuracies(all_results, rows)
+        plotting = {"models": ["LIN", "linSVP", "SVR"], "subsets": ["Auto", "LM"]}
+        self.plot_accuracies(all_results, rows, plotting)
         self.__store_all_comparisons([result for result, _ in results], [time for _, time in results], rows, "all_comparisons")
 
     @staticmethod
-    def plot_accuracies(results, rows):
+    def plot_accuracies(results, rows, plotting):
         data = list()
         for model in results:
             for subset in results[model]:
-                data.append((DataFrame(data=results[model][subset], index=rows,
-                                       columns=[x for x in results[model][subset]]), model + " x " + subset))
+                if model in plotting["models"] and subset in plotting["subsets"]:
+                    data.append((DataFrame(data=results[model][subset], index=rows,
+                                           columns=[x for x in results[model][subset]]), "featureSelectionAcc x " + model + " x " + subset))
         Visualization.performance(data)
-
-
-    def comparisons(self, models: List[str], targets: List[str], subsets: List[str], renew=False):
-        """
-        Estimate base-model performances by testing them on their respective cross validation test splits.
-        The base-models are trained on different base-feature subsets, which are determined by different feature
-        selection approaches. Save the results as .csv files in the `metalfi/data/output/selection` directory.
-
-        Parameters
-        ----------
-            models : Meta-model names.
-            targets : Meta-target names.
-            subsets : Meta-feature subsets.
-            renew : Whether to recompute the results, if they have already been computed.
-        """
-        with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
-            progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
-
-            results = [pool.map_async(
-                partial(self.parallel_comparisons, models=models, targets=targets, subsets=subsets, renew=renew),
-                (model, ), callback=(lambda x: progress_bar.update(n=1))) for model in self.__meta_models]
-
-            results = [x.get()[0] for x in results]
-            pool.close()
-            pool.join()
-
-        progress_bar.close()
-        model, _ = Memory.load_model([self.__meta_models[0]])[0]
-        rows = model.compare(models, targets, subsets, 33, False)
-        for result in results:
-            self.__comparisons = self.matrix_addition(self.__comparisons, result)
-
-        self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
-        self.__parameters = model.get_result_config()
-
-        all_results = {}
-        for model in models:
-            this_model = {}
-            for subset in subsets:
-                index = 0
-                for a, b, c in self.__parameters:
-                    if a == model and c == subset:
-                        this_model[b] = self.__comparisons[index]
-
-                    index += 1
-
-            all_results[model] = this_model
-
-        for model in all_results:
-            for subset in subsets:
-                Memory.store_data_frame(DataFrame(data=all_results[model], index=rows,
-                                                  columns=[x for x in all_results[model]]),
-                                        model + " x " + subset, "selection", True)
-
-        self.__store_all_comparisons(results, rows, "all_comparisons")
 
     def __store_all_comparisons(self, results: List[List[List[float]]], times: List[List[List[float]]], rows: List[str], name: str):
         data = {key: list() for key in ["base_data_set", "meta_model", "meta_features", "feature_selection_approach",
@@ -498,13 +417,6 @@ class Evaluation:
 
         data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2]
                 + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": list(map(lambda x: x[i][j], results))
-                for i in range(len(self.__parameters)) for j in range(len(rows))}
-
-        Memory.store_data_frame(DataFrame(data, index=self.__meta_models), name, "selection")
-
-    def __store_all_comparisons_2(self, results: List[List[float]], rows: List[str], name: str):
-        data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2]
-                + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": [results[i][j]]
                 for i in range(len(self.__parameters)) for j in range(len(rows))}
 
         Memory.store_data_frame(DataFrame(data, index=self.__meta_models), name, "selection")

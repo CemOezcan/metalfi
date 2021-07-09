@@ -138,11 +138,12 @@ class Visualization:
         frame = data[0][0].sort_values(by="PIMP")
         for base_model in set(frame["base_model"]):
             for imp in set(frame["importance_measure"]):
-                new_frame = frame[frame["base_model"] == base_model]
-                new_frame = new_frame[new_frame["importance_measure"] == imp]
-                plt.barh(list(new_frame["meta-features"])[-15:], list(new_frame["PIMP"])[-15:])
-                plt.yticks(list(new_frame["meta-features"])[-15:])
-                Memory.store_visual(plt, base_model + "x" + imp, "importance")
+                if "SHAP" in imp:
+                    new_frame = frame[frame["base_model"] == base_model]
+                    new_frame = new_frame[new_frame["importance_measure"] == imp]
+                    plt.barh(list(new_frame["meta-features"])[-15:], list(new_frame["PIMP"])[-15:])
+                    plt.yticks(list(new_frame["meta-features"])[-15:])
+                    Memory.store_visual(plt, "metaFeatureImp x " + base_model + "x" + imp, "importance")
 
     @staticmethod
     def compare_means(data: List[Tuple[pd.DataFrame, str]], folder: str):
@@ -186,17 +187,17 @@ class Visualization:
                     Visualization.__create_cd_diagram(names, ranks, metric, d, folder)
 
     @staticmethod
-    def __create_cd_diagram(names: List[str], ranks: List[float], metric: str, data: List[np.array], folder: str):
+    def __create_cd_diagram(names: List[str], ranks: List[float], file_name: str, data: List[np.array], folder: str):
         cd = Orange.evaluation.compute_CD(ranks, 28) if len(ranks) < 21 else 3.616
         Orange.evaluation.graph_ranks(ranks, names, cd=cd)
-        Memory.store_visual(plt, metric + "_cd", folder)
+        Memory.store_visual(plt, file_name + "_cd", folder)
         plt.close()
 
         _, ax = plt.subplots()
         ax.boxplot(data, notch=True, showfliers=False)
         ax.set_xticks(list(range(1, len(data) + 1)))
         ax.set_xticklabels(names)
-        Memory.store_visual(plt, metric + "_means", folder)
+        Memory.store_visual(plt, file_name + "_means", folder)
         plt.close()
 
     @staticmethod
