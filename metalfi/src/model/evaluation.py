@@ -146,11 +146,11 @@ class Evaluation:
             return [(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]), metric + suffix)
                     for metric in data]
 
-        q_1_lin = __question_data(data_1_lin, rows, "_LIN")
-        q_1_non = __question_data(data_1_non, rows, "_NON")
+        q_1_lin = __question_data(data_1_lin, rows, "_featureGroups_linearMetaModels")
+        q_1_non = __question_data(data_1_non, rows, "_featureGroups_nonlinearMetaModels")
         q_2 = self.__q_2(data_2, rows)
-        q_3 = __question_data(data_3, rows, "")
-        q_4 = __question_data(data_4, comp_rows, "")
+        q_3 = __question_data(data_3, rows, "_metaModels")
+        q_4 = __question_data(data_4, comp_rows, "_featureSelection")
 
         Visualization.compare_means(q_1_lin + q_1_non, "groups")
         Visualization.compare_means(q_2, "targets")
@@ -164,9 +164,9 @@ class Evaluation:
             fi_measures = {fi_measure: [0] * len(rows) for fi_measure in Parameters.fi_measures()}
             base_models = {name: [0] * len(rows) for _, name, _ in Parameters.base_models}
 
-            data_frames.append((data_frame, metric))
-            data_frames.append(self.__helper_q_2(fi_measures, data_frame, rows, metric, "targets_", targets=True))
-            data_frames.append(self.__helper_q_2(base_models, data_frame, rows, metric, "base_"))
+            data_frames.append((data_frame, metric + "_allMetaTargets"))
+            data_frames.append(self.__helper_q_2(fi_measures, data_frame, rows, metric, "_impMeasures", targets=True))
+            data_frames.append(self.__helper_q_2(base_models, data_frame, rows, metric, "_baseModels"))
 
         return data_frames
 
@@ -184,7 +184,7 @@ class Evaluation:
 
             dictionary[key] = [element / len(subset) for element in dictionary[key]]
 
-        return DataFrame(data=dictionary, index=rows, columns=[x for x in dictionary]), name + metric
+        return DataFrame(data=dictionary, index=rows, columns=[x for x in dictionary]), metric + name
 
     @staticmethod
     def __create_question_csv(performances: List[Tuple[List[str], List[float]]], names: List[str],
@@ -381,16 +381,18 @@ class Evaluation:
 
             all_results[model] = this_model
 
-        self.plot_accuracies(all_results, rows)
+        filter = {"models": ["LIN", "linSVP", "SVR"], "subsets": ["Auto", "LM"]}
+        self.plot_accuracies(all_results, rows, filter)
         self.__store_all_comparisons([result for result, _ in results], [time for _, time in results], rows, "all_comparisons")
 
     @staticmethod
-    def plot_accuracies(results, rows):
+    def plot_accuracies(results, rows, filter):
         data = list()
         for model in results:
             for subset in results[model]:
-                data.append((DataFrame(data=results[model][subset], index=rows,
-                                       columns=[x for x in results[model][subset]]), model + " x " + subset))
+                if model in filter["models"] and subset in filter["subsets"]:
+                    data.append((DataFrame(data=results[model][subset], index=rows,
+                                           columns=[x for x in results[model][subset]]), "featureSelectionAcc x " + model + " x " + subset))
         Visualization.performance(data)
 
     def __store_all_comparisons(self, results: List[List[List[float]]], times: List[List[List[float]]], rows: List[str], name: str):

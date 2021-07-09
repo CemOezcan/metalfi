@@ -186,17 +186,17 @@ class Visualization:
                     Visualization.__create_cd_diagram(names, ranks, metric, d, folder)
 
     @staticmethod
-    def __create_cd_diagram(names: List[str], ranks: List[float], metric: str, data: List[np.array], folder: str):
+    def __create_cd_diagram(names: List[str], ranks: List[float], file_name: str, data: List[np.array], folder: str):
         cd = Orange.evaluation.compute_CD(ranks, 28) if len(ranks) < 21 else 3.616
         Orange.evaluation.graph_ranks(ranks, names, cd=cd)
-        Memory.store_visual(plt, metric + "_cd", folder)
+        Memory.store_visual(plt, file_name + "_cd", folder)
         plt.close()
 
         _, ax = plt.subplots()
         ax.boxplot(data, notch=True, showfliers=False)
         ax.set_xticks(list(range(1, len(data) + 1)))
         ax.set_xticklabels(names)
-        Memory.store_visual(plt, metric + "_means", folder)
+        Memory.store_visual(plt, file_name + "_means", folder)
         plt.close()
 
     @staticmethod
