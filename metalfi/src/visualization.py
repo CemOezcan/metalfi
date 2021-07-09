@@ -138,11 +138,12 @@ class Visualization:
         frame = data[0][0].sort_values(by="PIMP")
         for base_model in set(frame["base_model"]):
             for imp in set(frame["importance_measure"]):
-                new_frame = frame[frame["base_model"] == base_model]
-                new_frame = new_frame[new_frame["importance_measure"] == imp]
-                plt.barh(list(new_frame["meta-features"])[-15:], list(new_frame["PIMP"])[-15:])
-                plt.yticks(list(new_frame["meta-features"])[-15:])
-                Memory.store_visual(plt, base_model + "x" + imp, "importance")
+                if "SHAP" in imp:
+                    new_frame = frame[frame["base_model"] == base_model]
+                    new_frame = new_frame[new_frame["importance_measure"] == imp]
+                    plt.barh(list(new_frame["meta-features"])[-15:], list(new_frame["PIMP"])[-15:])
+                    plt.yticks(list(new_frame["meta-features"])[-15:])
+                    Memory.store_visual(plt, "metaFeatureImp x " + base_model + "x" + imp, "importance")
 
     @staticmethod
     def compare_means(data: List[Tuple[pd.DataFrame, str]], folder: str):
