@@ -53,8 +53,8 @@ class ShapImportance(FeatureImportance):
         return self.__create_data_frame(imp, X)
 
     def kernel_shap(self, model: BaseEstimator, X: DataFrame, y: DataFrame, k=10) -> DataFrame:
-        model.fit(X, y)
         np.random.seed(115)
+        model.fit(X, y)
         X_summary = shap.kmeans(X, k)
         imp = shap.KernelExplainer(model.predict, X_summary).shap_values(X)
 
