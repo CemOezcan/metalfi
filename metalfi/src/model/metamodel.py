@@ -236,6 +236,10 @@ class MetaModel:
         for X_tr, X_te, y_tr, y_te in self.__get_cross_validation_folds(X_test, y_test):
             print(2)
             warnings.filterwarnings("ignore", category=DeprecationWarning, message="Using.*")
+            warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
+            warnings.filterwarnings("ignore", message="(invalid value.*|"
+                                                      "Features.*|"
+                                                      "Input data for shapiro has range zero.*)")
             results.append(list())
             times.append(list())
             dataset = Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target")
@@ -248,7 +252,7 @@ class MetaModel:
             mf.add_target(PermutationImportance(dataset))
             print(3)
 
-            warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
+
             normalizer = Normalizer()
             anova_time = self.measure_time(f_classif, X_tr, y_tr)
             mi_time = self.measure_time(partial(mutual_info_classif, random_state=115), X_tr, y_tr)
