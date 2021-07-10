@@ -31,10 +31,11 @@ class Main:
             delete_models: (bool)
                 Whether to delete meta-models.
         """
+        directories = ["model", "output/importance", "output/predictions", "output/selection", "output/tables"]
         if delete_meta:
-            Memory.clear_directory(["input", "preprocessed", "output/runtime", "model"])
+            Memory.clear_directory(["input", "preprocessed", "output/runtime"] + directories)
         if delete_models:
-            Memory.clear_directory(["model", "output/importance"])
+            Memory.clear_directory(directories)
 
         c = Controller()
         c.train_meta_models()
