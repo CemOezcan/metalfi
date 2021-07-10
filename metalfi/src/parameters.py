@@ -42,10 +42,11 @@ class Parameters:
                    (SVC(kernel="linear", probability=True, random_state=115), "linSVC", "linear"),
                    (GaussianNB(), "NB", "kernel")]
 
-    meta_models = [
+    meta_models = [(RandomForestRegressor(random_state=115), "RF", "tree"),
                    (DecisionTreeRegressor(random_state=115), "DT", "tree"),
                    (SVR(), "SVR", "kernel"),
-                   (LinearRegression(), "LIN", "linear")]
+                   (LinearRegression(), "LIN", "linear"),
+                   (LinearSVR(max_iter=10000, random_state=115), "linSVR", "linear")]
 
     @staticmethod
     def calculate_metrics(y_test: List[float], y_pred: List[float]) -> List[float]:
