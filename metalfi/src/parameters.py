@@ -1,3 +1,4 @@
+import warnings
 from typing import List, Tuple
 
 import numpy as np
@@ -63,6 +64,7 @@ class Parameters:
             Performance of prediction according to different metrics (currently: Coefficient of determination).
 
         """
+        warnings.filterwarnings("error", message="invalid value.*")
         r_2 = 0 if np.std(y_test) <= 0.001 or np.std(y_pred) <= 0.001 else \
             r2_score(y_test, y_pred)
 

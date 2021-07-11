@@ -212,7 +212,6 @@ class MetaModel:
         -------
             Accuracy scores and computation times.
         """
-
         k = 33
         meta_target_names = [x for x in Parameters.targets if "SHAP" in x]
         used_models = [(model, features, config) for model, features, config in self.__meta_models if config[1] in meta_target_names]
@@ -235,9 +234,6 @@ class MetaModel:
         times = list()
         for X_tr, X_te, y_tr, y_te in self.__get_cross_validation_folds(X_test, y_test):
             warnings.filterwarnings("ignore", category=DeprecationWarning, message="Using.*")
-            warnings.filterwarnings("ignore", message="(invalid value.*|"
-                                                      "Features.*|"
-                                                      "Input data for shapiro has range zero.*)")
             results.append(list())
             times.append(list())
             dataset = Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target")
@@ -248,11 +244,11 @@ class MetaModel:
                             "Multi": metalfi_time_tuple[2], "Uni": metalfi_time_tuple[1]}
             X_m = DataFrame(data=self.__sc1.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
             mf.add_target(PermutationImportance(dataset))
-
             warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
             warnings.filterwarnings("ignore", message="(invalid value.*|"
                                                       "Features.*|"
                                                       "Input data for shapiro has range zero.*)")
+
             normalizer = Normalizer()
             anova_time = self.measure_time(f_classif, X_tr, y_tr)
             mi_time = self.measure_time(partial(mutual_info_classif, random_state=115), X_tr, y_tr)
@@ -283,7 +279,6 @@ class MetaModel:
                 mi_times[name][n] = mi_time
                 pimp_times[name][n] = self.measure_time(partial(PermutationImportance.data_permutation_importance,
                                                                 og_model), X_tr, y_tr)
-
             for model, features, config in used_models:
                 metalfi_prediction_time = self.measure_time(lambda x, y: model.predict(x), X_m[features], None)
                 pipeline_metalfi = make_pipeline(StandardScaler(),

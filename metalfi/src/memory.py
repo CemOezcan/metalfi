@@ -93,7 +93,6 @@ class Memory:
         data_frames = data_frames[data_frames['NumberOfFeatures'] < features[1]]
         data_frames = data_frames[data_frames['NumberOfMissingValues'] == 0].sort_values(["version"])
         data_frames = data_frames.drop_duplicates("name", "last")
-        data_frames = shuffle(data_frames, random_state=115)
 
         ids = list(filter(lambda x: str(x[0]) + "_" + str(x[1]) + ".csv" not in Memory.get_contents("preprocessed"),
                           [tuple(x) for x in data_frames[["name", "version"]].values]))
