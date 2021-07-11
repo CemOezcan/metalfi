@@ -240,8 +240,8 @@ class MetaModel:
             mf = MetaFeatures(dataset)
             metalfi_time_tuple = mf.calculate_meta_features()
             metalfi_time = {"Auto": sum(metalfi_time_tuple[2:]), "All": sum(metalfi_time_tuple),
-                            "FMF": sum(metalfi_time_tuple[1:]), "LM": metalfi_time_tuple[3],
-                            "Multi": metalfi_time_tuple[2], "Uni": metalfi_time_tuple[1]}
+                            "FMF": sum(metalfi_time_tuple[1:]), "LM": metalfi_time_tuple[4],
+                            "Multi": sum(metalfi_time_tuple[2:4]), "Uni": metalfi_time_tuple[1]}
             X_m = DataFrame(data=self.__sc1.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
             mf.add_target(PermutationImportance(dataset))
             warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")
