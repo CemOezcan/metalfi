@@ -19,7 +19,7 @@ class Dataset:
         mf = MetaFeatures(self)
 
         start_d_total = time.time()
-        d_time, u_time, m_time, l_time = mf.calculate_meta_features()
+        d_time, u_time, mf_time, mt_time, l_time = mf.calculate_meta_features()
         end_d_total = time.time()
         d_total = end_d_total - start_d_total
 
@@ -30,8 +30,8 @@ class Dataset:
 
         data = mf.get_meta_data()
 
-        data_time = {"data": d_time, "univariate": u_time, "multivariate": m_time, "landmarking": l_time,
-                     "total": d_total}
+        data_time = {"data": d_time, "univariate": u_time, "multivariate_ff": mf_time, "multivariate_ft": mt_time,
+                     "landmarking": l_time, "total": d_total}
         target_time = {"LOFO": d, "PIMP": p, "LIME": l, "SHAP": s, "total": t_total}
 
         return data, targets, (data_time, target_time), len(self.__data_frame.columns) - 1, len(self.__data_frame.index)

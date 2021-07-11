@@ -90,4 +90,4 @@ class Parameters:
 
         """
         return ["linSVR", "RF", "DT", "SVR", "LIN"], list(filter(lambda x: x.endswith("_SHAP"), Parameters.targets)), \
-               ["LM", "FMF", "All", "Auto"]
+               ["LM", "FMF", "All", "Auto", "LMUni", "LMMultiFT", "LMMulti"]

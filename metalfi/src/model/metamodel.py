@@ -87,9 +87,13 @@ class MetaModel:
             [x for x in train.columns if x.startswith("multi_")]
         uni = \
             [x for x in train.columns if (x in fmf) and (x not in multi) and (x not in lm)]
+        lm_uni = lm + uni
+        lm_multi = lm + multi
+        lm_multi_ft = lm + [x for x in multi if x.startswith("multi_cb")]
+        uni_multi_ff = uni + [x for x in multi if not x.startswith("multi_cb")]
 
-        self.__feature_sets = [["Auto"], train.columns, fmf, lm, multi, uni]
-        self.__meta_feature_groups = {0: "Auto", 1: "All", 2: "FMF", 3: "LM", 4: "Multi", 5: "Uni"}
+        self.__feature_sets = [["Auto"], train.columns, fmf, lm, multi, uni, lm_uni, lm_multi, lm_multi_ft, uni_multi_ff]
+        self.__meta_feature_groups = {0: "Auto", 1: "All", 2: "FMF", 3: "LM", 4: "Multi", 5: "Uni", 6: "LMUni", 7: "LMMulti", 8: "LMMultiFT", 9: "UniMultiFF"}
 
     def get_name(self):
         return self.__file_name
@@ -240,8 +244,11 @@ class MetaModel:
             mf = MetaFeatures(dataset)
             metalfi_time_tuple = mf.calculate_meta_features()
             metalfi_time = {"Auto": sum(metalfi_time_tuple[2:]), "All": sum(metalfi_time_tuple),
-                            "FMF": sum(metalfi_time_tuple[1:]), "LM": metalfi_time_tuple[3],
-                            "Multi": metalfi_time_tuple[2], "Uni": metalfi_time_tuple[1]}
+                            "FMF": sum(metalfi_time_tuple[1:]), "LM": metalfi_time_tuple[4],
+                            "Multi": sum(metalfi_time_tuple[2:4]), "Uni": metalfi_time_tuple[1],
+                            "LMUni": metalfi_time_tuple[1] + metalfi_time_tuple[4],
+                            "LMMulti": sum(metalfi_time_tuple[2:]), "LMMultiFT": sum(metalfi_time_tuple[3:]),
+                            "UniMultiFF": metalfi_time_tuple[1] + metalfi_time_tuple[3]}
             X_m = DataFrame(data=self.__sc1.transform(mf.get_meta_data()), columns=mf.get_meta_data().columns)
             mf.add_target(PermutationImportance(dataset))
             warnings.filterwarnings("ignore", category=DeprecationWarning, message="tostring.*")

@@ -58,11 +58,11 @@ class MetaFeatures:
         -------
 
         """
-        uni_time, multi_time, lm_time = self.__compute_feature_meta_features()
+        uni_time, multi_ff_time, multi_ft_time, lm_time = self.__compute_feature_meta_features()
         data_time = self.__compute_data_meta_features()
         self.__create_meta_data()
 
-        return data_time, uni_time, multi_time, lm_time
+        return data_time, uni_time, multi_ff_time, multi_ft_time, lm_time
 
     @staticmethod
     def __run_pymfe(X: Union[DataFrame, np.ndarray], y: Union[DataFrame, np.ndarray], summary: Union[List[str], None],
@@ -124,7 +124,7 @@ class MetaFeatures:
         end_uni = time.time()
         total_uni = end_uni - start_uni
 
-        start_multi = time.time()
+        start_multi_ff = time.time()
         cov = X.cov()
         p_cor = X.corr("pearson")
         s_cor = X.corr("spearman")
@@ -137,8 +137,9 @@ class MetaFeatures:
         mean_k = self.__correlation_feature_meta_features(k_cor, "_k_corr")
         mean_su = self.__correlation_feature_meta_features(su_cor, "_su_corr")
 
-        end_multi = time.time()
-        total_multi = end_multi - start_multi
+        end_multi_ff = time.time()
+        total_multi_ff = end_multi_ff - start_multi_ff
+        total_multi_ft = total_multi_ff
 
         start_lm = time.time()
         columns, values = self.__run_pymfe(X.values, y.values, None, ["joint_ent", "mut_inf"])
@@ -150,11 +151,11 @@ class MetaFeatures:
         for column in columns:
             self.__feature_meta_feature_names.append("target_" + column)
 
-        self.__filter_scores(X, y, mean_p, mean_s, mean_k, mean_su)
+        total_multi_ft += self.__filter_scores(X, y, mean_p, mean_s, mean_k, mean_su)
         end_lm = time.time()
         total_lm = end_lm - start_lm
 
-        return total_uni, total_multi, total_lm
+        return total_uni, total_multi_ff, total_multi_ft, total_lm
 
     def __correlation_feature_meta_features(self, matrix: DataFrame, name: str, threshold=0.5) -> Dict[str, np.ndarray]:
         mean_correlation = {}
@@ -196,6 +197,7 @@ class MetaFeatures:
         log_anova_p = list(map((lambda x: 1 if math.isnan(x) else x), log_anova_p))
         log_chi2_p = list(map((lambda x: -500 if x == float("-inf") else x), [np.log(x) for x in chi2_p_values]))
 
+        total_multi_ft = 0
         for feature in X.columns:
             loc = X.columns.get_loc(feature)
             p = X[feature].corr(y, method="pearson")
@@ -211,10 +213,14 @@ class MetaFeatures:
             self.__feature_meta_features[loc].append(log_anova_p[loc])
             self.__feature_meta_features[loc].append(chi2_values[loc])
             self.__feature_meta_features[loc].append(log_chi2_p[loc])
+
+            start_multi_ft = time.time()
             self.__feature_meta_features[loc].append(abs(p) / np.sqrt(1 + 2 * p_cor[feature]))
             self.__feature_meta_features[loc].append(abs(s) / np.sqrt(1 + 2 * s_cor[feature]))
             self.__feature_meta_features[loc].append(abs(k) / np.sqrt(1 + 2 * k_cor[feature]))
             self.__feature_meta_features[loc].append(su / np.sqrt(1 + 2 * su_cor[feature]))
+            end_multi_ft = time.time()
+            total_multi_ft += end_multi_ft - start_multi_ft
 
         self.__feature_meta_feature_names.append("target_p_corr")
         self.__feature_meta_feature_names.append("target_s_corr")
@@ -228,6 +234,8 @@ class MetaFeatures:
         self.__feature_meta_feature_names.append("multi_cb_spearman")
         self.__feature_meta_feature_names.append("multi_cb_kendall")
         self.__feature_meta_feature_names.append("multi_cb_SU")
+
+        return total_multi_ft
 
     @staticmethod
     def __to_feature_vector(double_list: Sequence[np.array]) -> List[float]:
