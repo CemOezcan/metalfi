@@ -381,7 +381,7 @@ class Evaluation:
 
             all_results[model] = this_model
 
-        plotting = {"models": ["LIN", "linSVR", "SVR"], "subsets": ["Auto", "LM", "LMUni", "LMMultiFT", "LMMulti"]}
+        plotting = {"models": meta_models, "subsets": subsets}
         self.plot_accuracies(all_results, rows, plotting)
         self.__store_all_comparisons([result for result, _ in results], [time for _, time in results], rows, "all_comparisons")
 
