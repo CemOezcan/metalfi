@@ -200,12 +200,12 @@ class Evaluation:
                 tuples = [t for t in performances if t[0][0] in non_linear_meta_models]
         elif question == 2:
             tuples = [t for t in performances
-                      if ((t[0][0] in linear_meta_models) and (t[0][2] == "LM"))
-                      or ((t[0][0] in non_linear_meta_models) and (t[0][2] == "Auto"))]
+                      if ((t[0][0] in linear_meta_models) and (t[0][2] not in ["Uni", "UniMultiFF", "Multi", "All"]))
+                      or ((t[0][0] in non_linear_meta_models) and (t[0][2] not in ["Uni", "UniMultiFF"]))]
         elif question == 3:
             tuples = [t for t in performances if (t[0][1][:-4] != "LOFO")
-                      and ((t[0][0] in linear_meta_models and (t[0][2] == "LM"))
-                           or ((t[0][0] in non_linear_meta_models) and (t[0][2] == "Auto")))]
+                      and ((t[0][0] in linear_meta_models and (t[0][2] not in ["Uni", "UniMultiFF", "Multi", "All"]))
+                           or ((t[0][0] in non_linear_meta_models) and (t[0][2] not in ["Uni", "UniMultiFF"])))]
         else:
             tuples = list()
 
