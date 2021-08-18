@@ -197,7 +197,7 @@ class Evaluation:
             if linear:
                 tuples = [t for t in performances if t[0][0] in linear_meta_models]
             else:
-                tuples = [t for t in performances if t[0][0] in non_linear_meta_models]
+                tuples = [t for t in performances if t[0][0] in non_linear_meta_models and t[0][0] != "DT"]
         elif question == 2:
             tuples = [t for t in performances
                       if ((t[0][0] in linear_meta_models) and (t[0][2] not in ["Uni", "UniMultiFF", "Multi", "All"]))

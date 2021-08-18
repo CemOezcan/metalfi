@@ -197,6 +197,7 @@ class Visualization:
         ax.boxplot(data, notch=True, showfliers=False)
         ax.set_xticks(list(range(1, len(data) + 1)))
         ax.set_xticklabels(names)
+        plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right')
         Memory.store_visual(plt, file_name + "_means", folder)
         plt.close()
 
