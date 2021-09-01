@@ -1,21 +1,24 @@
 import time
+from typing import Tuple
+
+import pandas as pd
 
 from metalfi.src.metadata.metafeatures import MetaFeatures
 
 
 class Dataset:
 
-    def __init__(self, data_frame, target):
+    def __init__(self, data_frame: pd.DataFrame, target: str):
         self.__data_frame = data_frame
         self.__target = target
 
-    def get_data_frame(self):
+    def get_data_frame(self) -> pd.DataFrame:
         return self.__data_frame
 
-    def get_target(self):
+    def get_target(self) -> str:
         return self.__target
 
-    def train_meta_data(self):
+    def train_meta_data(self) -> Tuple[pd.DataFrame. Tuple[float, float], int, int]:
         mf = MetaFeatures(self)
 
         start_d_total = time.time()
@@ -36,7 +39,7 @@ class Dataset:
 
         return data, targets, (data_time, target_time), len(self.__data_frame.columns) - 1, len(self.__data_frame.index)
 
-    def test_meta_data(self):
+    def test_meta_data(self) -> pd.DataFrame:
         mf = MetaFeatures(self)
         mf.calculate_meta_features()
 

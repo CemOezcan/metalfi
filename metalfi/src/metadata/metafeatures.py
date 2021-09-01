@@ -1,10 +1,10 @@
 import math
 import time
-from typing import List, Dict, Union, Sequence
+from typing import Dict, List, Union, Sequence, Tuple
 import warnings
 
 import numpy as np
-from pandas import DataFrame
+import pandas as pd
 from pymfe.mfe import MFE
 from sklearn.feature_selection import f_classif, chi2
 from sklearn.preprocessing import MinMaxScaler
@@ -41,17 +41,17 @@ class MetaFeatures:
 
     def __init__(self, dataset):
         self.__dataset = dataset
-        self.__meta_data = DataFrame()
+        self.__meta_data = pd.DataFrame()
         self.__targets = list()
         self.__feature_meta_features = list()
         self.__data_meta_features = list()
         self.__data_meta_feature_names = list()
         self.__feature_meta_feature_names = list()
 
-    def get_meta_data(self):
+    def get_meta_data(self) -> pd.DataFrame:
         return self.__meta_data
 
-    def calculate_meta_features(self) -> (float, float, float, float):
+    def calculate_meta_features(self) -> Tuple[float, float, float, float, float]:
         """
 
         Returns
@@ -65,7 +65,7 @@ class MetaFeatures:
         return data_time, uni_time, multi_ff_time, multi_ft_time, lm_time
 
     @staticmethod
-    def __run_pymfe(X: Union[DataFrame, np.ndarray], y: Union[DataFrame, np.ndarray], summary: Union[List[str], None],
+    def __run_pymfe(X: Union[pd.DataFrame, np.ndarray], y: Union[pd.DataFrame, np.ndarray], summary: Union[List[str], None],
                     features: List[str]) -> (List[str], List[str]):
         warnings.filterwarnings("ignore", message="(It is not possible make equal discretization|"
                                                   "(divide by zero|invalid value) encountered in .*|"
@@ -157,7 +157,7 @@ class MetaFeatures:
 
         return total_uni, total_multi_ff, total_multi_ft, total_lm
 
-    def __correlation_feature_meta_features(self, matrix: DataFrame, name: str, threshold=0.5) -> Dict[str, np.ndarray]:
+    def __correlation_feature_meta_features(self, matrix: pd.DataFrame, name: str, threshold=0.5) -> Dict[str, np.ndarray]:
         mean_correlation = {}
         for i in range(0, len(matrix.columns)):
             values = list()
@@ -183,8 +183,9 @@ class MetaFeatures:
                                               "multi_mean_high_corr" + name]
         return mean_correlation
 
-    def __filter_scores(self, X: DataFrame, y: DataFrame, p_cor: Dict[str, np.ndarray], s_cor: Dict[str, np.ndarray],
-                        k_cor: Dict[str, np.ndarray], su_cor: Dict[str, np.ndarray]):
+    def __filter_scores(self, X: pd.DataFrame, y: pd.DataFrame, p_cor: Dict[str, np.ndarray],
+                        s_cor: Dict[str, np.ndarray], k_cor: Dict[str, np.ndarray],
+                        su_cor: Dict[str, np.ndarray]):
         sc = MinMaxScaler()
         X_sc = sc.fit_transform(X)
 
@@ -251,7 +252,7 @@ class MetaFeatures:
         return vector
 
     def __create_meta_data(self):
-        self.__meta_data = DataFrame(
+        self.__meta_data = pd.DataFrame(
             columns=self.__feature_meta_feature_names,
             data=self.__feature_meta_features,
             index=self.__dataset.get_data_frame().drop(self.__dataset.get_target(), axis=1).columns)
@@ -307,7 +308,7 @@ class MetaFeatures:
         total = end - start
         return total
 
-    def __symmetrical_uncertainty(self, X: DataFrame, y: DataFrame, matrix=False) -> Union[float, DataFrame]:
+    def __symmetrical_uncertainty(self, X: pd.DataFrame, y: pd.DataFrame, matrix=False) -> Union[float, pd.DataFrame]:
         if matrix:
             data = {}
             for feature_1 in X.columns:
@@ -326,7 +327,7 @@ class MetaFeatures:
                     else:
                         data[feature_1][feature_2] = (2 * mut_inf) / (h_1 + h_2)
 
-            return DataFrame(data=data, columns=X.columns, index=X.columns)
+            return pd.DataFrame(data=data, columns=X.columns, index=X.columns)
 
         _, values = self.__run_pymfe(X.values, y.values, None, ["attr_ent", "class_ent", "mut_inf"])
         su = (2 * values[2][0]) / (values[0][0] + values[1])
