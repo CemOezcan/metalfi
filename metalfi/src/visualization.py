@@ -1,6 +1,4 @@
-from decimal import Decimal
-import re
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,10 +17,10 @@ class Visualization:
     """
 
     @staticmethod
-    def fetch_runtime_data(substring, threshold: int = 1000000):
+    def fetch_runtime_data(substring: str, threshold: int = 1000000) -> Dict[str, pd.DataFrame]:
         # Deprecated
         directory = "output/runtime"
-        file_names = list(filter(lambda x: x.endswith('.csv') and substring in x, Memory.get_contents(directory)))
+        file_names = [x for x in Memory.get_contents(directory) if x.endswith('.csv') and substring in x]
         data = list()
 
         for name in file_names:
@@ -49,7 +47,7 @@ class Visualization:
         return summary
 
     @staticmethod
-    def runtime_graph(name):
+    def runtime_graph(file_name: str) -> None:
         # Deprecated
         target_data = Visualization.fetch_runtime_data("XtargetX")
         meta_data = Visualization.fetch_runtime_data("XmetaX")
@@ -65,10 +63,10 @@ class Visualization:
             plt.plot(meta_data[x].columns[0], x, data=meta_data[x], linewidth=2)
 
         plt.legend()
-        Memory.store_visual(plt, name, "runtime")
+        Memory.store_visual(file_name=file_name, directory_name="runtime")
 
     @staticmethod
-    def runtime_boxplot(threshold, targets, meta, name):
+    def runtime_boxplot(threshold: int, targets: List[str], meta, file_name: str) -> None:
         # Deprecated
         target_data = Visualization.fetch_runtime_data("XtargetX", threshold)
         meta_data = Visualization.fetch_runtime_data("XmetaX", threshold)
@@ -91,14 +89,14 @@ class Visualization:
         _, ax = plt.subplots()
         ax.boxplot(data, showfliers=False)
         plt.xticks(list(range(1, len(data) + 1)), names)
-        Memory.store_visual(plt, name + "_box", "runtime")
+        Memory.store_visual(file_name=file_name + "_box", directory_name="runtime")
 
     @staticmethod
-    def performance(data):
+    def performance(data: List[Tuple[pd.DataFrame, str]]) -> None:
         """
         Create and save bar charts. Visualizes the performances of different feature selection approaches.
         """
-        for frame, name in data:
+        for frame, file_name in data:
             width = 0.1
             _, ax = plt.subplots()
 
@@ -125,10 +123,10 @@ class Visualization:
             ax.legend()
             plt.ylim([0.5, 0.85])
 
-            Memory.store_visual(plt, name, "selection")
+            Memory.store_visual(file_name=file_name, directory_name="selection")
 
     @staticmethod
-    def meta_feature_importance():
+    def meta_feature_importance() -> None:
         """
         Create and save bar charts. Visualizes the importance of meta-features for different meta-targets.
         """
@@ -143,10 +141,11 @@ class Visualization:
                     new_frame = new_frame[new_frame["importance_measure"] == imp]
                     plt.barh(list(new_frame["meta-features"])[-15:], list(new_frame["PIMP"])[-15:])
                     plt.yticks(list(new_frame["meta-features"])[-15:])
-                    Memory.store_visual(plt, "metaFeatureImp x " + base_model + "x" + imp, "importance")
+                    Memory.store_visual(file_name="metaFeatureImp x " + base_model + "x" + imp,
+                                        directory_name="importance")
 
     @staticmethod
-    def compare_means(data: List[Tuple[pd.DataFrame, str]], folder: str):
+    def compare_means(data: List[Tuple[pd.DataFrame, str]], folder: str) -> None:
         """
         Determine, whether the differences in meta-model performance are significant:
         Group data across cross validation splits and employ the non-parametric Friedman test.
@@ -164,18 +163,19 @@ class Visualization:
         for data_frame, metric in data:
             d = list()
             names = list()
-            ranks = [0] * len(data_frame.columns)
+            ranks = np.zeros(len(data_frame.columns))
 
             for i in range(len(data_frame.index)):
-                copy = data_frame.iloc[i].values
-                values = np.array(copy) if ("RMSE" in metric) else np.array(list(map(lambda x: -x, copy)))
+                values = np.array(data_frame.iloc[i].values)
+                if "RMSE" not in metric:
+                    values = -values
                 temp = values.argsort()
-                current_ranks = np.array([0] * len(values))
+                current_ranks = np.zeros(len(values))
                 current_ranks[temp] = np.arange(len(values))
-                current_ranks = list(map(lambda x: x + 1, current_ranks))
-                ranks = list(map(np.add, ranks, current_ranks))
+                current_ranks += 1
+                ranks += current_ranks
 
-            ranks = list(map(lambda x: x / len(data_frame.index), ranks))
+            ranks /= len(data_frame.index)
 
             for column in data_frame.columns:
                 names.append(column)
@@ -184,13 +184,14 @@ class Visualization:
             if 24 >= len(names) >= 3:
                 _, p_value = ss.friedmanchisquare(*d)
                 if p_value < 0.05:
-                    Visualization.__create_cd_diagram(names, ranks, metric, d, folder)
+                    Visualization.__create_cd_diagram(names, ranks.tolist(), metric, d, folder)
 
     @staticmethod
-    def __create_cd_diagram(names: List[str], ranks: List[float], file_name: str, data: List[np.array], folder: str):
+    def __create_cd_diagram(names: List[str], ranks: List[float], file_name: str,
+                            data: List[np.array], folder: str) -> None:
         cd = Orange.evaluation.compute_CD(ranks, 28) if len(ranks) < 21 else 3.616
         Orange.evaluation.graph_ranks(ranks, names, cd=cd)
-        Memory.store_visual(plt, file_name + "_cd", folder)
+        Memory.store_visual(file_name=file_name + "_cd", directory_name=folder)
         plt.close()
 
         _, ax = plt.subplots()
@@ -198,11 +199,11 @@ class Visualization:
         ax.set_xticks(list(range(1, len(data) + 1)))
         ax.set_xticklabels(names)
         plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right')
-        Memory.store_visual(plt, file_name + "_means", folder)
+        Memory.store_visual(file_name=file_name + "_means", directory_name=folder)
         plt.close()
 
     @staticmethod
-    def correlate_metrics():
+    def correlate_metrics() -> None:
         """
         Compute pairwise Spearman correlation coefficients between performance metrics.
         """
@@ -222,7 +223,7 @@ class Visualization:
         Memory.store_data_frame(corr, "metrics_corr", "", True)
 
     @staticmethod
-    def correlate_targets():
+    def correlate_targets() -> None:
         """
         Compute pairwise Spearman correlation coefficients between meta-features and meta-targets,
         grouped by feature importance measure.
@@ -255,12 +256,12 @@ class Visualization:
         matrix = matrix.drop([x for x in list(frame.columns) if x not in lofo + shap + pimp + lime], axis=1)
 
         def __f(targets):
-            return np.round(np.mean([np.mean(list([val for val in list(map(abs, matrix[x].values)) if val < 1]))
-                                     for x in targets]), 2)
+            return np.round(np.mean([np.mean([abs(x) for x in matrix[target].values if abs(x) < 1])
+                                     for target in targets]), 2)
 
         def __f_2(targets):
-            return np.round(np.max([np.mean(list([val for val in list(map(abs, matrix[x].values)) if val < 1]))
-                                    for x in targets]), 2)
+            return np.round(np.max([np.mean([abs(x) for x in matrix[target].values if abs(x) < 1])
+                                    for target in targets]), 2)
 
         d = {'lofo': [__f(lofo), __f_2(lofo)], 'shap': [__f(shap), __f_2(shap)],
              'lime': [__f(lime), __f_2(lime)], 'pimp': [__f(pimp), __f_2(pimp)]}
@@ -268,7 +269,7 @@ class Visualization:
         Memory.store_data_frame(data_frame, "target_corr", "tables", True)
 
     @staticmethod
-    def create_histograms():
+    def create_histograms() -> None:
         """
         Group meta-targets by feature importance measure and visualize their distributions as histograms.
         """
@@ -298,4 +299,4 @@ class Visualization:
             axs[x, y].set_title(name)
             axs[x, y].set_xlim(np.quantile(values, 0.05), np.quantile(values, 0.75))
 
-        Memory.store_visual(plt, "Histograms", "predictions")
+        Memory.store_visual(file_name="Histograms", directory_name="predictions")

@@ -2,9 +2,9 @@ import os
 from pathlib import Path
 import multiprocessing as mp
 import pickle
-from sklearn.utils import shuffle
 from typing import List, Tuple
 
+import matplotlib.pyplot as plt
 import numpy as np
 import openml
 import pandas as pd
@@ -271,17 +271,16 @@ class Memory:
             Memory.lock.release()
 
     @staticmethod
-    def store_visual(plt, name, directory):
+    def store_visual(file_name: str, directory_name: str):
         """
         Save `plt` as .pdf file in a subdirectory of metalfi/data.
 
         Parameters
         ----------
-            plt : Matplotlib-plot.
             name : Name of the .pdf file.
             directory : Subdirectory of metalfi/data.
         """
-        plt.savefig(Memory.get_path() / ("output/" + directory + "/" + name + ".pdf"))
+        plt.savefig(Memory.get_path() / ("output/" + directory_name + "/" + file_name + ".pdf"))
         plt.close()
 
     @staticmethod
