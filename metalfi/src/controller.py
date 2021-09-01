@@ -1,5 +1,5 @@
 import multiprocessing as mp
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
 from sklearn.feature_selection import f_regression
@@ -36,7 +36,7 @@ class Controller:
         self.fetch_data()
         self.store_meta_data()
 
-    def fetch_data(self):
+    def fetch_data(self) -> None:
         """
         Fetch base-data sets from openMl and scikit-learn
         """
@@ -47,7 +47,7 @@ class Controller:
             self.__data_names[name] = i
             i += 1
 
-    def store_meta_data(self):
+    def store_meta_data(self) -> None:
         """
         Parallel computation of meta-data sets from base-data sets.
         """
@@ -66,7 +66,7 @@ class Controller:
         progress_bar.close()
 
     @staticmethod
-    def parallel_meta_computation(data: Tuple[pd.DataFrame, str]):
+    def parallel_meta_computation(data: Tuple[pd.DataFrame, str]) -> None:
         """
         Computes a meta-data set, given a base-data set.
 
@@ -84,7 +84,7 @@ class Controller:
         Memory.store_input(meta_data, name)
         Memory.update_runtimes(new_runtime_data=d_times, name=name)
 
-    def __load_meta_data(self):
+    def __load_meta_data(self) -> None:
         for _, name in self.__train_data:
             sc = StandardScaler()
             data = Memory.load(name + "meta.csv", "input")
@@ -97,7 +97,10 @@ class Controller:
             data_frame = pd.concat([X_d, X_f], axis=1)
             self.__meta_data.append((data_frame, name))
 
-    def __select_meta_features(self, meta_model_name="", percentiles=[10]):
+    def __select_meta_features(self, meta_model_name: str = "",
+                               percentiles: Optional[Sequence[float]] = None) -> Dict[str, Dict[str, List[str]]]:
+        if percentiles is None:
+            percentiles = [10]
         # Selects features for meta-data with `meta_model_name` as test and all other meta-data sets as train
         data = [d for d, n in self.__meta_data if n != meta_model_name]
         fs = MetaFeatureSelection(pd.concat(data))
@@ -108,7 +111,7 @@ class Controller:
 
         return sets
 
-    def train_meta_models(self):
+    def train_meta_models(self) -> None:
         """
         Partition meta-data into train-test splits based on base-data sets and
         fit instances of class :py:class:`MetaModel` using the train split.
@@ -125,7 +128,7 @@ class Controller:
             if not (Memory.get_path() / ("model/" + test_name)).is_file()]
 
         selection_results = [self.__select_meta_features(parameter[1][:-4]) for parameter in parameters]
-        args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))
+        args = [(*x[0], x[1]) for x in zip(parameters, selection_results)]
 
         with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(args), desc="Training meta-models")
@@ -139,7 +142,7 @@ class Controller:
         progress_bar.close()
 
     @staticmethod
-    def parallel_training(iterable: Tuple[pd.DataFrame, str, pd.DataFrame, Dataset, Dict[str, Dict[str, List[str]]]]):
+    def parallel_training(iterable: Tuple[pd.DataFrame, str, pd.DataFrame, Dataset, Dict[str, Dict[str, List[str]]]]) -> None:
         """
         Create an instance of class :py:class:`MetaModel` and call its :py:func:`MetaModel.fit()` function.
 
@@ -152,7 +155,7 @@ class Controller:
         Memory.store_model(model, iterable[1])
 
     @staticmethod
-    def estimate(names: List[str]):
+    def estimate(names: List[str]) -> None:
         """
         Estimate meta-model performances. Use file names in `names` to identify these meta-models.
 
@@ -167,7 +170,7 @@ class Controller:
         evaluation.new_comparisons()
 
     @staticmethod
-    def questions(names: List[str]):
+    def questions(names: List[str]) -> None:
         """
         Create and save .csv files that contain the estimated meta-model performances.
         Use file names in `names` to identify these meta-models.
@@ -180,7 +183,7 @@ class Controller:
         evaluation = Evaluation(names)
         evaluation.questions()
 
-    def compare_all(self):
+    def compare_all(self) -> None:
         # Deprecated
         self.__load_meta_data()
 
@@ -191,14 +194,14 @@ class Controller:
             self.__train_data[0][0])]
 
         selection_results = [self.__select_meta_features("")]
-        args = list(map(lambda x: (*x[0], x[1]), zip(parameters, selection_results)))
+        args = [(*x[0], x[1]) for x in zip(parameters, selection_results)]
 
         m = MetaModel(args[0])
         m.compare_all(self.__train_data)
         evaluation = Evaluation(["all"])
         evaluation.new_comparisons(m)
 
-    def meta_feature_importances(self):
+    def meta_feature_importances(self) -> None:
         """
         Estimate the importance of each meta-feature. Save the results as .csv files in metalfi/data/output/importance.
         """

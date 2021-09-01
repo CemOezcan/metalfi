@@ -1,10 +1,10 @@
 import multiprocessing as mp
 import warnings
 from statistics import mean
-from typing import Dict, List, Tuple
+from typing import Callable, Dict, List, Sequence, Tuple
 
 import numpy as np
-from pandas import DataFrame
+import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.feature_selection import VarianceThreshold, SelectPercentile
 from sklearn.model_selection import cross_val_score
@@ -19,7 +19,7 @@ class MetaFeatureSelection:
     Methods for feature importance estimation and selection.
     """
 
-    def __init__(self, meta_data: DataFrame):
+    def __init__(self, meta_data: pd.DataFrame):
         self.__X = meta_data.drop(Parameters.targets, axis=1)
         fmf = [x for x in self.__X.columns if "." not in x]
         self.__X = self.__X[fmf]
@@ -30,8 +30,9 @@ class MetaFeatureSelection:
 
         self.__X = self.__X[features]
 
-    def select(self, meta_model, scoring, percentiles=(5, 10, 15, 20, 25, 30), k=10, tree=False) \
-            -> Dict[str, Dict[str, List[str]]]:
+    def select(self, meta_model: BaseEstimator, scoring: Callable,
+               percentiles: Sequence[float] = (5, 10, 15, 20, 25, 30), k: int = 10,
+               tree: bool = False) -> Dict[str, List[str]]:
         """
         Meta-feature selection, given a meta-model.
         Rank meta-features according to their `scoring` value and search for the percentile of al meta-features,
@@ -63,7 +64,8 @@ class MetaFeatureSelection:
         return sets
 
     @staticmethod
-    def __percentile_search(meta_model, scoring, y, percentiles, k, new_X):
+    def __percentile_search(meta_model: BaseEstimator, scoring: Callable, y: pd.Series,
+                            percentiles: Sequence[float], k: int, new_X: pd.DataFrame) -> Tuple[float, List[str]]:
         results = []
         subsets = []
 
@@ -71,11 +73,7 @@ class MetaFeatureSelection:
             support = SelectPercentile(score_func=scoring, percentile=percentiles[0]).fit(new_X, y).get_support(indices=True)
             features = [x for x in list(new_X.columns) if list(new_X.columns).index(x) in support]
 
-            subsets.append(features)
-            p = percentiles[0]
-            f = subsets[0]
-
-            return p, f
+            return percentiles[0], features
 
         for p in percentiles:
             support = SelectPercentile(score_func=scoring, percentile=p).fit(new_X, y).get_support(indices=True)
@@ -86,14 +84,14 @@ class MetaFeatureSelection:
             results.append(mean(cross_val_score(estimator=meta_model, X=X, y=y, cv=k)))
 
         index = results.index(max(results))
-        p = percentiles[index]
+        p = percentiles[index]  # percentile with maximum cross-val score
         f = subsets[index]
 
         return p, f
 
     @staticmethod
-    def meta_feature_importance(meta_data: DataFrame, models: List[Tuple[BaseEstimator, str, str]], targets: List[str],
-                                subsets: Dict[str, Dict[str, List[str]]]) -> Dict[str, List[DataFrame]]:
+    def meta_feature_importance(meta_data: pd.DataFrame, models: List[Tuple[BaseEstimator, str, str]], targets: List[str],
+                                subsets: Dict[str, Dict[str, List[str]]]) -> Dict[str, List[pd.DataFrame]]:
         """
         Estimate model based meta-feature importance.
 
@@ -139,8 +137,8 @@ class MetaFeatureSelection:
         return importance
 
     @staticmethod
-    def parallel_meta_importance(iterable: Tuple[str, BaseEstimator, DataFrame, DataFrame, str]) \
-            -> Tuple[str, DataFrame]:
+    def parallel_meta_importance(iterable: Tuple[str, BaseEstimator, pd.DataFrame, pd.Series, str]) \
+            -> Tuple[str, pd.DataFrame]:
         """
         Compute SHAP-importance.
 
@@ -152,7 +150,7 @@ class MetaFeatureSelection:
         -------
             SHAP-importance values
         """
-        target, model, X, y, category = iterable
+        target, model, X, y, _ = iterable
         warnings.filterwarnings("ignore", message="Liblinear failed to converge, increase the number of iterations.")
         imp = PermutationImportance.data_permutation_importance(model, X, y)
         warnings.filterwarnings("default")
