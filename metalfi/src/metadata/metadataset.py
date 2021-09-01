@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import pandas as pd
 
@@ -21,14 +21,14 @@ class MetaDataset:
     def get_target_names(self) -> List[str]:
         return self.__target_names
 
-    def get_times(self) -> Tuple[float, float]:
+    def get_times(self) -> Tuple[Dict[str, float], Dict[str, float]]:
         return self.__times
 
     def get_nrs(self) -> Tuple[int, int]:
         return self.nr_feat, self.nr_inst
 
     @staticmethod
-    def calculate_training_data(dataset: Dataset) -> Tuple[pd.DataFrame, List[str], Tuple[float, float], int, int]:
+    def calculate_training_data(dataset: Dataset) -> Tuple[pd.DataFrame, List[str], Tuple[Dict[str, float], Dict[str, float]], int, int]:
         data_frames = list()
         nr_feat = 0
         nr_inst = 0

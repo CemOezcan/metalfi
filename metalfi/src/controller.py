@@ -82,7 +82,7 @@ class Controller:
         del t_times["total"]
         d_times.update(t_times)
         Memory.store_input(meta_data, name)
-        Memory.update_runtimes(d_times, name)
+        Memory.update_runtimes(new_runtime_data=d_times, name=name)
 
     def __load_meta_data(self):
         for _, name in self.__train_data:

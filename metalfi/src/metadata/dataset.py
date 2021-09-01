@@ -1,5 +1,5 @@
 import time
-from typing import Tuple
+from typing import Dict, Tuple
 
 import pandas as pd
 
@@ -18,7 +18,7 @@ class Dataset:
     def get_target(self) -> str:
         return self.__target
 
-    def train_meta_data(self) -> Tuple[pd.DataFrame. Tuple[float, float], int, int]:
+    def train_meta_data(self) -> Tuple[pd.DataFrame. Tuple[Dict[str, float], Dict[str, float]], int, int]:
         mf = MetaFeatures(self)
 
         start_d_total = time.time()

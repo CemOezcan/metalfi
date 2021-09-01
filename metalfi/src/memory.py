@@ -1,8 +1,8 @@
-import os
-from pathlib import Path
 import multiprocessing as mp
+import os
+import pathlib
 import pickle
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -24,7 +24,7 @@ class Memory:
     lock = mp.Lock()
 
     @staticmethod
-    def load(name: str, directory) -> pd.DataFrame:
+    def load(file_name: str, directory_name: str) -> pd.DataFrame:
         """
         Load a .csv file.
 
@@ -38,9 +38,9 @@ class Memory:
             The .csv file as :py:object:`DataFrame` object.
         """
         path = Memory.get_path()
-        if directory != "":
-            directory += "/"
-        return pd.read_csv(path / (directory + name))
+        if directory_name != "":
+            directory_name += "/"
+        return pd.read_csv(path / (directory_name + file_name))
 
     @staticmethod
     def load_open_ml() -> List[Tuple[pd.DataFrame, str, str]]:
@@ -73,35 +73,38 @@ class Memory:
             the name of the base-data set and the name of its target variable.
         """
         openml_list = openml.datasets.list_datasets()
-        data = pd.DataFrame.from_dict(openml_list, orient="index")
-        data = data[data['NumberOfClasses'] == 2]
-        data = data[(data["MajorityClassSize"] / data['NumberOfInstances']) < 0.67]
+        dataset_overview = pd.DataFrame.from_dict(openml_list, orient="index")
+        dataset_overview = dataset_overview[dataset_overview['NumberOfClasses'] == 2]
+        dataset_overview = dataset_overview[(dataset_overview["MajorityClassSize"] / dataset_overview['NumberOfInstances']) < 0.67]
 
         target = "base-target_variable"
-        Memory.filter_data_frames(data, (99, 2001), (4, 11), 20, target)
-        Memory.filter_data_frames(data, (99, 2001), (10, 21), 20, target)
-        Memory.filter_data_frames(data, (99, 2001), (20, 51), 20, target)
+        Memory.filter_data_frames(dataset_overview=dataset_overview, instances=(99, 2001), features=(4, 11),
+                                  max_num_datasets=20, target_name=target)
+        Memory.filter_data_frames(dataset_overview=dataset_overview, instances=(99, 2001), features=(10, 21),
+                                  max_num_datasets=20, target_name=target)
+        Memory.filter_data_frames(dataset_overview=dataset_overview, instances=(99, 2001), features=(20, 51),
+                                  max_num_datasets=20, target_name=target)
 
         return [(Memory.load(file, "preprocessed"), file[:-4], target) for file in Memory.get_contents("preprocessed")]
 
     @staticmethod
-    def filter_data_frames(data, instances, features, limit, target):
-        data_frames = data
-        data_frames = data_frames[data_frames['NumberOfInstances'] > instances[0]]
-        data_frames = data_frames[data_frames['NumberOfInstances'] < instances[1]]
-        data_frames = data_frames[data_frames['NumberOfFeatures'] > features[0]]
-        data_frames = data_frames[data_frames['NumberOfFeatures'] < features[1]]
-        data_frames = data_frames[data_frames['NumberOfMissingValues'] == 0].sort_values(["version"])
-        data_frames = data_frames.drop_duplicates("name", "last")
+    def filter_data_frames(dataset_overview: pd.DataFrame, instances: Tuple[int, int], features: Tuple[int, int],
+                           max_num_datasets: int, target_name: str) -> None:
+        dataset_overview = dataset_overview[dataset_overview['NumberOfInstances'] > instances[0]]
+        dataset_overview = dataset_overview[dataset_overview['NumberOfInstances'] < instances[1]]
+        dataset_overview = dataset_overview[dataset_overview['NumberOfFeatures'] > features[0]]
+        dataset_overview = dataset_overview[dataset_overview['NumberOfFeatures'] < features[1]]
+        dataset_overview = dataset_overview[dataset_overview['NumberOfMissingValues'] == 0].sort_values(["version"])
+        dataset_overview = dataset_overview.drop_duplicates("name", "last")
 
-        ids = list(filter(lambda x: str(x[0]) + "_" + str(x[1]) + ".csv" not in Memory.get_contents("preprocessed"),
-                          [tuple(x) for x in data_frames[["name", "version"]].values]))
+        ids = [tuple(x) for x in dataset_overview[["name", "version"]].values
+               if str(x[0]) + "_" + str(x[1]) + ".csv" not in Memory.get_contents("preprocessed")]  # not pre-processed
 
-        ctr = len(list(filter(lambda x: str(x[0]) + "_" + str(x[1]) + ".csv" in Memory.get_contents("preprocessed"),
-                              [tuple(x) for x in data_frames[["name", "version"]].values])))
+        counter = sum(str(x[0]) + "_" + str(x[1]) + ".csv" in Memory.get_contents("preprocessed")
+                      for x in dataset_overview[["name", "version"]].values)  # already pre-processed
 
         for name, version in ids:
-            if ctr >= limit:
+            if counter >= max_num_datasets:
                 return
             try:
                 dataset = fetch_openml(name=name, version=version, as_frame=True)
@@ -113,12 +116,12 @@ class Memory:
             all_features = dataset["feature_names"]
             cat_features = list()
             data_frame = dataset["frame"].dropna(axis=0)
-            data_frame = data_frame.rename(columns={dataset["target_names"][0]: target})
+            data_frame = data_frame.rename(columns={dataset["target_names"][0]: target_name})
 
-            X = data_frame.drop(target, axis=1)
+            X = data_frame.drop(target_name, axis=1)
             X_cat = X
 
-            y = data_frame[target]
+            y = data_frame[target_name]
 
             sorted_categories = list()
             for feature in all_features:
@@ -134,7 +137,7 @@ class Memory:
 
             else:
                 est = KBinsDiscretizer(n_bins=2, encode='ordinal')
-                y = est.fit_transform(list(map(lambda x: [x], y)))
+                y = est.fit_transform([[x] for x in y])
 
             X_num = X.drop(X_cat.columns, axis=1)
             num_features = list(set(all_features) - set(cat_features))
@@ -143,36 +146,17 @@ class Memory:
             X_cat = X_enc.fit_transform(X_cat)
 
             data_frame = pd.DataFrame(data=np.c_[np.c_[X_cat, X_num], y],
-                                      columns=cat_features + num_features + [target])
+                                      columns=cat_features + num_features + [target_name])
 
             if True in [data_frame[d].var() == 0.0 for d in data_frame.columns]:
                 ids.remove((name, version))
                 continue
 
             Memory.store_preprocessed(data_frame, name + "_" + str(version))
-            ctr += 1
+            counter += 1
 
     @staticmethod
-    def store_meta_features(data):
-        path = Memory.get_path() / "features/selected"
-        if not path.is_file():
-            with open(path, 'wb') as file:
-                pickle.dump(data, file)
-
-    @staticmethod
-    def load_meta_features():
-        try:
-            path = Memory.get_path() / "features/selected"
-            with open(path, 'rb') as file:
-                data = pickle.load(file)
-
-        except FileNotFoundError:
-            data = None
-
-        return data
-
-    @staticmethod
-    def store_input(data: pd.DataFrame, name: str):
+    def store_input(data: pd.DataFrame, dataset_name: str):
         """
         Store `data` as a .csv file in metalfi/data/input.
 
@@ -181,12 +165,12 @@ class Memory:
             data : Contains a meta-data set.
             name : Name of the base-data set, from which the meta-data set in `data` was extracted.
         """
-        path = Memory.get_path() / ("input/" + name + "meta.csv")
+        path = Memory.get_path() / ("input/" + dataset_name + "meta.csv")
         if not path.is_file():
             data.to_csv(path, index=False, header=True)
 
     @staticmethod
-    def store_model(model: 'MetaModel', name: str):
+    def store_model(model: 'MetaModel', file_name: str):
         """
         Serialize and save an instance of :py:class:`MetaModel` in metalfi/data/model.
 
@@ -195,7 +179,7 @@ class Memory:
             model : Instance of :py:class:`MetaModel`, that is supposed to be saved as a pickle-file.
             name : Name of the pickle-file.
         """
-        path = Memory.get_path() / ("model/" + name)
+        path = Memory.get_path() / ("model/" + file_name)
         data = (model.get_meta_models(), model.get_stats(), model.get_result_config(), model.get_results(), model.get_times())
         if not path.is_file():
             with open(path, 'wb') as file:
@@ -224,21 +208,8 @@ class Memory:
         return models
 
     @staticmethod
-    def renew_model(model: 'MetaModel', name: str):
-        """
-        Replace a meta-model in metalfi/data/model.
-
-        Parameters
-        ----------
-            model : New instance of :py:class:`MetaModel`, that is supposed to replace the old instance.
-            name : Identifies the file that is supposed to be replaced.
-        """
-        path = Memory.get_path() / ("model/" + name)
-        with open(path, 'wb') as file:
-            pickle.dump(model, file)
-
-    @staticmethod
-    def store_data_frame(data: pd.DataFrame, name: str, directory: str, renew=True):
+    def store_data_frame(data: pd.DataFrame, file_name: str, directory_name: str,
+                         renew: bool = True) -> None:
         """
         Store a :py:obj:`DataFrame` object as .csv file in a given sub directory of metalfi/data/output.
 
@@ -249,14 +220,14 @@ class Memory:
             directory : Subdirectory of metalfi/data
             renew : Whether to renew the file, or not, should it already exist.
         """
-        path = Memory.get_path() / ("output/" + directory + "/" + name + ".csv")
+        path = Memory.get_path() / ("output/" + directory_name + "/" + file_name + ".csv")
         if renew or not path.is_file():
             if data.index.name is None:
                 data.index.name = "Index"
             data.to_csv(path, header=True)
 
     @staticmethod
-    def update_runtimes(data, index):
+    def update_runtimes(new_runtime_data: Dict[str, float], name: str) -> None:
         Memory.lock.acquire()
         try:
             try:
@@ -265,13 +236,14 @@ class Memory:
                 Memory.store_data_frame(pd.DataFrame(), "runtimes", "runtime")
                 runtimes = pd.DataFrame()
 
-            runtimes.drop([index], inplace=True, errors="ignore")
-            Memory.store_data_frame(runtimes.append(pd.DataFrame(data=data, index=[index])), "runtimes", "runtime")
+            runtimes.drop([name], inplace=True, errors="ignore")
+            Memory.store_data_frame(data=runtimes.append(pd.DataFrame(data=new_runtime_data, index=[name])),
+                                    file_name="runtimes", directory_name="runtime")
         finally:
             Memory.lock.release()
 
     @staticmethod
-    def store_visual(file_name: str, directory_name: str):
+    def store_visual(file_name: str, directory_name: str) -> None:
         """
         Save `plt` as .pdf file in a subdirectory of metalfi/data.
 
@@ -284,7 +256,7 @@ class Memory:
         plt.close()
 
     @staticmethod
-    def get_contents(directory) -> List[str]:
+    def get_contents(directory_name: str) -> List[str]:
         """
         Fetch and return all file names in the subdirectory `directory` of metalfi/data.
 
@@ -296,22 +268,22 @@ class Memory:
         -------
             File names in metalfi/data/`directory`.
         """
-        path = Memory.get_path() / directory
-        file_names = list(filter(lambda x: not x.endswith(".gitignore"), os.listdir(path)))
+        path = Memory.get_path() / directory_name
+        file_names = [x for x in os.listdir(path) if not x.endswith(".gitignore")]
         return file_names
 
     @staticmethod
-    def get_path():
+    def get_path() -> pathlib.Path:
         """
 
         Returns:
             The metalfi/data directory.
         """
-        path = Path(__file__).parents[1] / "data"
+        path = pathlib.Path(__file__).parents[1] / "data"
         return path
 
     @staticmethod
-    def store_preprocessed(data: pd.DataFrame, name: str):
+    def store_preprocessed(data: pd.DataFrame, file_name: str) -> None:
         """
         Store a :py:obj:`DataFrame` object as .csv file in metalfi/data/preprocessed.
 
@@ -320,11 +292,11 @@ class Memory:
             data : Contains the contents of the .csv file.
             name : Name of the file.
         """
-        path = Memory.get_path() / ("preprocessed/" + name + ".csv")
+        path = Memory.get_path() / ("preprocessed/" + file_name + ".csv")
         data.to_csv(path, index=False, header=True)
 
     @staticmethod
-    def clear_directory(directories: List[str]):
+    def clear_directory(directories: List[str]) -> None:
         """
         Delete all files (except .gitignore files) from given directories.
 
