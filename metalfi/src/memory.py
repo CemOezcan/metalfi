@@ -85,7 +85,7 @@ class Memory:
         Memory.filter_data_frames(dataset_overview=dataset_overview, instances=(99, 2001), features=(20, 51),
                                   max_num_datasets=20, target_name=target)
 
-        return [(Memory.load(file, "preprocessed"), file[:-4], target) for file in Memory.get_contents("preprocessed")]
+        return [(Memory.load(file, "base_datasets"), file[:-4], target) for file in Memory.get_contents("base_datasets")]
 
     @staticmethod
     def filter_data_frames(dataset_overview: pd.DataFrame, instances: Tuple[int, int], features: Tuple[int, int],
@@ -98,9 +98,9 @@ class Memory:
         dataset_overview = dataset_overview.drop_duplicates("name", "last")
 
         ids = [tuple(x) for x in dataset_overview[["name", "version"]].values
-               if str(x[0]) + "_" + str(x[1]) + ".csv" not in Memory.get_contents("preprocessed")]  # not pre-processed
+               if str(x[0]) + "_" + str(x[1]) + ".csv" not in Memory.get_contents("base_datasets")]  # not pre-processed
 
-        counter = sum(str(x[0]) + "_" + str(x[1]) + ".csv" in Memory.get_contents("preprocessed")
+        counter = sum(str(x[0]) + "_" + str(x[1]) + ".csv" in Memory.get_contents("base_datasets")
                       for x in dataset_overview[["name", "version"]].values)  # already pre-processed
 
         for name, version in ids:
@@ -152,20 +152,20 @@ class Memory:
                 ids.remove((name, version))
                 continue
 
-            Memory.store_preprocessed(data_frame, name + "_" + str(version))
+            Memory.store_base_dataset(data_frame, name + "_" + str(version))
             counter += 1
 
     @staticmethod
-    def store_input(data: pd.DataFrame, dataset_name: str):
+    def store_meta_dataset(data: pd.DataFrame, dataset_name: str):
         """
-        Store `data` as a .csv file in metalfi/data/input.
+        Store `data` as a .csv file
 
         Parameters
         ----------
             data : Contains a meta-data set.
             name : Name of the base-data set, from which the meta-data set in `data` was extracted.
         """
-        path = Memory.get_path() / ("input/" + dataset_name + "meta.csv")
+        path = Memory.get_path() / ("meta_datasets/" + dataset_name + "meta.csv")
         if not path.is_file():
             data.to_csv(path, index=False, header=True)
 
@@ -283,16 +283,16 @@ class Memory:
         return path
 
     @staticmethod
-    def store_preprocessed(data: pd.DataFrame, file_name: str) -> None:
+    def store_base_dataset(data: pd.DataFrame, file_name: str) -> None:
         """
-        Store a :py:obj:`DataFrame` object as .csv file in metalfi/data/preprocessed.
+        Store a :py:obj:`DataFrame` object as .csv file.
 
         Parameters
         ----------
-            data : Contains the contents of the .csv file.
+            data : Contains a base dataset.
             name : Name of the file.
         """
-        path = Memory.get_path() / ("preprocessed/" + file_name + ".csv")
+        path = Memory.get_path() / ("base_datasets/" + file_name + ".csv")
         data.to_csv(path, index=False, header=True)
 
     @staticmethod

@@ -12,8 +12,9 @@ Input data and results data of the experimental pipelines are also available [on
     .
     ├── metalfi                 
         ├── data                        # Data sets and plots
+            ├── base_datasets           # Preprocessed base-data sets.
             ├── features                # Data on meta-feature importance
-            ├── input                   # Meta-data sets
+            ├── meta_datasets           # Meta-data sets
             ├── model                   # Meta-models
             ├── output                  # .csv files of experimental results. The content of this folder is used to generate the plots, which are also saved in this directory.
                 ├── groups              # Group meta-model performance estimates by meta-feature subsets: 
@@ -35,17 +36,6 @@ Input data and results data of the experimental pipelines are also available [on
                 ├── targets             # Group meta-model performance estimates by meta-targets:
                 ├                            Box plots and critical differences diagrams visualize and compare meta-model 
                 ├                            performance estimates grouped by meta-targets. 
-            ├── preprocessed            # Preprocessed base-data sets. 
-            ├                                The latest versions of all active openML data sets, 
-            ├                                which meet the following criteria, are fetched and preprcessed 
-            ├                                in order to be used as base-data sets:
-            ├                                    - Number of instances < 1000
-            ├                                    - Number of features in [5, 19]
-            ├                                    - Number of classes = 2
-            ├                                    - Number of missing values = 0
-            ├                                    - Number of zero-variance features = 0
-            ├                                Preprocessing: 
-            ├                                    - Apply ordinal encoding on categorical features and target variables.
         ├── src                         # Source code
     ├── .gitignore                 
     ├── requirements.txt           

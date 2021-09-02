@@ -52,7 +52,7 @@ class Controller:
         Parallel computation of meta-data sets from base-data sets.
         """
         data = [(dataset, name) for dataset, name in self.__train_data
-                if not (Memory.get_path() / ("input/" + name + "meta.csv")).is_file()]
+                if not (Memory.get_path() / ("meta_datasets/" + name + "meta.csv")).is_file()]
 
         with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(data), desc="Computing meta-data")
@@ -81,13 +81,13 @@ class Controller:
         del d_times["total"]
         del t_times["total"]
         d_times.update(t_times)
-        Memory.store_input(meta_data, name)
+        Memory.store_meta_dataset(meta_data, name)
         Memory.update_runtimes(new_runtime_data=d_times, name=name)
 
     def __load_meta_data(self) -> None:
         for _, name in self.__train_data:
             sc = StandardScaler()
-            data = Memory.load(name + "meta.csv", "input")
+            data = Memory.load(name + "meta.csv", "meta_datasets")
             fmf = [x for x in data.columns if "." not in x]
             dmf = [x for x in data.columns if "." in x]
 

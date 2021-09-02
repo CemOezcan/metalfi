@@ -33,7 +33,7 @@ class Main:
         """
         directories = ["model", "output/importance", "output/predictions", "output/selection", "output/tables"]
         if delete_meta:
-            Memory.clear_directory(["input", "preprocessed", "output/runtime"] + directories)
+            Memory.clear_directory(["base_datasets", "meta_datasets", "output/runtime"] + directories)
         if delete_models:
             Memory.clear_directory(directories)
 

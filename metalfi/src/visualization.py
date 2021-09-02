@@ -233,7 +233,7 @@ class Visualization:
             Mean and maximum values over all correlation coefficients for each group.
 
         """
-        directory = "input"
+        directory = "meta_datasets"
         file_names = Memory.get_contents(directory)
         sc = StandardScaler()
         data = []
@@ -273,7 +273,7 @@ class Visualization:
         """
         Group meta-targets by feature importance measure and visualize their distributions as histograms.
         """
-        directory = "input"
+        directory = "meta_datasets"
         file_names = Memory.get_contents(directory)
         data = []
 
