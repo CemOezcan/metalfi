@@ -1,6 +1,5 @@
 import multiprocessing as mp
 import os
-import pathlib
 import pickle
 from typing import Dict, List, Tuple
 
@@ -10,6 +9,8 @@ import openml
 import pandas as pd
 from sklearn.datasets import fetch_openml
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, LabelEncoder
+
+from scr.metalfi.parameters import Parameters
 
 
 class Memory:
@@ -22,25 +23,6 @@ class Memory:
             Mutex lock.
     """
     lock = mp.Lock()
-
-    @staticmethod
-    def load(file_name: str, directory_name: str) -> pd.DataFrame:
-        """
-        Load a .csv file.
-
-        Parameters
-        ----------
-            name : Name of the file.
-            directory : (str) Directory of the file.
-
-        Returns
-        -------
-            The .csv file as :py:object:`DataFrame` object.
-        """
-        path = Memory.get_path()
-        if directory_name != "":
-            directory_name += "/"
-        return pd.read_csv(path / (directory_name + file_name))
 
     @staticmethod
     def load_open_ml() -> List[Tuple[pd.DataFrame, str, str]]:
@@ -85,7 +67,8 @@ class Memory:
         Memory.filter_data_frames(dataset_overview=dataset_overview, instances=(99, 2001), features=(20, 51),
                                   max_num_datasets=20, target_name=target)
 
-        return [(Memory.load(file, "base_datasets"), file[:-4], target) for file in Memory.get_contents("base_datasets")]
+        return [(pd.read_csv(Parameters.base_dataset_dir + file), file[:-4], target)
+                for file in os.listdir(Parameters.base_dataset_dir) if file.endswith('.csv')]
 
     @staticmethod
     def filter_data_frames(dataset_overview: pd.DataFrame, instances: Tuple[int, int], features: Tuple[int, int],
@@ -98,9 +81,9 @@ class Memory:
         dataset_overview = dataset_overview.drop_duplicates("name", "last")
 
         ids = [tuple(x) for x in dataset_overview[["name", "version"]].values
-               if str(x[0]) + "_" + str(x[1]) + ".csv" not in Memory.get_contents("base_datasets")]  # not pre-processed
+               if str(x[0]) + "_" + str(x[1]) + ".csv" not in os.listdir(Parameters.base_dataset_dir)]  # not pre-processed
 
-        counter = sum(str(x[0]) + "_" + str(x[1]) + ".csv" in Memory.get_contents("base_datasets")
+        counter = sum(str(x[0]) + "_" + str(x[1]) + ".csv" in os.listdir(Parameters.base_dataset_dir)
                       for x in dataset_overview[["name", "version"]].values)  # already pre-processed
 
         for name, version in ids:
@@ -152,34 +135,20 @@ class Memory:
                 ids.remove((name, version))
                 continue
 
-            Memory.store_base_dataset(data_frame, name + "_" + str(version))
+            data_frame.to_csv(Parameters.base_dataset_dir + name + "_" + str(version) + ".csv", index=False)
             counter += 1
-
-    @staticmethod
-    def store_meta_dataset(data: pd.DataFrame, dataset_name: str):
-        """
-        Store `data` as a .csv file
-
-        Parameters
-        ----------
-            data : Contains a meta-data set.
-            name : Name of the base-data set, from which the meta-data set in `data` was extracted.
-        """
-        path = Memory.get_path() / ("meta_datasets/" + dataset_name + "meta.csv")
-        if not path.is_file():
-            data.to_csv(path, index=False, header=True)
 
     @staticmethod
     def store_model(model: 'MetaModel', file_name: str):
         """
-        Serialize and save an instance of :py:class:`MetaModel` in metalfi/data/model.
+        Serialize and save an instance of :py:class:`MetaModel`.
 
         Parameters
         ----------
             model : Instance of :py:class:`MetaModel`, that is supposed to be saved as a pickle-file.
             name : Name of the pickle-file.
         """
-        path = Memory.get_path() / ("model/" + file_name)
+        path = Parameters.meta_model_dir + file_name
         data = (model.get_meta_models(), model.get_stats(), model.get_result_config(), model.get_results(), model.get_times())
         if not path.is_file():
             with open(path, 'wb') as file:
@@ -188,7 +157,7 @@ class Memory:
     @staticmethod
     def load_model(names: List[str]) -> List[Tuple['MetaModel', str]]:
         """
-        Load pickle files in metalfi/data/model and return them as instances of :py:class:`MetaModel`.
+        Load pickle files and return them as instances of :py:class:`MetaModel`.
 
         Parameters
         ----------
@@ -200,7 +169,7 @@ class Memory:
         """
         models = []
         for name in names:
-            path = Memory.get_path() / ("model/" + name)
+            path = Parameters.meta_model_dir + name
             with open(path, 'rb') as file:
                 data = pickle.load(file)
             models.append((data, name))
@@ -211,7 +180,7 @@ class Memory:
     def store_data_frame(data: pd.DataFrame, file_name: str, directory_name: str,
                          renew: bool = True) -> None:
         """
-        Store a :py:obj:`DataFrame` object as .csv file in a given sub directory of metalfi/data/output.
+        Store a :py:obj:`DataFrame` object as .csv file in a given sub directory of the output directory.
 
         Parameters
         ----------
@@ -220,7 +189,7 @@ class Memory:
             directory : Subdirectory of metalfi/data
             renew : Whether to renew the file, or not, should it already exist.
         """
-        path = Memory.get_path() / ("output/" + directory_name + "/" + file_name + ".csv")
+        path = Parameters.output_dir + directory_name + "/" + file_name + ".csv"
         if renew or not path.is_file():
             if data.index.name is None:
                 data.index.name = "Index"
@@ -231,7 +200,7 @@ class Memory:
         Memory.lock.acquire()
         try:
             try:
-                runtimes = Memory.load("runtimes.csv", "output/runtime").set_index("Index")
+                runtimes = pd.read_csv(Parameters.output_dir + "runtime/runtimes.csv").set_index("Index")
             except (FileNotFoundError, KeyError):
                 Memory.store_data_frame(pd.DataFrame(), "runtimes", "runtime")
                 runtimes = pd.DataFrame()
@@ -243,60 +212,7 @@ class Memory:
             Memory.lock.release()
 
     @staticmethod
-    def store_visual(file_name: str, directory_name: str) -> None:
-        """
-        Save `plt` as .pdf file in a subdirectory of metalfi/data.
-
-        Parameters
-        ----------
-            name : Name of the .pdf file.
-            directory : Subdirectory of metalfi/data.
-        """
-        plt.savefig(Memory.get_path() / ("output/" + directory_name + "/" + file_name + ".pdf"))
-        plt.close()
-
-    @staticmethod
-    def get_contents(directory_name: str) -> List[str]:
-        """
-        Fetch and return all file names in the subdirectory `directory` of metalfi/data.
-
-        Parameters
-        ----------
-            directory : Subdirectory of metalfi/data.
-
-        Returns
-        -------
-            File names in metalfi/data/`directory`.
-        """
-        path = Memory.get_path() / directory_name
-        file_names = [x for x in os.listdir(path) if not x.endswith(".gitignore")]
-        return file_names
-
-    @staticmethod
-    def get_path() -> pathlib.Path:
-        """
-
-        Returns:
-            The metalfi/data directory.
-        """
-        path = pathlib.Path(__file__).parents[1] / "data"
-        return path
-
-    @staticmethod
-    def store_base_dataset(data: pd.DataFrame, file_name: str) -> None:
-        """
-        Store a :py:obj:`DataFrame` object as .csv file.
-
-        Parameters
-        ----------
-            data : Contains a base dataset.
-            name : Name of the file.
-        """
-        path = Memory.get_path() / ("base_datasets/" + file_name + ".csv")
-        data.to_csv(path, index=False, header=True)
-
-    @staticmethod
-    def clear_directory(directories: List[str]) -> None:
+    def clear_directories(directories: List[str]) -> None:
         """
         Delete all files (except .gitignore files) from given directories.
 
@@ -306,8 +222,9 @@ class Memory:
             The directories, whose contents are supposed to be deleted.
         """
         for directory in directories:
-            for file in Memory.get_contents(directory):
-                try:
-                    os.remove(Memory.get_path() / directory / file)
-                except FileNotFoundError:
-                    continue
+            for file in os.listdir(directory):
+                if file != '.gitignore':
+                    try:
+                        os.remove(directory + file)
+                    except FileNotFoundError:
+                        continue

@@ -1,10 +1,12 @@
 import warnings
 warnings.filterwarnings("ignore", message="IPython could not be loaded!")
-import sys
 
+import os
+import sys
 
 from metalfi.src.controller import Controller
 from metalfi.src.memory import Memory
+from metalfi.src.parameters import Parameters
 from metalfi.src.visualization import Visualization
 
 
@@ -31,15 +33,18 @@ class Main:
             delete_models: (bool)
                 Whether to delete meta-models.
         """
-        directories = ["model", "output/importance", "output/predictions", "output/selection", "output/tables"]
+        directories = ["importance", "predictions", "selection", "tables"]
+        directories = [Parameters.output_dir + x for x in directories]
+        directories.append(Parameters.meta_model_dir)
         if delete_meta:
-            Memory.clear_directory(["base_datasets", "meta_datasets", "output/runtime"] + directories)
+            Memory.clear_directories([Parameters.base_dataset_dir, Parameters.meta_dataset_dir,
+                                      Parameters.output_dir + "runtime"] + directories)
         if delete_models:
-            Memory.clear_directory(directories)
+            Memory.clear_directories(directories)
 
         c = Controller()
         c.train_meta_models()
-        data = Memory.get_contents("model")
+        data = [x for x in os.listdir(Parameters.meta_model_dir) if x != ".gitignore"]
         c.estimate(data)
         c.meta_feature_importances()
         c.questions(data)

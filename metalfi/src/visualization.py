@@ -1,3 +1,4 @@
+import os
 from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
@@ -15,81 +16,6 @@ class Visualization:
     """"
     Postprocessing data and visualization.
     """
-
-    @staticmethod
-    def fetch_runtime_data(substring: str, threshold: int = 1000000) -> Dict[str, pd.DataFrame]:
-        # Deprecated
-        directory = "output/runtime"
-        file_names = [x for x in Memory.get_contents(directory) if x.endswith('.csv') and substring in x]
-        data = []
-
-        for name in file_names:
-            file = Memory.load(name, directory)
-            data.append((file, name))
-
-        summary = {}
-        columns = list(data[0][0].columns)
-        columns.pop(0)
-        for column in columns:
-            summary[column] = pd.DataFrame(columns=["size", column])
-
-        for file, name in data:
-            for x in summary:
-                split = name.split("X")
-                temp = int(split[3][:-4]) * int(split[2])
-                if temp < threshold:
-                    summary[x] = summary[x].append(pd.Series([temp, file[x].values[0]],
-                                                             index=summary[x].columns), ignore_index=True)
-
-        for x in summary:
-            summary[x] = summary[x].sort_values(by=["size"])
-
-        return summary
-
-    @staticmethod
-    def runtime_graph(file_name: str) -> None:
-        # Deprecated
-        target_data = Visualization.fetch_runtime_data("XtargetX")
-        meta_data = Visualization.fetch_runtime_data("XmetaX")
-        for x in target_data:
-            if x in ["LOFO", "SHAP", "LIME", "total"]:
-                continue
-            target_data[x][x] /= 5
-            plt.plot(target_data[x].columns[0], x, data=target_data[x], linewidth=2)
-
-        for x in meta_data:
-            if x in ["total", "multivariate"]:
-                continue
-            plt.plot(meta_data[x].columns[0], x, data=meta_data[x], linewidth=2)
-
-        plt.legend()
-        Memory.store_visual(file_name=file_name, directory_name="runtime")
-
-    @staticmethod
-    def runtime_boxplot(threshold: int, targets: List[str], meta, file_name: str) -> None:
-        # Deprecated
-        target_data = Visualization.fetch_runtime_data("XtargetX", threshold)
-        meta_data = Visualization.fetch_runtime_data("XmetaX", threshold)
-
-        data = []
-        names = []
-        for x in target_data:
-            if x not in targets:
-                continue
-            names.append(x)
-            target_data[x][x] /= 5
-            data.append(target_data[x][x].values)
-
-        for x in meta_data:
-            if x not in meta:
-                continue
-            names.append(x)
-            data.append(meta_data[x][x].values)
-
-        _, ax = plt.subplots()
-        ax.boxplot(data, showfliers=False)
-        plt.xticks(list(range(1, len(data) + 1)), names)
-        Memory.store_visual(file_name=file_name + "_box", directory_name="runtime")
 
     @staticmethod
     def performance(data: List[Tuple[pd.DataFrame, str]]) -> None:
@@ -123,16 +49,17 @@ class Visualization:
             ax.legend()
             plt.ylim([0.5, 0.85])
 
-            Memory.store_visual(file_name=file_name, directory_name="selection")
+            plt.savefig(Parameters.output_dir + "selection/" + file_name + ".pdf")
+            plt.close()
 
     @staticmethod
     def meta_feature_importance() -> None:
         """
         Create and save bar charts. Visualizes the importance of meta-features for different meta-targets.
         """
-        directory = "output/importance"
-        file_names = Memory.get_contents(directory)
-        data = [(Memory.load(name, directory), name) for name in file_names if ".csv" in name]
+        directory = Parameters.output_dir + "importance/"
+        data = [(pd.read_csv(directory + file_name), file_name)
+                for file_name in os.listdir(directory) if ".csv" in file_name]
         frame = data[0][0].sort_values(by="PIMP")
         for base_model in set(frame["base_model"]):
             for imp in set(frame["importance_measure"]):
@@ -141,8 +68,8 @@ class Visualization:
                     new_frame = new_frame[new_frame["importance_measure"] == imp]
                     plt.barh(list(new_frame["meta-features"])[-15:], list(new_frame["PIMP"])[-15:])
                     plt.yticks(list(new_frame["meta-features"])[-15:])
-                    Memory.store_visual(file_name="metaFeatureImp x " + base_model + "x" + imp,
-                                        directory_name="importance")
+                    plt.savefig(Parameters.output_dir + f"importance/metaFeatureImp x {base_model}x{imp}.pdf")
+                    plt.close()
 
     @staticmethod
     def compare_means(data: List[Tuple[pd.DataFrame, str]], folder: str) -> None:
@@ -191,7 +118,7 @@ class Visualization:
                             data: List[np.array], folder: str) -> None:
         cd = Orange.evaluation.compute_CD(ranks, 28) if len(ranks) < 21 else 3.616
         Orange.evaluation.graph_ranks(ranks, names, cd=cd)
-        Memory.store_visual(file_name=file_name + "_cd", directory_name=folder)
+        plt.savefig(Parameters.output_dir + folder + file_name + "_cd.pdf")
         plt.close()
 
         _, ax = plt.subplots()
@@ -199,7 +126,7 @@ class Visualization:
         ax.set_xticks(list(range(1, len(data) + 1)))
         ax.set_xticklabels(names)
         plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right')
-        Memory.store_visual(file_name=file_name + "_means", directory_name=folder)
+        plt.savefig(Parameters.output_dir + folder + file_name + "_means.pdf")
         plt.close()
 
     @staticmethod
@@ -208,9 +135,9 @@ class Visualization:
         Compute pairwise Spearman correlation coefficients between performance metrics.
         """
         new = {metric: [] for metric in Parameters.metrics}
-        directory = "output/predictions"
-        file_names = Memory.get_contents(directory)
-        data = [(Memory.load(name, directory), name) for name in file_names if "x" not in name]
+        directory = Parameters.output_dir + "predictions/"
+        data = [(pd.read_csv(directory + file_name), file_name) for file_name in os.listdir(directory)
+                if "x" not in file_name and file_name.endswith('.csv')]
 
         columns = data[0][0].columns
 
@@ -233,13 +160,11 @@ class Visualization:
             Mean and maximum values over all correlation coefficients for each group.
 
         """
-        directory = "meta_datasets"
-        file_names = Memory.get_contents(directory)
         sc = StandardScaler()
         data = []
 
-        for name in file_names:
-            d = Memory.load(name, directory)
+        for file_name in [x for x in os.listdir(Parameters.meta_dataset_dir) if x.endswith('.csv')]:
+            d = pd.read_csv(Parameters.meta_dataset_dir + file_name)
             df = pd.DataFrame(data=sc.fit_transform(d), columns=d.columns)
             data.append(df)
 
@@ -273,12 +198,10 @@ class Visualization:
         """
         Group meta-targets by feature importance measure and visualize their distributions as histograms.
         """
-        directory = "meta_datasets"
-        file_names = Memory.get_contents(directory)
         data = []
 
-        for name in file_names:
-            d = Memory.load(name, directory)
+        for file_name in [x for x in os.listdir(Parameters.meta_dataset_dir) if x.endswith('.csv')]:
+            d = pd.read_csv(Parameters.meta_dataset_dir + file_name)
             df = pd.DataFrame(data=d, columns=d.columns)
             data.append(df)
 
@@ -299,4 +222,5 @@ class Visualization:
             axs[x, y].set_title(name)
             axs[x, y].set_xlim(np.quantile(values, 0.05), np.quantile(values, 0.75))
 
-        Memory.store_visual(file_name="Histograms", directory_name="predictions")
+        plt.savefig(Parameters.output_dir + "predictions/Histograms.pdf")
+        plt.close()

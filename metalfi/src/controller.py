@@ -1,4 +1,5 @@
 import multiprocessing as mp
+import os
 from typing import Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
@@ -52,7 +53,7 @@ class Controller:
         Parallel computation of meta-data sets from base-data sets.
         """
         data = [(dataset, name) for dataset, name in self.__train_data
-                if not (Memory.get_path() / ("meta_datasets/" + name + "meta.csv")).is_file()]
+                if not os.path.isfile(Parameters.meta_dataset_dir + name + "meta.csv")]
 
         with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(data), desc="Computing meta-data")
@@ -81,13 +82,13 @@ class Controller:
         del d_times["total"]
         del t_times["total"]
         d_times.update(t_times)
-        Memory.store_meta_dataset(meta_data, name)
+        meta_data.to_csv(Parameters.meta_dataset_dir + name + "meta.csv", index=False)
         Memory.update_runtimes(new_runtime_data=d_times, name=name)
 
     def __load_meta_data(self) -> None:
         for _, name in self.__train_data:
             sc = StandardScaler()
-            data = Memory.load(name + "meta.csv", "meta_datasets")
+            data = pd.read_csv(Parameters.meta_dataset_dir + name + "meta.csv")
             fmf = [x for x in data.columns if "." not in x]
             dmf = [x for x in data.columns if "." in x]
 
@@ -115,7 +116,7 @@ class Controller:
         """
         Partition meta-data into train-test splits based on base-data sets and
         fit instances of class :py:class:`MetaModel` using the train split.
-        Save the trained meta-models as instances of class :py:class:`MetaModel` in metalfi/data/model.
+        Save the trained meta-models as instances of class :py:class:`MetaModel`.
         """
         self.__load_meta_data()
 
@@ -125,7 +126,7 @@ class Controller:
             test_data,
             self.__train_data[self.__data_names[test_name]][0])
             for test_data, test_name in self.__meta_data
-            if not (Memory.get_path() / ("model/" + test_name)).is_file()]
+            if not os.path.isfile(Parameters.meta_model_dir + test_name)]
 
         selection_results = [self.__select_meta_features(parameter[1][:-4]) for parameter in parameters]
         args = [(*x[0], x[1]) for x in zip(parameters, selection_results)]
@@ -203,7 +204,7 @@ class Controller:
 
     def meta_feature_importances(self) -> None:
         """
-        Estimate the importance of each meta-feature. Save the results as .csv files in metalfi/data/output/importance.
+        Estimate the importance of each meta-feature. Save the results as .csv files.
         """
         data = [d for d, _ in self.__meta_data]
         models = Parameters.meta_models

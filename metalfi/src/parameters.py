@@ -32,6 +32,11 @@ class Parameters:
                "linSVC_PIMP", "LOG_PIMP", "RF_PIMP", "NB_PIMP", "SVC_PIMP", "DT_PIMP",
                "linSVC_LOFO", "LOG_LOFO", "RF_LOFO", "NB_LOFO", "SVC_LOFO", "DT_LOFO"]
 
+    base_dataset_dir = "data/base_datasets/"
+    meta_dataset_dir = "data/meta_datasets/"
+    meta_model_dir = "data/meta_models/"
+    output_dir = "data/output/"
+
     # Hyperparameters:
     #   (probability): Required for LIME-importance.
     #   (max_iter): Fix convergence issues.
