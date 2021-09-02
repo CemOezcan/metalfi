@@ -13,7 +13,6 @@ Input data and results data of the experimental pipelines are also available [on
     ├── metalfi                 
         ├── data                        # Data sets and plots
             ├── base_datasets           # Preprocessed base-data sets.
-            ├── features                # Data on meta-feature importance
             ├── meta_datasets           # Meta-data sets
             ├── meta_models             # Meta-models
             ├── output                  # .csv files of experimental results. The content of this folder is used to generate the plots, which are also saved in this directory.

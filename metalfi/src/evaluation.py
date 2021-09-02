@@ -240,7 +240,7 @@ class Evaluation:
         return data
 
     @staticmethod
-    def parallelize_predictions(name: str, progress_bar) -> Tuple[List[List[float]], List[List[str]], List[str]]:
+    def parallelize_predictions(model_name: str, progress_bar) -> Tuple[List[List[float]], List[List[str]], List[str]]:
         """
         Compute performance estimates for meta-models.
 
@@ -253,7 +253,7 @@ class Evaluation:
             Performance estimates, configurations and meta-targets of said meta-models.
 
         """
-        model, _ = Memory.load_model([name])[0]
+        model, _ = Memory.load_model(model_name=model_name)
         stats = model[1]
         config = [c for (a, b, c) in model[0]]
         targets = Parameters.targets
@@ -339,10 +339,10 @@ class Evaluation:
             Memory.store_data_frame(pd.DataFrame(data, columns=columns, index=index), metric_name, "predictions")
 
     @staticmethod
-    def new_parallel_comparisons(model, progress_bar):
-        data = Memory.load_model([model])
-        results = data[0][0][3]
-        times = data[0][0][4]
+    def new_parallel_comparisons(model_name: str, progress_bar):
+        data = Memory.load_model(model_name=model_name)
+        results = data[0][3]
+        times = data[0][4]
         key = list(results.keys())[0]
         progress_bar.update(n=1)
         return results[key], times[key]
@@ -362,7 +362,7 @@ class Evaluation:
 
         self.__comparisons = [[x / len(self.__meta_models) for x in result] for result in self.__comparisons]
         self.__comparison_times = [[x / len(self.__meta_models) for x in time] for time in self.__comparison_times]
-        self.__parameters = Memory.load_model([self.__meta_models[0]])[0][0][2]
+        self.__parameters = Memory.load_model(model_name=self.__meta_models[0])[0][2]
 
         all_results = {}
         for _, model, _ in [x for x in Parameters.meta_models if x[1] in meta_models]:
@@ -392,13 +392,13 @@ class Evaluation:
         for model in results:
             for subset in results[model]:
                 if model in plotting["models"] and subset in plotting["subsets"]:
-                    data.append((DataFrame(data=results[model][subset], index=rows,
-                                           columns=results[model][subset].keys()), "featureSelectionAcc x " + model + " x " + subset))
+                    data.append((pd.DataFrame(data=results[model][subset], index=rows,
+                                              columns=results[model][subset].keys()), "featureSelectionAcc x " + model + " x " + subset))
         Visualization.performance(data)
 
     def __store_all_comparisons(self, results: List[List[List[float]]], times: List[List[List[float]]], rows: List[str], name: str):
         data = {key: [] for key in ["base_data_set", "meta_model", "meta_features", "feature_selection_approach",
-                                        "base_model", "importance_measure", "accuracy", "time"]}
+                                    "base_model", "importance_measure", "accuracy", "time"]}
         for i in range(len(self.__parameters)):
             for j in range(len(rows)):
                 for k in range(len(self.__meta_models)):

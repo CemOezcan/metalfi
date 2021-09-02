@@ -139,42 +139,38 @@ class Memory:
             counter += 1
 
     @staticmethod
-    def store_model(model: 'MetaModel', file_name: str):
+    def store_model(model: 'MetaModel', model_name: str):
         """
         Serialize and save an instance of :py:class:`MetaModel`.
 
         Parameters
         ----------
-            model : Instance of :py:class:`MetaModel`, that is supposed to be saved as a pickle-file.
-            name : Name of the pickle-file.
+            model : Instance of :py:class:`MetaModel`, that is supposed to be saved as a pickle file.
+            model_name : Name of the pickle file.
         """
-        path = Parameters.meta_model_dir + file_name
+        path = Parameters.meta_model_dir + model_name + '.pickle'
         data = (model.get_meta_models(), model.get_stats(), model.get_result_config(), model.get_results(), model.get_times())
         if not path.is_file():
             with open(path, 'wb') as file:
                 pickle.dump(data, file)
 
     @staticmethod
-    def load_model(names: List[str]) -> List[Tuple['MetaModel', str]]:
+    def load_model(model_name: str) -> Tuple['MetaModel', str]:
         """
-        Load pickle files and return them as instances of :py:class:`MetaModel`.
+        Load pickle file and return an instance of :py:class:`MetaModel`.
 
         Parameters
         ----------
-            names : Names of files that are supposed to be loaded.
+            file_names : Names of file that is supposed to be loaded.
 
         Returns
         -------
-            ist of Tuples containing meta-models as instances of :py:class:`MetaModel` and their respective names.
+            Tuples containing meta-model as instances of :py:class:`MetaModel` and its respective name.
         """
-        models = []
-        for name in names:
-            path = Parameters.meta_model_dir + name
-            with open(path, 'rb') as file:
-                data = pickle.load(file)
-            models.append((data, name))
-
-        return models
+        path = Parameters.meta_model_dir + model_name + '.pickle'
+        with open(path, 'rb') as file:
+            data = pickle.load(file)
+        return (data, model_name)
 
     @staticmethod
     def store_data_frame(data: pd.DataFrame, file_name: str, directory_name: str,
