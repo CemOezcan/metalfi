@@ -31,12 +31,12 @@ class Evaluation:
 
     def __init__(self, meta_models: List[str]):
         self.__meta_models = meta_models
-        self.__tests = list()
-        self.__config = list()
+        self.__tests = []
+        self.__config = []
 
-        self.__comparisons = list()
-        self.__comparison_times = list()
-        self.__parameters = list()
+        self.__comparisons = []
+        self.__comparison_times = []
+        self.__parameters = []
 
     @staticmethod
     def matrix_addition(x: List[List[float]], y: List[List[float]]) -> List[List[float]]:
@@ -55,7 +55,7 @@ class Evaluation:
         if len(x) == 0:
             return y
 
-        result = [list(map(sum, zip(x[i], y[i]))) for i in range(len(x))]
+        result = [[x[i][j] + y[i][j] for j in range(len(x[i]))] for i in range(len(x))]
 
         return result
 
@@ -83,7 +83,7 @@ class Evaluation:
         (across cross validation splits) are significant. Visualize the results.
         """
         directory = "output/predictions"
-        file_names = list(filter(lambda x: "x" not in x and "long" not in x and x.endswith(".csv"), Memory.get_contents(directory)))
+        file_names = [x for x in Memory.get_contents(directory) if "x" not in x and "long" not in x and x.endswith(".csv")]
 
         data = {name[:-4]: Memory.load(name, directory) for name in file_names}
         pattern = re.compile(r"\$(?P<meta>.+)\_\{(?P<features>.+)\}\((?P<target>.+)\)\$")
@@ -95,7 +95,7 @@ class Evaluation:
 
         # Q_4
         directory = "output/selection"
-        file_name = list(filter(lambda x: x.endswith(".csv") and "_" in x, Memory.get_contents(directory)))[0]
+        file_name = [x for x in Memory.get_contents(directory) if x.endswith(".csv") and "_" in x][0]
         comparison_data = {file_name[:-4]: Memory.load(file_name, directory)}
         pattern = re.compile(r"\$(?P<meta>.+)\_\{(?P<features>.+) \\times (?P<selection>.+)\}\((?P<target>.+)\)\$")
 
@@ -106,26 +106,26 @@ class Evaluation:
         # Q_1
         subset_names_lin = list(dict.fromkeys([c[2] for c in config if c[2] != "All"]))
         subset_names_non = list(dict.fromkeys([c[2] for c in config]))
-        data_1_lin = {metric: {key: list() for key in subset_names_lin} for metric in Parameters.metrics}
-        data_1_non = {metric: {key: list() for key in subset_names_non} for metric in Parameters.metrics}
+        data_1_lin = {metric: {key: [] for key in subset_names_lin} for metric in Parameters.metrics}
+        data_1_non = {metric: {key: [] for key in subset_names_non} for metric in Parameters.metrics}
 
         # Q_2
         target_names = list(dict.fromkeys([c[1] for c in config]))
-        data_2 = {metric: {key: list() for key in target_names} for metric in Parameters.metrics}
+        data_2 = {metric: {key: [] for key in target_names} for metric in Parameters.metrics}
 
         # Q_3
         meta_model_names = list(dict.fromkeys([c[0] for c in config]))
-        data_3 = {metric: {key: list() for key in meta_model_names} for metric in Parameters.metrics}
+        data_3 = {metric: {key: [] for key in meta_model_names} for metric in Parameters.metrics}
 
         # Q_4
         selection_names = list(set(c[3] for c in config_4))
-        data_4 = {meta_target: {key: list() for key in selection_names}
+        data_4 = {meta_target: {key: [] for key in selection_names}
                   for meta_target in Parameters.question_5_parameters()[1]}
 
-        rows = list()
+        rows = []
         base_data_sets = list(data.values())[0]["Index"]
         for i in range(len(base_data_sets)):
-            stats = list(map(lambda x: list(x), zip(*[data_set.iloc[i][1:] for data_set in data.values()])))
+            stats = [list(x) for x in zip(*[data_set.iloc[i][1:] for data_set in data.values()])]
             performances = list(zip(config, stats))
             rows.append(base_data_sets.iloc[i])
             data_1_lin = self.__create_question_csv(performances, subset_names_lin, data_1_lin, 2, question=1, linear=True)
@@ -133,17 +133,17 @@ class Evaluation:
             data_2 = self.__create_question_csv(performances, target_names, data_2, 1, question=2)
             data_3 = self.__create_question_csv(performances, meta_model_names, data_3, 0, question=3)
 
-        comp_rows = list()
+        comp_rows = []
         base_data_sets = list(comparison_data.values())[0]["Index"]
         for i in range(len(base_data_sets)):
             comp_rows.append(base_data_sets.iloc[i])
-            comps = list(map(lambda x: list(x), zip(*[data_set.iloc[i][1:] for data_set in comparison_data.values()])))
+            comps = [list(x) for x in zip(*[data_set.iloc[i][1:] for data_set in comparison_data.values()])]
             comparisons = list(zip(config_4, comps))
             data_4 = self.__create_question_4_csv(comparisons, data_4)
 
         def __question_data(data: Dict[str, Dict[str, List[float]]], rows: List[str], suffix: str) \
                 -> List[Tuple[DataFrame, str]]:
-            return [(DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]]), metric + suffix)
+            return [(DataFrame(data=data[metric], index=rows, columns=data[metric].keys()), metric + suffix)
                     for metric in data]
 
         q_1_lin = __question_data(data_1_lin, rows, "_featureGroups_linearMetaModels")
@@ -158,9 +158,9 @@ class Evaluation:
         # Visualization.compare_means(q_4, "selection")
 
     def __q_2(self, data: Dict[str, Dict[str, List[float]]], rows: List[str]) -> List[Tuple[DataFrame, str]]:
-        data_frames = list()
+        data_frames = []
         for metric in data:
-            data_frame = DataFrame(data=data[metric], index=rows, columns=[x for x in data[metric]])
+            data_frame = DataFrame(data=data[metric], index=rows, columns=data[metric].keys())
             fi_measures = {fi_measure: [0] * len(rows) for fi_measure in Parameters.fi_measures()}
             base_models = {name: [0] * len(rows) for _, name, _ in Parameters.base_models}
 
@@ -180,18 +180,18 @@ class Evaluation:
                 subset = [column for column in data_frame.columns if (key == column[:-5]) and (column[-4:] != "LOFO")]
 
             for column in subset:
-                dictionary[key] = list(map(sum, zip(dictionary[key], list(data_frame[column].values))))
+                dictionary[key] = [sum(x) for x in zip(dictionary[key], list(data_frame[column].values))]
 
             dictionary[key] = [element / len(subset) for element in dictionary[key]]
 
-        return DataFrame(data=dictionary, index=rows, columns=[x for x in dictionary]), metric + name
+        return DataFrame(data=dictionary, index=rows, columns=dictionary.keys()), metric + name
 
     @staticmethod
     def __create_question_csv(performances: List[Tuple[List[str], List[float]]], names: List[str],
                               data: Dict[str, Dict[str, List[float]]], index: int, question: int, linear=False) \
             -> Dict[str, Dict[str, List[float]]]:
-        linear_meta_models = [name for _, name, _ in filter(lambda x: x[2] == "linear", Parameters.meta_models)]
-        non_linear_meta_models = [name for _, name, _ in filter(lambda x: x[2] != "linear", Parameters.meta_models)]
+        linear_meta_models = [name for _, name, category in Parameters.meta_models if category == "linear"]
+        non_linear_meta_models = [name for _, name, category in Parameters.meta_models if category != "linear"]
 
         if question == 1:
             if linear:
@@ -207,17 +207,17 @@ class Evaluation:
                       and ((t[0][0] in linear_meta_models and (t[0][2] not in ["Uni", "UniMultiFF", "Multi", "All"]))
                            or ((t[0][0] in non_linear_meta_models) and (t[0][2] not in ["Uni", "UniMultiFF", "Multi"])))]
         else:
-            tuples = list()
+            tuples = []
 
         for name in names:
             numerator = [0] * len(Parameters.metrics)
             denominator = 0
             for t in tuples:
                 if t[0][index] == name:
-                    numerator = list(map(sum, zip(numerator, t[1])))
+                    numerator = [sum(x) for x in zip(numerator, t[1])]
                     denominator += 1
 
-            values = list(map(lambda x: x / denominator, numerator))
+            values = [x / denominator for x in numerator]
             for metric_idx, metric_name in enumerate(Parameters.metrics):
                 data[metric_name][name].append(values[metric_idx])
 
@@ -227,8 +227,8 @@ class Evaluation:
     def __create_question_4_csv(comparisons: List[Tuple[List[str], List[float]]],
                                 data: Dict[str, Dict[str, List[float]]]) -> Dict[str, Dict[str, List[float]]]:
         for key in data:
-            tuples = list(filter(lambda x: x[0][1] == key, comparisons))
-            selection_methods = {method: list() for method in list(set(map(lambda x: x[0][3], comparisons)))}
+            tuples = [x for x in comparisons if x[0][1] == key]
+            selection_methods = {method: [] for method in list({x[0][3] for x in comparisons})}
 
             for t in tuples:
                 selection_methods[t[0][3]].append(t[1][0])
@@ -270,16 +270,16 @@ class Evaluation:
         for stats, _, _ in results:
             self.__tests = self.matrix_addition(self.__tests, stats)
 
-        self.__tests = [list(map(lambda x: x / len(self.__meta_models), stat)) for stat in self.__tests]
+        self.__tests = [[x / len(self.__meta_models) for x in stat] for stat in self.__tests]
         self.__config = results[0][1]
 
         targets = results[0][2]
         algorithms = [x[:-5] for x in targets]
-        rows = list()
+        rows = []
 
         all_results = {}
         for i, metric_name in enumerate(Parameters.metrics):
-            metric = {measure: {a: list() for a in algorithms} for measure in Parameters.fi_measures()}
+            metric = {measure: {a: [] for a in algorithms} for measure in Parameters.fi_measures()}
             index = 0
             for a, b, c in self.__config:
                 row = "$" + a + "_{" + c + "}$"
@@ -295,11 +295,11 @@ class Evaluation:
         self.__store_all_results(results)
 
     @staticmethod
-    def create_tables(results, rows):
+    def create_tables(results: Dict, rows):
         for metric in results:
             for importance in results[metric]:
                 data_frame = DataFrame(data=results[metric][importance], index=rows,
-                                       columns=[x for x in results[metric][importance]]).round(3)
+                                       columns=results[metric][importance].keys()).round(3)
                 for i in range(len(data_frame.index)):
                     for j in range(len(data_frame.columns)):
                         string = str(data_frame.iloc[i].iloc[j])
@@ -316,7 +316,7 @@ class Evaluation:
                 Memory.store_data_frame(data_frame, metric + "x" + importance, "tables", True)
 
     def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]):
-        data = {key: list() for key in ["base_data_set", "meta_model", "meta_features", "base_model", "importance_measure", "r^2"]}
+        data = {key: [] for key in ["base_data_set", "meta_model", "meta_features", "base_model", "importance_measure", "r^2"]}
         for i in range(len(self.__meta_models)):
             base_data_set = self.__meta_models[i]
             for j in range(len(self.__config)):
@@ -334,7 +334,7 @@ class Evaluation:
         index = self.__meta_models
 
         for metric_idx, metric_name in enumerate(Parameters.metrics):
-            data = [tuple(map((lambda x: x[metric_idx]), results[i][0])) for i in range(len(index))]
+            data = [tuple(x[metric_idx] for x in results[i][0]) for i in range(len(index))]
             Memory.store_data_frame(DataFrame(data, columns=columns, index=index), metric_name, "predictions")
 
     @staticmethod
@@ -359,12 +359,12 @@ class Evaluation:
             self.__comparisons = self.matrix_addition(self.__comparisons, result)
             self.__comparison_times = self.matrix_addition(self.__comparison_times, time)
 
-        self.__comparisons = [list(map(lambda x: x / len(self.__meta_models), result)) for result in self.__comparisons]
-        self.__comparison_times = [list(map(lambda x: x / len(self.__meta_models), time)) for time in self.__comparison_times]
+        self.__comparisons = [[x / len(self.__meta_models) for x in result] for result in self.__comparisons]
+        self.__comparison_times = [[x / len(self.__meta_models) for x in time] for time in self.__comparison_times]
         self.__parameters = Memory.load_model([self.__meta_models[0]])[0][0][2]
 
         all_results = {}
-        for _, model, _ in filter(lambda x: x[1] in meta_models, Parameters.meta_models):
+        for _, model, _ in [x for x in Parameters.meta_models if x[1] in meta_models]:
             this_model = {}
             for subset in subsets:
                 index = 0
@@ -387,16 +387,16 @@ class Evaluation:
 
     @staticmethod
     def plot_accuracies(results, rows, plotting):
-        data = list()
+        data = []
         for model in results:
             for subset in results[model]:
                 if model in plotting["models"] and subset in plotting["subsets"]:
                     data.append((DataFrame(data=results[model][subset], index=rows,
-                                           columns=[x for x in results[model][subset]]), "featureSelectionAcc x " + model + " x " + subset))
+                                           columns=results[model][subset].keys()), "featureSelectionAcc x " + model + " x " + subset))
         Visualization.performance(data)
 
     def __store_all_comparisons(self, results: List[List[List[float]]], times: List[List[List[float]]], rows: List[str], name: str):
-        data = {key: list() for key in ["base_data_set", "meta_model", "meta_features", "feature_selection_approach",
+        data = {key: [] for key in ["base_data_set", "meta_model", "meta_features", "feature_selection_approach",
                                         "base_model", "importance_measure", "accuracy", "time"]}
         for i in range(len(self.__parameters)):
             for j in range(len(rows)):
@@ -416,7 +416,7 @@ class Evaluation:
         Memory.store_data_frame(DataFrame(data=data), "longComps", "selection")
 
         data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2]
-                + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": list(map(lambda x: x[i][j], results))
+                + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": [x[i][j] for x in results]
                 for i in range(len(self.__parameters)) for j in range(len(rows))}
 
         Memory.store_data_frame(DataFrame(data, index=self.__meta_models), name, "selection")

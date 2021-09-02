@@ -114,7 +114,7 @@ class Memory:
                 continue
 
             all_features = dataset["feature_names"]
-            cat_features = list()
+            cat_features = []
             data_frame = dataset["frame"].dropna(axis=0)
             data_frame = data_frame.rename(columns={dataset["target_names"][0]: target_name})
 
@@ -123,7 +123,7 @@ class Memory:
 
             y = data_frame[target_name]
 
-            sorted_categories = list()
+            sorted_categories = []
             for feature in all_features:
                 if str(data_frame[feature].dtypes) == "category":
                     cat_features.append(feature)
@@ -198,7 +198,7 @@ class Memory:
         -------
             ist of Tuples containing meta-models as instances of :py:class:`MetaModel` and their respective names.
         """
-        models = list()
+        models = []
         for name in names:
             path = Memory.get_path() / ("model/" + name)
             with open(path, 'rb') as file:

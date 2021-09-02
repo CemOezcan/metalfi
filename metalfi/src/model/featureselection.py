@@ -111,9 +111,9 @@ class MetaFeatureSelection:
         all_X = meta_data.drop(all_targets, axis=1)
         Y = meta_data[targets]
 
-        iterable = list()
+        iterable = []
         for target in targets:
-            importance[target] = list()
+            importance[target] = []
             iterable += [(target, model, all_X[subsets[name][target]], Y[target], category)
                          for model, name, category in models]
 

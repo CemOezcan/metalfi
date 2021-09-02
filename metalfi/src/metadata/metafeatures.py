@@ -42,11 +42,11 @@ class MetaFeatures:
     def __init__(self, dataset):
         self.__dataset = dataset
         self.__meta_data = pd.DataFrame()
-        self.__targets = list()
-        self.__feature_meta_features = list()
-        self.__data_meta_features = list()
-        self.__data_meta_feature_names = list()
-        self.__feature_meta_feature_names = list()
+        self.__targets = []
+        self.__feature_meta_features = []
+        self.__data_meta_features = []
+        self.__data_meta_feature_names = []
+        self.__feature_meta_feature_names = []
 
     def get_meta_data(self) -> pd.DataFrame:
         return self.__meta_data
@@ -108,7 +108,7 @@ class MetaFeatures:
 
         y = data_frame[target]
         X = data_frame.drop(target, axis=1)
-        columns = list()
+        columns = []
 
         for feature in X.columns:
             X_temp = data_frame[feature]
@@ -160,16 +160,16 @@ class MetaFeatures:
     def __correlation_feature_meta_features(self, matrix: pd.DataFrame, name: str, threshold=0.5) -> Dict[str, np.ndarray]:
         mean_correlation = {}
         for i in range(0, len(matrix.columns)):
-            values = list()
+            values = []
             for j in range(0, len(matrix.columns)):
                 if i != j:
                     values.append(abs(matrix.iloc[i].iloc[j]))
 
             mean_correlation[matrix.columns[i]] = np.mean(values)
             percentile = np.percentile(values, 75)
-            th = map(lambda x: x >= threshold, values)
-            th_list = list(map(lambda x: x if (x >= threshold) else 0, values))
-            percentile_list = list(map(lambda x: x if (x >= percentile) else 0, values))
+            th = [x >= threshold for x in values]
+            th_list = [x if (x >= threshold) else 0 for x in values]
+            percentile_list = [x if (x >= percentile) else 0 for x in values]
 
             self.__feature_meta_features[i] += [np.mean(values), np.median(values),
                                                 np.std(values), np.var(values),
@@ -193,10 +193,10 @@ class MetaFeatures:
         warnings.filterwarnings("ignore", message="divide by zero encountered in .*")
         f_values, anova_p_values = f_classif(X, y)
         # TODO: Better solution
-        f_values = list(map((lambda x: 500 if x == float("inf") else x), f_values))
-        log_anova_p = list(map((lambda x: -500 if x == float("-inf") else x), [np.log(x) for x in anova_p_values]))
-        log_anova_p = list(map((lambda x: 1 if math.isnan(x) else x), log_anova_p))
-        log_chi2_p = list(map((lambda x: -500 if x == float("-inf") else x), [np.log(x) for x in chi2_p_values]))
+        f_values = [500 if x == float("inf") else x for x in f_values]
+        log_anova_p = [-500 if np.log(x) == float("-inf") else np.log(x) for x in anova_p_values]
+        log_anova_p = [1 if math.isnan(x) else x for x in log_anova_p]
+        log_chi2_p = [-500 if np.log(x) == float("-inf") else np.log(x) for x in chi2_p_values]
 
         total_multi_ft = 0
         for feature in X.columns:
@@ -240,7 +240,7 @@ class MetaFeatures:
 
     @staticmethod
     def __to_feature_vector(double_list: Sequence[np.array]) -> List[float]:
-        vector = list()
+        vector = []
         for x in double_list:
             try:
                 vector.append(x[0])
@@ -295,7 +295,7 @@ class MetaFeatures:
         target.calculate_scores()
         imp = target.get_feature_importances()
         name = target.get_name()
-        target_names = list()
+        target_names = []
 
         for i in range(0, len(imp)):
             self.__meta_data.insert(len(self.__meta_data.columns), target.get_model_names()[i] + name, 0.0, True)

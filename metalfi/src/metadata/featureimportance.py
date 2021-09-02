@@ -48,7 +48,7 @@ class FeatureImportance(ABC):
         self.__model_names = sum([list(d.keys()) for d in self._models.values()], [])
         self._all_models = sum([list(d.values()) for d in self._models.values()], [])
 
-        self._feature_importances = list()
+        self._feature_importances = []
         self._name = ""
 
     def get_model_names(self):
@@ -80,7 +80,7 @@ class FeatureImportance(ABC):
             warnings.filterwarnings("default")
             sys.stderr = sys.__stderr__
             pattern = re.compile(r".*\d+%\|.*\|\s\d+/\d+\s\[.*<.*,.*(it/s|s/it)].*")
-            for warning in set(filter(lambda x: not re.match(pattern, x) and x != "", temp.getvalue().splitlines())):
+            for warning in {x for x in temp.getvalue().splitlines() if not re.match(pattern, x) and x != ""}:
                 warnings.warn(warning)
 
     @abstractmethod

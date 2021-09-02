@@ -50,7 +50,7 @@ class LimeImportance(FeatureImportance):
             for index, importance in xp.as_map()[1]:
                 importances[index] += abs(importance)
 
-        importances = list(map(lambda x: x / num_samples, importances))
+        importances = [x / num_samples for x in importances]
         data_frame = DataFrame(data=importances, index=X.columns, columns=["Importances"])
 
         return data_frame

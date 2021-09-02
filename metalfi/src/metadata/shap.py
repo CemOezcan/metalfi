@@ -62,9 +62,8 @@ class ShapImportance(FeatureImportance):
 
     def __create_data_frame(self, array: List[List[float]], X: DataFrame) -> DataFrame:
         if str(type(array)).endswith("'list'>"):
-            importances = list(map(lambda x: x / len(array),
-                                   map(sum,
-                                       zip(*[self.__calculate_importances(c) for c in array]))))
+            importances = [self.__calculate_importances(c) for c in array]
+            importances = [sum(x[i] for x in importances) / len(array) for i in range(len(importances[0]))]
         else:
             importances = self.__calculate_importances(array)
 
@@ -72,8 +71,4 @@ class ShapImportance(FeatureImportance):
 
     @staticmethod
     def __calculate_importances(array: List[List[float]]) -> List[float]:
-        importances = list()
-        for i in range(len(array[0])):
-            importances.append(sum([abs(x[i]) for x in array]) / len(array))
-
-        return importances
+        return [sum([abs(x[i]) for x in array]) / len(array) for i in range(len(array[0]))]

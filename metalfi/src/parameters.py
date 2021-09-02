@@ -78,7 +78,7 @@ class Parameters:
         -------
             List of all feature importance measures used to compute meta-targets.
         """
-        return list(dict.fromkeys(map(lambda x: x[-4:], Parameters.targets)))
+        return list(dict.fromkeys([x[-4:] for x in Parameters.targets]))
 
     @staticmethod
     def question_5_parameters() -> Tuple[List[str], List[str], List[str]]:
@@ -89,5 +89,5 @@ class Parameters:
             Experimental parameters for research question 5.
 
         """
-        return ["linSVR", "RF", "DT", "SVR", "LIN"], list(filter(lambda x: x.endswith("_SHAP"), Parameters.targets)), \
+        return ["linSVR", "RF", "DT", "SVR", "LIN"], [x for x in Parameters.targets if x.endswith("_SHAP")], \
                ["LM", "FMF", "All", "Auto", "LMUni", "LMMultiFT", "LMMulti"]

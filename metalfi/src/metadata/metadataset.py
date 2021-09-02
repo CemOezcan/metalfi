@@ -29,7 +29,7 @@ class MetaDataset:
 
     @staticmethod
     def calculate_training_data(dataset: Dataset) -> Tuple[pd.DataFrame, List[str], Tuple[Dict[str, float], Dict[str, float]], int, int]:
-        data_frames = list()
+        data_frames = []
         nr_feat = 0
         nr_inst = 0
 
@@ -43,7 +43,7 @@ class MetaDataset:
 
     @staticmethod
     def calculate_test_data(datasets: List[Dataset]) -> Tuple[pd.DataFrame, None, None, None, None]:
-        data_frames = list()
+        data_frames = []
         for dataset in datasets:
             data_frames.append(dataset.test_meta_data())
 

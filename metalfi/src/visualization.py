@@ -21,7 +21,7 @@ class Visualization:
         # Deprecated
         directory = "output/runtime"
         file_names = [x for x in Memory.get_contents(directory) if x.endswith('.csv') and substring in x]
-        data = list()
+        data = []
 
         for name in file_names:
             file = Memory.load(name, directory)
@@ -71,8 +71,8 @@ class Visualization:
         target_data = Visualization.fetch_runtime_data("XtargetX", threshold)
         meta_data = Visualization.fetch_runtime_data("XmetaX", threshold)
 
-        data = list()
-        names = list()
+        data = []
+        names = []
         for x in target_data:
             if x not in targets:
                 continue
@@ -161,8 +161,8 @@ class Visualization:
                 Name of the subdirectory of metalfi/data, in which the diagrams are supposed to be saved.
         """
         for data_frame, metric in data:
-            d = list()
-            names = list()
+            d = []
+            names = []
             ranks = np.zeros(len(data_frame.columns))
 
             for i in range(len(data_frame.index)):
@@ -207,7 +207,7 @@ class Visualization:
         """
         Compute pairwise Spearman correlation coefficients between performance metrics.
         """
-        new = {metric: list() for metric in Parameters.metrics}
+        new = {metric: [] for metric in Parameters.metrics}
         directory = "output/predictions"
         file_names = Memory.get_contents(directory)
         data = [(Memory.load(name, directory), name) for name in file_names if "x" not in name]
@@ -236,7 +236,7 @@ class Visualization:
         directory = "input"
         file_names = Memory.get_contents(directory)
         sc = StandardScaler()
-        data = list()
+        data = []
 
         for name in file_names:
             d = Memory.load(name, directory)
@@ -275,7 +275,7 @@ class Visualization:
         """
         directory = "input"
         file_names = Memory.get_contents(directory)
-        data = list()
+        data = []
 
         for name in file_names:
             d = Memory.load(name, directory)
@@ -291,7 +291,7 @@ class Visualization:
 
         _, axs = plt.subplots(2, 2)
         for target, name, x, y in meta_targets:
-            values = list()
+            values = []
             for value in [list(frame[column].values) for column in target]:
                 values += value
 

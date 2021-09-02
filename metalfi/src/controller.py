@@ -32,7 +32,7 @@ class Controller:
     def __init__(self):
         self.__train_data = None
         self.__data_names = None
-        self.__meta_data = list()
+        self.__meta_data = []
         self.fetch_data()
         self.store_meta_data()
 
@@ -217,7 +217,7 @@ class Controller:
             for data_frame in importance[target]:
                 meta_features[target].update(data_frame.index)
 
-        data_frames = list()
+        data_frames = []
         for target in targets:
             this_target = {}
             index = []

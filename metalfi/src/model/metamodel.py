@@ -1,19 +1,18 @@
-import time
-import warnings
 from copy import deepcopy
 from functools import partial
-from typing import List, Tuple, Dict
+import multiprocessing as mp
+import time
+from typing import List, Tuple
+import warnings
 
 import numpy as np
-from sklearn.pipeline import make_pipeline
-import multiprocessing as mp
-import tqdm
-
 from pandas import DataFrame
 from sklearn.base import BaseEstimator
 from sklearn.feature_selection import f_classif, mutual_info_classif, SelectPercentile
 from sklearn.model_selection import StratifiedKFold
-from sklearn.preprocessing import StandardScaler, Normalizer
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import Normalizer, StandardScaler
+import tqdm
 
 from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.metadata.dropcolumn import DropColumnImportance
@@ -64,11 +63,11 @@ class MetaModel:
         self.__og_X = og_data.get_data_frame().drop(og_data.get_target(), axis=1)
         self.__selected = selected
         self.__file_name = name
-        self.__meta_models = list()
-        self.__stats = list()
-        self.__results = list()
-        self.__times = list()
-        self.__result_configurations = list()
+        self.__meta_models = []
+        self.__stats = []
+        self.__results = []
+        self.__times = []
+        self.__result_configurations = []
 
         self.__sc1 = StandardScaler()
         self.__sc1.fit(train)
@@ -79,14 +78,10 @@ class MetaModel:
         self.__sc1.fit(temp)
 
         train = train.drop(Parameters.targets, axis=1)
-        fmf = \
-            [x for x in train.columns if "." not in x]
-        lm = \
-            [x for x in train.columns if x.startswith("target_")]
-        multi = \
-            [x for x in train.columns if x.startswith("multi_")]
-        uni = \
-            [x for x in train.columns if (x in fmf) and (x not in multi) and (x not in lm)]
+        fmf = [x for x in train.columns if "." not in x]
+        lm = [x for x in train.columns if x.startswith("target_")]
+        multi = [x for x in train.columns if x.startswith("multi_")]
+        uni = [x for x in train.columns if (x in fmf) and (x not in multi) and (x not in lm)]
         lm_uni = lm + uni
         lm_multi = lm + multi
         lm_multi_ft = lm + [x for x in multi if x.startswith("multi_cb")]
@@ -151,9 +146,9 @@ class MetaModel:
         all_res = {list(results.keys())[0]: results[list(results.keys())[0]]}
         all_times = {list(times.keys())[0]: times[list(times.keys())[0]]}
         sum_up = lambda x: x[0] if len(x) == 1 else Evaluation.matrix_addition(x[0], sum_up(x[1:]))
-        self.__results = {key: [list(map(lambda x: x / 5, result)) for result in sum_up(all_res[key])]
+        self.__results = {key: [[x / 5 for x in result] for result in sum_up(all_res[key])]
                           for key in all_res.keys()}
-        self.__times = {key: [list(map(lambda x: x / 5, result)) for result in sum_up(all_times[key])]
+        self.__times = {key: [[x / 5 for x in result] for result in sum_up(all_times[key])]
                         for key in all_times.keys()}
         self.__meta_models = [(None, feat, config) for model, feat, config in self.__meta_models]
 
@@ -172,7 +167,7 @@ class MetaModel:
 
         """
         if renew:
-            self.__stats = list()
+            self.__stats = []
 
         if len(self.__stats) == len(self.__meta_models):
             return
@@ -201,6 +196,7 @@ class MetaModel:
         for model, model_name, _ in Parameters.base_models:
             if name.startswith(model_name):
                 return model
+        return None
 
     def parallel_comparisons(self, args):
         """
@@ -234,12 +230,12 @@ class MetaModel:
         pimp_times = {name: dict()}
         all_times = {name: dict()}
 
-        results = list()
-        times = list()
+        results = []
+        times = []
         for X_tr, X_te, y_tr, y_te in self.__get_cross_validation_folds(X_test, y_test):
             warnings.filterwarnings("ignore", category=DeprecationWarning, message="Using.*")
-            results.append(list())
-            times.append(list())
+            results.append([])
+            times.append([])
             dataset = Dataset(DataFrame(data=X_tr).assign(target=y_tr), "target")
             mf = MetaFeatures(dataset)
             metalfi_time_tuple = mf.calculate_meta_features()
@@ -261,7 +257,7 @@ class MetaModel:
             mi_time = self.measure_time(partial(mutual_info_classif, random_state=115), X_tr, y_tr)
             bagging_time = self.measure_time(lambda x, y: [x.mean() for x in normalizer.fit_transform(X_m[self.__feature_sets[3]])], X_tr, y_tr)
 
-            for og_model, n in set([(self.__get_original_model(target), target[:-5]) for target in meta_target_names]):
+            for og_model, n in {(self.__get_original_model(target), target[:-5]) for target in meta_target_names}:
                 pipeline_anova = make_pipeline(StandardScaler(),
                                                SelectPercentile(f_classif, percentile=k),
                                                og_model)
@@ -323,11 +319,11 @@ class MetaModel:
     def compare_all(self, test_data: List[Tuple[Dataset, str]]):
         # Deprecated
         X_1 = self.__train_data.drop(Parameters.targets, axis=1)
-        meta_model_names, meta_target_names, meta_feature_subsets = Parameters.question_5_parameters()
+        meta_model_names, meta_target_names, _ = Parameters.question_5_parameters()
         test_data_sets = [(d.get_data_frame().drop("base-target_variable", axis=1),
                            d.get_data_frame()["base-target_variable"], name) for d, name in test_data]
 
-        for meta_model, model_name, _ in filter(lambda x: x[1] in meta_model_names, Parameters.meta_models):
+        for meta_model, model_name, _ in [x for x in Parameters.meta_models if x[1] in meta_model_names]:
             for target in meta_target_names:
                 y = self.__train_data[target]
                 j = 0
@@ -355,7 +351,7 @@ class MetaModel:
         all_res = {list(result.keys())[0]: result[list(result.keys())[0]] for result in results}
         sum_up = lambda x: x[0] if len(x) == 1 else Evaluation.matrix_addition(x[0], sum_up(x[1:]))
         self.__result_configurations += [config for (_, _, config) in self.__meta_models]
-        self.__results = {key: [list(map(lambda x: x / 5, result)) for result in sum_up(all_res[key])]
+        self.__results = {key: [[x / 5 for x in result] for result in sum_up(all_res[key])]
                           for key in all_res.keys()}
 
     @staticmethod
@@ -390,7 +386,7 @@ class MetaModel:
         kf = StratifiedKFold(n_splits=k, shuffle=True, random_state=115)
         kf.get_n_splits(X)
 
-        folds = list()
+        folds = []
         for train_index, test_index in kf.split(X, y):
             folds.append((DataFrame(X_temp[train_index], columns=X.columns), DataFrame(X_temp[test_index], columns=X.columns),
                           y_temp[train_index], y_temp[test_index]))
