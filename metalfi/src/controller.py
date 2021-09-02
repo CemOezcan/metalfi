@@ -9,9 +9,9 @@ import tqdm
 from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.metadata.metadataset import MetaDataset
 from metalfi.src.memory import Memory
-from metalfi.src.model.evaluation import Evaluation
-from metalfi.src.model.featureselection import MetaFeatureSelection
-from metalfi.src.model.metamodel import MetaModel
+from metalfi.src.evaluation import Evaluation
+from metalfi.src.featureselection import MetaFeatureSelection
+from metalfi.src.metamodel import MetaModel
 from metalfi.src.parameters import Parameters
 
 

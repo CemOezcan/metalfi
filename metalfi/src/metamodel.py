@@ -20,7 +20,7 @@ from metalfi.src.metadata.lime import LimeImportance
 from metalfi.src.metadata.metafeatures import MetaFeatures
 from metalfi.src.metadata.permutation import PermutationImportance
 from metalfi.src.metadata.shap import ShapImportance
-from metalfi.src.model.evaluation import Evaluation
+from metalfi.src.evaluation import Evaluation
 from metalfi.src.parameters import Parameters
 
 

@@ -47,8 +47,6 @@ Input data and results data of the experimental pipelines are also available [on
             ├                                Preprocessing: 
             ├                                    - Apply ordinal encoding on categorical features and target variables.
         ├── src                         # Source code
-            ├── metadata                # Scripts that handle the meta-data
-            ├── model                   # Contains scripts that train and evaluate meta-models
     ├── .gitignore                 
     ├── requirements.txt           
     ├── start.py                   
