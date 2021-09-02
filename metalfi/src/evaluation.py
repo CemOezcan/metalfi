@@ -83,7 +83,7 @@ class Evaluation:
         Use statistical hypothesis testing to determine, whether the differences between the groups
         (across cross validation splits) are significant. Visualize the results.
         """
-        directory = Parameters.output_dir + "predictions/"
+        directory = Parameters.output_dir + "meta_prediction_performance/"
         file_names = [x for x in os.listdir(directory) if "x" not in x and "long" not in x and x.endswith(".csv")]
 
         data = {file_name[:-4]: pd.read_csv(directory + file_name) for file_name in file_names}
@@ -95,7 +95,7 @@ class Evaluation:
                   for column in data[file_names[0][:-4]].columns if "Index" not in column]
 
         # Q_4
-        directory = Parameters.output_dir + "selection/"
+        directory = Parameters.output_dir + "feature_selection_performance/"
         file_name = [x for x in os.listdir(directory) if x.endswith(".csv") and "_" in x][0]
         comparison_data = {file_name[:-4]: pd.read_csv(directory + file_name)}
         pattern = re.compile(r"\$(?P<meta>.+)\_\{(?P<features>.+) \\times (?P<selection>.+)\}\((?P<target>.+)\)\$")
@@ -314,7 +314,7 @@ class Evaluation:
                         else:
                             data_frame.iloc[i, j] = round(data_frame.iloc[i].iloc[j], 3)
 
-                Memory.store_data_frame(data_frame, metric + "x" + importance, "tables", True)
+                Memory.store_data_frame(data_frame, metric + "x" + importance, "meta_prediction_performance", True)
 
     def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]):
         data = {key: [] for key in ["base_data_set", "meta_model", "meta_features", "base_model", "importance_measure", "r^2"]}
@@ -329,14 +329,14 @@ class Evaluation:
                 data["importance_measure"].append(target[-4:])
                 data["r^2"].append(results[i][0][j][0])
 
-        Memory.store_data_frame(pd.DataFrame(data=data), "longPred", "predictions")
+        Memory.store_data_frame(pd.DataFrame(data=data), "longPred", "meta_prediction_performance")
 
         columns = ["$" + meta + "_{" + features + "}(" + target + ")$" for meta, target, features in self.__config]
         index = self.__meta_models
 
         for metric_idx, metric_name in enumerate(Parameters.metrics):
             data = [tuple(x[metric_idx] for x in results[i][0]) for i in range(len(index))]
-            Memory.store_data_frame(pd.DataFrame(data, columns=columns, index=index), metric_name, "predictions")
+            Memory.store_data_frame(pd.DataFrame(data, columns=columns, index=index), metric_name, "meta_prediction_performance")
 
     @staticmethod
     def new_parallel_comparisons(model_name: str, progress_bar):
@@ -414,10 +414,10 @@ class Evaluation:
                     else:
                         data["time"].append(0)
 
-        Memory.store_data_frame(pd.DataFrame(data=data), "longComps", "selection")
+        Memory.store_data_frame(pd.DataFrame(data=data), "longComps", "feature_selection_performance")
 
         data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2]
                 + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": [x[i][j] for x in results]
                 for i in range(len(self.__parameters)) for j in range(len(rows))}
 
-        Memory.store_data_frame(pd.DataFrame(data, index=self.__meta_models), name, "selection")
+        Memory.store_data_frame(pd.DataFrame(data, index=self.__meta_models), name, "feature_selection_performance")

@@ -240,4 +240,4 @@ class Controller:
             data["importance_measure"] = [target[-4:]] * len(index)
             data_frames.append(data.sort_values(["PIMP", "base_model", "importance_measure"]))
 
-        Memory.store_data_frame(pd.concat(data_frames), "all_importances", "importance")
+        Memory.store_data_frame(pd.concat(data_frames), "all_importances", "meta_feature_importance")

@@ -196,14 +196,14 @@ class Memory:
         Memory.lock.acquire()
         try:
             try:
-                runtimes = pd.read_csv(Parameters.output_dir + "runtime/runtimes.csv").set_index("Index")
+                runtimes = pd.read_csv(Parameters.output_dir + "meta_computation_time/runtimes.csv").set_index("Index")
             except (FileNotFoundError, KeyError):
-                Memory.store_data_frame(pd.DataFrame(), "runtimes", "runtime")
+                Memory.store_data_frame(pd.DataFrame(), "runtimes", "meta_computation_time")
                 runtimes = pd.DataFrame()
 
             runtimes.drop([name], inplace=True, errors="ignore")
             Memory.store_data_frame(data=runtimes.append(pd.DataFrame(data=new_runtime_data, index=[name])),
-                                    file_name="runtimes", directory_name="runtime")
+                                    file_name="runtimes", directory_name="meta_computation_ime")
         finally:
             Memory.lock.release()
 

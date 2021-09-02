@@ -33,12 +33,12 @@ class Main:
             delete_models: (bool)
                 Whether to delete meta-models.
         """
-        directories = ["importance", "predictions", "selection", "tables"]
+        directories = ["meta_feature_importance", "meta_prediction_performance", "feature_selection_performance"]
         directories = [Parameters.output_dir + x for x in directories]
         directories.append(Parameters.meta_model_dir)
         if delete_meta:
             Memory.clear_directories([Parameters.base_dataset_dir, Parameters.meta_dataset_dir,
-                                      Parameters.output_dir + "runtime"] + directories)
+                                      Parameters.output_dir + "meta_computation_time"] + directories)
         if delete_models:
             Memory.clear_directories(directories)
 

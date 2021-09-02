@@ -11,36 +11,20 @@ Input data and results data of the experimental pipelines are also available [on
 
     .
     ├── metalfi                 
-        ├── data                        # Data sets and plots
-            ├── base_datasets           # Preprocessed base-data sets.
-            ├── meta_datasets           # Meta-data sets
-            ├── meta_models             # Meta-models
-            ├── output                  # .csv files of experimental results. The content of this folder is used to generate the plots, which are also saved in this directory.
-                ├── groups              # Group meta-model performance estimates by meta-feature subsets: 
-                ├                            Box plots and critical differences diagrams visualize and compare 
-                ├                            linear and non-linear meta-model performances based on the meta-feature 
-                ├                            subsets, they were trained on.
-                ├── importance          # SHAP-based meta-feature importance estimates: 
-                ├                            Bar plots visualize the importance values of the top 15 meta-features. 
-                ├── models              # Group meta-model performance estimates by meta-model types: 
-                ├                            Box plots and critical differences diagrams visualize and compare meta-model 
-                ├                            performance estimates, grouped by their respective regression model.
-                ├── predictions         # All meta-model performance estimates over all meta-model configurations 
-                ├                            and cross validation splits. 
-                ├── runtime             # Computation times of all meta-feature subsets and meta-targets, 
-                ├                            for all base-data sets. 
-                ├── selection           # Group base-model accuracy scores by different feature selection approaches: 
-                ├                            Bar plots and critical differences diagrams visualize and compare base-model 
-                ├                            accuracies grouped by feature selection approaches. 
-                ├── targets             # Group meta-model performance estimates by meta-targets:
-                ├                            Box plots and critical differences diagrams visualize and compare meta-model 
-                ├                            performance estimates grouped by meta-targets. 
-        ├── src                         # Source code
-    ├── .gitignore                 
-    ├── requirements.txt           
-    ├── start.py                   
+        ├── data                                  # Data sets and plots.
+            ├── base_datasets                     # Preprocessed base-data sets.
+            ├── meta_datasets                     # Meta-data sets.
+            ├── meta_models                       # Meta-models.
+            ├── output                            # Experimental results. The content of this folder is used to generate plots, which are also saved in this directory.
+                ├── meta_feature_importance       # Meta-feature importance.
+                ├── meta_prediction_performance   # Meta-model performance, overall and comparing various experimental dimensions.
+                ├── meta_computation_time         # Computation times of all meta-feature subsets and meta-targets for all base-data sets.
+                ├── feature_selection_performance # Feature-selection performance of MetaLFI and competitors.
+        ├── src                                   # Source code.
+    ├── .gitignore
     ├── LICENSE
-    └── README.md
+    ├── README.md
+    └── requirements.txt
 
 ## Setup
 
@@ -134,8 +118,9 @@ python -m metalfi.src.main
 ```
 
 This will start the meta-data calculations, the meta-model training as well as the generation of the experimental results. 
-The results will be saved in subdirectories of `metalfi/metalfi/data/`.
-On an average laptop, the calculations require approximately 20 hours to finish.
+The results will be saved in subdirectories of `data/`.
+This might take some time, but the pipeline has progress bars.
+Meta-data calculation and meta-model training account for nearly the whole runtime.
 
 If necessary, one can delete (and subsequently recompute) all meta-data sets or all trained meta-models by passing 
 `delete_meta=True` or `delete_models=True` as keyword arguments: 
@@ -143,20 +128,3 @@ If necessary, one can delete (and subsequently recompute) all meta-data sets or 
 ```bash
 python -m metalfi.src.main delete_meta=True delete_models=True
 ```
-
-### Plots and Tables
-
-The generated plots and tables can be found in the folder `metalfi/metalfi/data/visual/`. 
-The following table maps figures in the article to the file names of their corresponding `.png` files in folder `visual`:  
-
-| Figure number | 6.2 | 6.3 | 6.4 | 6.5 | 6.6 | 6.7 | 6.8 | 6.9 | 6.10 | 6.11 | 6.12 | 6.13 |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| File name | R^2NON | R^2LIN | RF_SHAP | Histograms | targets_R^2 | base_R^2 | r | linSVR x LM | fast | fast_multi | slow | fast_graph |
-
-The folder `visual` also contains `.csv` files that can be found as tables in the article: 
-`Table 6.1` in the article corresponds to `visual/target_corr.csv`.
-The claim that our evaluation metrics are correlated, is supported by `visual/metrics_corr.csv`.  
-
-The tables containing meta-model performances can be found in the folder `metalfi/metalfi/data/output/predictions/`. 
-The `.csv` files in the `predictions` are named after their metric and their meta-target. 
-For instance, the file that contains the performances, measured with R^2,  of all meta-models predicting SHAP-based meta-targets is `predictions/r2xSHAP.csv`.

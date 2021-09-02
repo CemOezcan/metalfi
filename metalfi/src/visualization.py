@@ -49,7 +49,7 @@ class Visualization:
             ax.legend()
             plt.ylim([0.5, 0.85])
 
-            plt.savefig(Parameters.output_dir + "selection/" + file_name + ".pdf")
+            plt.savefig(Parameters.output_dir + "feature_selection_performance/" + file_name + ".pdf")
             plt.close()
 
     @staticmethod
@@ -57,7 +57,7 @@ class Visualization:
         """
         Create and save bar charts. Visualizes the importance of meta-features for different meta-targets.
         """
-        directory = Parameters.output_dir + "importance/"
+        directory = Parameters.output_dir + "meta_feature_importance/"
         data = [(pd.read_csv(directory + file_name), file_name)
                 for file_name in os.listdir(directory) if ".csv" in file_name]
         frame = data[0][0].sort_values(by="PIMP")
@@ -68,7 +68,7 @@ class Visualization:
                     new_frame = new_frame[new_frame["importance_measure"] == imp]
                     plt.barh(list(new_frame["meta-features"])[-15:], list(new_frame["PIMP"])[-15:])
                     plt.yticks(list(new_frame["meta-features"])[-15:])
-                    plt.savefig(Parameters.output_dir + f"importance/metaFeatureImp x {base_model}x{imp}.pdf")
+                    plt.savefig(Parameters.output_dir + f"meta_feature_importance/metaFeatureImp x {base_model}x{imp}.pdf")
                     plt.close()
 
     @staticmethod
@@ -130,26 +130,6 @@ class Visualization:
         plt.close()
 
     @staticmethod
-    def correlate_metrics() -> None:
-        """
-        Compute pairwise Spearman correlation coefficients between performance metrics.
-        """
-        new = {metric: [] for metric in Parameters.metrics}
-        directory = Parameters.output_dir + "predictions/"
-        data = [(pd.read_csv(directory + file_name), file_name) for file_name in os.listdir(directory)
-                if "x" not in file_name and file_name.endswith('.csv')]
-
-        columns = data[0][0].columns
-
-        for d, n in data:
-            for column in columns[1:]:
-                new[n[:-4]] += list(d[column].values)
-
-        frame = pd.DataFrame.from_dict(new)
-        corr = frame.corr("spearman")
-        Memory.store_data_frame(corr, "metrics_corr", "", True)
-
-    @staticmethod
     def correlate_targets() -> None:
         """
         Compute pairwise Spearman correlation coefficients between meta-features and meta-targets,
@@ -191,7 +171,7 @@ class Visualization:
         d = {'lofo': [__f(lofo), __f_2(lofo)], 'shap': [__f(shap), __f_2(shap)],
              'lime': [__f(lime), __f_2(lime)], 'pimp': [__f(pimp), __f_2(pimp)]}
         data_frame = pd.DataFrame(data=d, index=["mean", "max"], columns=["lofo", "shap", "lime", "pimp"])
-        Memory.store_data_frame(data_frame, "target_corr", "tables", True)
+        Memory.store_data_frame(data_frame, "target_corr", "meta_prediction_performance", True)
 
     @staticmethod
     def create_histograms() -> None:
@@ -222,5 +202,5 @@ class Visualization:
             axs[x, y].set_title(name)
             axs[x, y].set_xlim(np.quantile(values, 0.05), np.quantile(values, 0.75))
 
-        plt.savefig(Parameters.output_dir + "predictions/Histograms.pdf")
+        plt.savefig(Parameters.output_dir + "meta_prediction_performance/Histograms.pdf")
         plt.close()
