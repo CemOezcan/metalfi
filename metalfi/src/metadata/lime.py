@@ -38,7 +38,8 @@ class LimeImportance(FeatureImportance):
 
         num_features = len(X.columns)
         num_entries = len(X.values)
-        num_samples = int(max([0.1 * num_entries, min([num_features * 2 * math.log2(num_entries), 0.5 * num_entries])]))
+        num_samples = int(max(0.1 * num_entries, min(num_features * 2 * math.log2(num_entries),
+                                                     0.5 * num_entries)))
         # TODO: Temporary
         num_samples = int(0.1 * num_entries)
         np.random.seed(115)
@@ -46,7 +47,8 @@ class LimeImportance(FeatureImportance):
 
         importances = [0] * num_features
         for i in samples:
-            xp = explainer.explain_instance(X.values[i, :], model.predict_proba, num_features=num_features)
+            xp = explainer.explain_instance(X.values[i, :], model.predict_proba,
+                                            num_features=num_features)
             for index, importance in xp.as_map()[1]:
                 importances[index] += abs(importance)
 

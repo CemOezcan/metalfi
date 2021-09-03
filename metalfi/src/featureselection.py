@@ -35,8 +35,8 @@ class MetaFeatureSelection:
                tree: bool = False) -> Dict[str, List[str]]:
         """
         Meta-feature selection, given a meta-model.
-        Rank meta-features according to their `scoring` value and search for the percentile of al meta-features,
-        that yields the best results.
+        Rank meta-features according to their `scoring` value and search for the percentile of
+        all meta-feature that yields the best results.
 
         Parameters
         ----------
@@ -70,13 +70,15 @@ class MetaFeatureSelection:
         subsets = []
 
         if len(percentiles) == 1:
-            support = SelectPercentile(score_func=scoring, percentile=percentiles[0]).fit(new_X, y).get_support(indices=True)
+            support = SelectPercentile(score_func=scoring, percentile=percentiles[0]).fit(
+                new_X, y).get_support(indices=True)
             features = [x for x in list(new_X.columns) if list(new_X.columns).index(x) in support]
 
             return percentiles[0], features
 
         for p in percentiles:
-            support = SelectPercentile(score_func=scoring, percentile=p).fit(new_X, y).get_support(indices=True)
+            support = SelectPercentile(score_func=scoring, percentile=p).fit(
+                new_X, y).get_support(indices=True)
             features = [x for x in list(new_X.columns) if list(new_X.columns).index(x) in support]
 
             X = new_X[features]
@@ -90,8 +92,9 @@ class MetaFeatureSelection:
         return p, f
 
     @staticmethod
-    def meta_feature_importance(meta_data: pd.DataFrame, models: List[Tuple[BaseEstimator, str, str]], targets: List[str],
-                                subsets: Dict[str, Dict[str, List[str]]]) -> Dict[str, List[pd.DataFrame]]:
+    def meta_feature_importance(
+            meta_data: pd.DataFrame, models: List[Tuple[BaseEstimator, str, str]],
+            targets: List[str], subsets: Dict[str, Dict[str, List[str]]]) -> Dict[str, List[pd.DataFrame]]:
         """
         Estimate model based meta-feature importance.
 

@@ -143,7 +143,8 @@ class Controller:
         progress_bar.close()
 
     @staticmethod
-    def parallel_training(iterable: Tuple[pd.DataFrame, str, pd.DataFrame, Dataset, Dict[str, Dict[str, List[str]]]]) -> None:
+    def parallel_training(iterable: Tuple[pd.DataFrame, str, pd.DataFrame, Dataset,
+                                          Dict[str, Dict[str, List[str]]]]) -> None:
         """
         Create an instance of class :py:class:`MetaModel` and call its :py:func:`MetaModel.fit()` function.
 
@@ -195,8 +196,8 @@ class Controller:
         data = [d for d, _ in self.__meta_data]
         models = Parameters.meta_models
         targets = Parameters.targets
-        importance = MetaFeatureSelection.meta_feature_importance(pd.concat(data), models, targets,
-                                                                  self.__select_meta_features(percentiles=[100]))
+        importance = MetaFeatureSelection.meta_feature_importance(
+            pd.concat(data), models, targets, self.__select_meta_features(percentiles=[100]))
 
         meta_features = {}
         for target in targets:

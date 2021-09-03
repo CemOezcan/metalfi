@@ -65,13 +65,12 @@ class MetaFeatures:
         return data_time, uni_time, multi_ff_time, multi_ft_time, lm_time
 
     @staticmethod
-    def __run_pymfe(X: Union[pd.DataFrame, np.ndarray], y: Union[pd.DataFrame, np.ndarray], summary: Union[List[str], None],
-                    features: List[str]) -> (List[str], List[str]):
-        warnings.filterwarnings("ignore", message="(It is not possible make equal discretization|"
-                                                  "(divide by zero|invalid value) encountered in .*|"
-                                                  "Can't summarize feature 'cor' with .*|"
-                                                  "Features.*|"
-                                                  "Input data for shapiro has range zero.*)")
+    def __run_pymfe(X: Union[pd.DataFrame, np.ndarray], y: Union[pd.DataFrame, np.ndarray],
+                    summary: Union[List[str], None], features: List[str]) -> (List[str], List[str]):
+        warnings.filterwarnings(
+            "ignore", message="(It is not possible make equal discretization|" +
+            "(divide by zero|invalid value) encountered in .*|Can't summarize feature 'cor' with .*|" +
+            "Features.*|Input data for shapiro has range zero.*)")
         mfe = MFE(summary=summary, features=features)
         mfe.fit(X, y)
         vector = mfe.extract()
@@ -86,14 +85,13 @@ class MetaFeatures:
         X = data_frame.drop(target, axis=1)
         y = data_frame[target]
 
-        names_1, dmf_1 = self.__run_pymfe(X.values, y.values,
-                                          ["min", "median", "max", "sd", "kurtosis", "skewness", "mean"],
-                                          ["attr_to_inst", "freq_class", "inst_to_attr", "nr_attr", "nr_class",
-                                           "nr_inst", "gravity", "cor", "cov", "eigenvalues", "nr_cor_attr",
-                                           "class_ent", "eq_num_attr", "ns_ratio", "iq_range", "kurtosis", "mad", "max",
-                                           "mean", "median", "min", "range", "sd", "skewness", "sparsity", "t_mean",
-                                           "var", "attr_ent", "joint_ent", "mut_inf", "nr_norm", "nr_outliers",
-                                           "nr_cat", "nr_bin", "nr_num"])
+        names_1, dmf_1 = self.__run_pymfe(
+            X.values, y.values, ["min", "median", "max", "sd", "kurtosis", "skewness", "mean"],
+            ["attr_to_inst", "freq_class", "inst_to_attr", "nr_attr", "nr_class", "nr_inst",
+             "gravity", "cor", "cov", "eigenvalues", "nr_cor_attr", "class_ent", "eq_num_attr",
+             "ns_ratio", "iq_range", "kurtosis", "mad", "max", "mean", "median", "min", "range",
+             "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent", "joint_ent", "mut_inf",
+             "nr_norm", "nr_outliers", "nr_cat", "nr_bin", "nr_num"])
 
         self.__data_meta_feature_names = names_1
         self.__data_meta_features = dmf_1
@@ -113,10 +111,11 @@ class MetaFeatures:
         for feature in X.columns:
             X_temp = data_frame[feature]
 
-            columns, values = self.__run_pymfe(X_temp.values, y.values, None,
-                                               ["iq_range", "kurtosis", "mad", "max", "mean", "median", "min", "range",
-                                                "sd", "skewness", "sparsity", "t_mean", "var", "attr_ent", "nr_norm",
-                                                "nr_outliers", "nr_cat", "nr_bin", "nr_num"])
+            columns, values = self.__run_pymfe(
+                X_temp.values, y.values, None,
+                ["iq_range", "kurtosis", "mad", "max", "mean", "median", "min", "range", "sd",
+                 "skewness", "sparsity", "t_mean", "var", "attr_ent", "nr_norm", "nr_outliers",
+                 "nr_cat", "nr_bin", "nr_num"])
 
             self.__feature_meta_features.append(self.__to_feature_vector(values))
 
@@ -157,7 +156,8 @@ class MetaFeatures:
 
         return total_uni, total_multi_ff, total_multi_ft, total_lm
 
-    def __correlation_feature_meta_features(self, matrix: pd.DataFrame, name: str, threshold=0.5) -> Dict[str, np.ndarray]:
+    def __correlation_feature_meta_features(self, matrix: pd.DataFrame, name: str,
+                                            threshold=0.5) -> Dict[str, np.ndarray]:
         mean_correlation = {}
         for i in range(0, len(matrix.columns)):
             values = []
@@ -171,16 +171,16 @@ class MetaFeatures:
             th_list = [x if (x >= threshold) else 0 for x in values]
             percentile_list = [x if (x >= percentile) else 0 for x in values]
 
-            self.__feature_meta_features[i] += [np.mean(values), np.median(values),
-                                                np.std(values), np.var(values),
-                                                max(values), min(values), percentile, np.mean(percentile_list),
-                                                sum(th), sum(th) / len(values), np.mean(th_list)]
+            self.__feature_meta_features[i] += [
+                np.mean(values), np.median(values), np.std(values), np.var(values), max(values),
+                min(values), percentile, np.mean(percentile_list), sum(th), sum(th) / len(values),
+                np.mean(th_list)]
 
-        self.__feature_meta_feature_names += ["multi_mean" + name, "multi_median" + name, "multi_sd" + name,
-                                              "multi_var" + name, "multi_max" + name, "multi_min" + name,
-                                              "multi_percentile_0,75" + name, "multi_mean_percentile_0,75" + name,
-                                              "multi_high_corr" + name, "multi_high_corr_ratio" + name,
-                                              "multi_mean_high_corr" + name]
+        self.__feature_meta_feature_names += [
+            "multi_mean" + name, "multi_median" + name, "multi_sd" + name, "multi_var" + name,
+            "multi_max" + name, "multi_min" + name, "multi_percentile_0,75" + name,
+            "multi_mean_percentile_0,75" + name, "multi_high_corr" + name,
+            "multi_high_corr_ratio" + name, "multi_mean_high_corr" + name]
         return mean_correlation
 
     def __filter_scores(self, X: pd.DataFrame, y: pd.DataFrame, p_cor: Dict[str, np.ndarray],
@@ -315,9 +315,11 @@ class MetaFeatures:
                 data[feature_1] = {}
                 for feature_2 in X.columns:
                     _, values_1 = \
-                        self.__run_pymfe(X[feature_1].values, X[feature_2].values, None, ["attr_ent", "mut_inf"])
+                        self.__run_pymfe(X[feature_1].values, X[feature_2].values, None,
+                                         ["attr_ent", "mut_inf"])
                     _, values_2 = \
-                        self.__run_pymfe(X[feature_2].values, X[feature_1].values, None, ["attr_ent", "mut_inf"])
+                        self.__run_pymfe(X[feature_2].values, X[feature_1].values, None,
+                                         ["attr_ent", "mut_inf"])
 
                     mut_inf = np.mean([values_1[1][0], values_2[1][0]])
                     h_1 = values_1[0][0]

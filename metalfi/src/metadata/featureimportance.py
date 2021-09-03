@@ -15,7 +15,7 @@ class FeatureImportance(ABC):
     Attributes
     ----------
         _data_frame : (DataFrame)
-            The underlying base-data set, whose feature importance values are supposed to be estimated.
+            The underlying base-data set whose feature importance values should be estimated.
         _target : (str)
             Name of the target variable of the base-data set.
         _models : (Dict[str, Dict[str, sklearn estimator]])

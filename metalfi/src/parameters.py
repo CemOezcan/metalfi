@@ -2,9 +2,9 @@ import warnings
 from typing import List, Tuple
 
 import numpy as np
-from sklearn.metrics import r2_score
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.metrics import r2_score
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC, SVR, LinearSVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
@@ -57,7 +57,7 @@ class Parameters:
     @staticmethod
     def calculate_metrics(y_test: List[float], y_pred: List[float]) -> List[float]:
         """
-        Compute different performance metrics for model predictions.
+        Compute performance metrics for model predictions.
 
         Parameters
         ----------
@@ -66,7 +66,7 @@ class Parameters:
 
         Returns
         -------
-            Performance of prediction according to different metrics (currently: Coefficient of determination).
+            Performance of prediction according to different metrics (currently: only R^2).
 
         """
         warnings.filterwarnings("error", message="invalid value.*")
@@ -94,5 +94,6 @@ class Parameters:
             Experimental parameters for research question 5.
 
         """
-        return ["linSVR", "RF", "DT", "SVR", "LIN"], [x for x in Parameters.targets if x.endswith("_SHAP")], \
-               ["LM", "FMF", "All", "Auto", "LMUni", "LMMultiFT", "LMMulti"]
+        return (["linSVR", "RF", "DT", "SVR", "LIN"],
+                [x for x in Parameters.targets if x.endswith("_SHAP")],
+                ["LM", "FMF", "All", "Auto", "LMUni", "LMMultiFT", "LMMulti"])

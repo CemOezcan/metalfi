@@ -56,22 +56,23 @@ class Memory:
         openml_list = openml.datasets.list_datasets()
         dataset_overview = pd.DataFrame.from_dict(openml_list, orient="index")
         dataset_overview = dataset_overview[dataset_overview['NumberOfClasses'] == 2]
-        dataset_overview = dataset_overview[(dataset_overview["MajorityClassSize"] / dataset_overview['NumberOfInstances']) < 0.67]
+        dataset_overview = dataset_overview[(dataset_overview["MajorityClassSize"] /
+                                             dataset_overview['NumberOfInstances']) < 0.67]
 
         target = "base-target_variable"
-        Memory.filter_data_frames(dataset_overview=dataset_overview, instances=(99, 2001), features=(4, 11),
-                                  max_num_datasets=20, target_name=target)
-        Memory.filter_data_frames(dataset_overview=dataset_overview, instances=(99, 2001), features=(10, 21),
-                                  max_num_datasets=20, target_name=target)
-        Memory.filter_data_frames(dataset_overview=dataset_overview, instances=(99, 2001), features=(20, 51),
-                                  max_num_datasets=20, target_name=target)
+        Memory.filter_data_frames(dataset_overview=dataset_overview, instances=(99, 2001),
+                                  features=(4, 11), max_num_datasets=20, target_name=target)
+        Memory.filter_data_frames(dataset_overview=dataset_overview, instances=(99, 2001),
+                                  features=(10, 21), max_num_datasets=20, target_name=target)
+        Memory.filter_data_frames(dataset_overview=dataset_overview, instances=(99, 2001),
+                                  features=(20, 51), max_num_datasets=20, target_name=target)
 
         return [(pd.read_csv(Parameters.base_dataset_dir + file), file[:-4], target)
                 for file in os.listdir(Parameters.base_dataset_dir) if file.endswith('.csv')]
 
     @staticmethod
-    def filter_data_frames(dataset_overview: pd.DataFrame, instances: Tuple[int, int], features: Tuple[int, int],
-                           max_num_datasets: int, target_name: str) -> None:
+    def filter_data_frames(dataset_overview: pd.DataFrame, instances: Tuple[int, int],
+                           features: Tuple[int, int], max_num_datasets: int, target_name: str) -> None:
         dataset_overview = dataset_overview[dataset_overview['NumberOfInstances'] > instances[0]]
         dataset_overview = dataset_overview[dataset_overview['NumberOfInstances'] < instances[1]]
         dataset_overview = dataset_overview[dataset_overview['NumberOfFeatures'] > features[0]]
@@ -134,7 +135,8 @@ class Memory:
                 ids.remove((name, version))
                 continue
 
-            data_frame.to_csv(Parameters.base_dataset_dir + name + "_" + str(version) + ".csv", index=False)
+            data_frame.to_csv(Parameters.base_dataset_dir + name + "_" + str(version) + ".csv",
+                              index=False)
             counter += 1
 
     @staticmethod
@@ -144,11 +146,12 @@ class Memory:
 
         Parameters
         ----------
-            model : Instance of :py:class:`MetaModel`, that is supposed to be saved as a pickle file.
+            model : Instance of :py:class:`MetaModel`, supposed to be saved as a pickle file.
             model_name : Name of the pickle file.
         """
         path = Parameters.meta_model_dir + model_name + '.pickle'
-        data = (model.get_meta_models(), model.get_stats(), model.get_result_config(), model.get_results(), model.get_times())
+        data = (model.get_meta_models(), model.get_stats(), model.get_result_config(),
+                model.get_results(), model.get_times())
         if not path.is_file():
             with open(path, 'wb') as file:
                 pickle.dump(data, file)

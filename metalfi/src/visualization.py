@@ -15,7 +15,7 @@ from metalfi.src.parameters import Parameters
 
 def performance(data: List[Tuple[pd.DataFrame, str]]) -> None:
     """
-    Create and save bar charts. Visualizes the performances of different feature selection approaches.
+    Create and save bar charts. Visualizes the performances of different feature-selection approaches.
     """
     for frame, file_name in data:
         width = 0.1
@@ -71,14 +71,14 @@ def compare_means(data: List[Tuple[pd.DataFrame, str]], folder: str) -> None:
     """
     Determine, whether the differences in meta-model performance are significant:
     Group data across cross validation splits and employ the non-parametric Friedman test.
-    If the differences between the cross validation splits are significant,
-    employ the Nemenyi post-hoc test and visualize its results using a Critical Differences (CD) diagram.
+    If the differences between the cross validation splits are significant, employ the Nemenyi
+    post-hoc test and visualize its results using a Critical Differences (CD) diagram.
 
     Parameters
     ----------
         data :
-            List of cross validation results as a tuple. Each tuple contains meta-model performance estimates
-            on a given cross validation split and the name of said split.
+            List of cross validation results as a tuple. Each tuple contains meta-model
+            performance estimates on a given cross validation split and the name of said split.
         folder :
             Name of the subdirectory of metalfi/data, in which the diagrams are supposed to be saved.
     """

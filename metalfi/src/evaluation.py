@@ -66,25 +66,27 @@ class Evaluation:
         (Q_1, Q_2, Q_3):
             Fetch the performance estimates of all meta-models.
             (Q_1):
-                Group performance estimates by meta-feature subsets and differentiate
-                between linear and non-linear meta-models. Examine the differences between meta-models,
+                Group performance estimates by meta-feature subsets and differentiate between
+                linear and non-linear meta-models. Examine the differences between meta-models,
                 trained on different meta-feature subsets, for linear and non-linear meta-models respectively.
             (Q_2):
                 Group performance estimates by meta-targets. Examine the differences between meta-models,
                 trained to predict different meta-targets, based on their respective performances.
             (Q_3):
-                Group performance estimates by meta-models. Examine the differences between meta-model performances.
+                Group performance estimates by meta-models. Examine the differences between
+                meta-model performances.
         (Q_4):
-            Fetch the performance estimates of all base-models, trained on different base-feature subsets.
-            The base-feature subsets are the results of different feature selection approaches, including metaLFI.
-            Group performance estimates by feature selection approaches and examine the differences
-            between base-model performances.
+            Fetch the performance estimates of all base-models, trained on different base-feature
+            subsets. The base-feature subsets are the results of different feature selection
+            approaches, including MetaLFI. Group performance estimates by feature selection
+            approaches and examine the differences between base-model performances.
 
         Use statistical hypothesis testing to determine, whether the differences between the groups
         (across cross validation splits) are significant. Visualize the results.
         """
         directory = Parameters.output_dir + "meta_prediction_performance/"
-        file_names = [x for x in os.listdir(directory) if "x" not in x and "long" not in x and x.endswith(".csv")]
+        file_names = [x for x in os.listdir(directory)
+                      if "x" not in x and "long" not in x and x.endswith(".csv")]
 
         data = {file_name[:-4]: pd.read_csv(directory + file_name) for file_name in file_names}
         pattern = re.compile(r"\$(?P<meta>.+)\_\{(?P<features>.+)\}\((?P<target>.+)\)\$")
@@ -129,8 +131,10 @@ class Evaluation:
             stats = [list(x) for x in zip(*[data_set.iloc[i][1:] for data_set in data.values()])]
             performances = list(zip(config, stats))
             rows.append(base_data_sets.iloc[i])
-            data_1_lin = self.__create_question_csv(performances, subset_names_lin, data_1_lin, 2, question=1, linear=True)
-            data_1_non = self.__create_question_csv(performances, subset_names_non, data_1_non, 2, question=1, linear=False)
+            data_1_lin = self.__create_question_csv(performances, subset_names_lin, data_1_lin, 2,
+                                                    question=1, linear=True)
+            data_1_non = self.__create_question_csv(performances, subset_names_non, data_1_non, 2,
+                                                    question=1, linear=False)
             data_2 = self.__create_question_csv(performances, target_names, data_2, 1, question=2)
             data_3 = self.__create_question_csv(performances, meta_model_names, data_3, 0, question=3)
 
@@ -144,8 +148,8 @@ class Evaluation:
 
         def __question_data(data: Dict[str, Dict[str, List[float]]], rows: List[str], suffix: str) \
                 -> List[Tuple[pd.DataFrame, str]]:
-            return [(pd.DataFrame(data=data[metric], index=rows, columns=data[metric].keys()), metric + suffix)
-                    for metric in data]
+            return [(pd.DataFrame(data=data[metric], index=rows, columns=data[metric].keys()),
+                     metric + suffix) for metric in data]
 
         q_1_lin = __question_data(data_1_lin, rows, "_featureGroups_linearMetaModels")
         q_1_non = __question_data(data_1_non, rows, "_featureGroups_nonlinearMetaModels")
@@ -166,8 +170,10 @@ class Evaluation:
             base_models = {name: [0] * len(rows) for _, name, _ in Parameters.base_models}
 
             data_frames.append((data_frame, metric + "_allMetaTargets"))
-            data_frames.append(self.__helper_q_2(fi_measures, data_frame, rows, metric, "_impMeasures", targets=True))
-            data_frames.append(self.__helper_q_2(base_models, data_frame, rows, metric, "_baseModels"))
+            data_frames.append(self.__helper_q_2(fi_measures, data_frame, rows, metric,
+                                                 "_impMeasures", targets=True))
+            data_frames.append(self.__helper_q_2(base_models, data_frame, rows, metric,
+                                                 "_baseModels"))
 
         return data_frames
 
@@ -178,7 +184,8 @@ class Evaluation:
             if targets:
                 subset = [column for column in data_frame.columns if key == column[-4:]]
             else:
-                subset = [column for column in data_frame.columns if (key == column[:-5]) and (column[-4:] != "LOFO")]
+                subset = [column for column in data_frame.columns
+                          if (key == column[:-5]) and (column[-4:] != "LOFO")]
 
             for column in subset:
                 dictionary[key] = [sum(x) for x in zip(dictionary[key], list(data_frame[column].values))]
@@ -189,10 +196,12 @@ class Evaluation:
 
     @staticmethod
     def __create_question_csv(performances: List[Tuple[List[str], List[float]]], names: List[str],
-                              data: Dict[str, Dict[str, List[float]]], index: int, question: int, linear=False) \
-            -> Dict[str, Dict[str, List[float]]]:
-        linear_meta_models = [name for _, name, category in Parameters.meta_models if category == "linear"]
-        non_linear_meta_models = [name for _, name, category in Parameters.meta_models if category != "linear"]
+                              data: Dict[str, Dict[str, List[float]]], index: int, question: int,
+                              linear=False) -> Dict[str, Dict[str, List[float]]]:
+        linear_meta_models = [name for _, name, category in Parameters.meta_models
+                              if category == "linear"]
+        non_linear_meta_models = [name for _, name, category in Parameters.meta_models
+                                  if category != "linear"]
 
         if question == 1:
             if linear:
@@ -201,12 +210,16 @@ class Evaluation:
                 tuples = [t for t in performances if t[0][0] in non_linear_meta_models and t[0][0] != "DT"]
         elif question == 2:
             tuples = [t for t in performances
-                      if ((t[0][0] in linear_meta_models) and (t[0][2] not in ["Uni", "UniMultiFF", "Multi", "All"]))
-                      or ((t[0][0] in non_linear_meta_models) and (t[0][2] not in ["Uni", "UniMultiFF", "Multi"]))]
+                      if ((t[0][0] in linear_meta_models)
+                          and (t[0][2] not in ["Uni", "UniMultiFF", "Multi", "All"]))
+                      or ((t[0][0] in non_linear_meta_models)
+                          and (t[0][2] not in ["Uni", "UniMultiFF", "Multi"]))]
         elif question == 3:
             tuples = [t for t in performances if (t[0][1][:-4] != "LOFO")
-                      and ((t[0][0] in linear_meta_models and (t[0][2] not in ["Uni", "UniMultiFF", "Multi", "All"]))
-                           or ((t[0][0] in non_linear_meta_models) and (t[0][2] not in ["Uni", "UniMultiFF", "Multi"])))]
+                      and ((t[0][0] in linear_meta_models
+                            and (t[0][2] not in ["Uni", "UniMultiFF", "Multi", "All"]))
+                           or ((t[0][0] in non_linear_meta_models)
+                               and (t[0][2] not in ["Uni", "UniMultiFF", "Multi"])))]
         else:
             tuples = []
 
@@ -246,7 +259,7 @@ class Evaluation:
 
         Parameters
         ----------
-            name : Name of the :py:class:`MetaModel` instance, whose meta-models are supposed to be tested.
+            name : Name of the :py:class:`MetaModel` instance whose meta-models should be tested.
 
         Returns
         -------
@@ -262,11 +275,12 @@ class Evaluation:
 
     def predictions(self):
         """
-        Estimate meta-model performances by testing them on their respective cross validation test splits.
-        Save the results as .csv files.
+        Estimate meta-model performances by testing them on their respective cross-validation test
+        splits. Save the results as .csv files.
         """
         progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Evaluating meta-models")
-        results = [self.parallelize_predictions(meta_model, progress_bar) for meta_model in self.__meta_models]
+        results = [self.parallelize_predictions(meta_model, progress_bar)
+                   for meta_model in self.__meta_models]
         progress_bar.close()
         for stats, _, _ in results:
             self.__tests = self.matrix_addition(self.__tests, stats)
@@ -314,10 +328,12 @@ class Evaluation:
                         else:
                             data_frame.iloc[i, j] = round(data_frame.iloc[i].iloc[j], 3)
 
-                Memory.store_data_frame(data_frame, metric + "x" + importance, "meta_prediction_performance", True)
+                Memory.store_data_frame(data_frame, metric + "x" + importance,
+                                        "meta_prediction_performance", True)
 
     def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]):
-        data = {key: [] for key in ["base_data_set", "meta_model", "meta_features", "base_model", "importance_measure", "r^2"]}
+        data = {key: [] for key in ["base_data_set", "meta_model", "meta_features", "base_model",
+                                    "importance_measure", "r^2"]}
         for i in range(len(self.__meta_models)):
             base_data_set = self.__meta_models[i]
             for j in range(len(self.__config)):
@@ -331,12 +347,14 @@ class Evaluation:
 
         Memory.store_data_frame(pd.DataFrame(data=data), "longPred", "meta_prediction_performance")
 
-        columns = ["$" + meta + "_{" + features + "}(" + target + ")$" for meta, target, features in self.__config]
+        columns = ["$" + meta + "_{" + features + "}(" + target + ")$"
+                   for meta, target, features in self.__config]
         index = self.__meta_models
 
         for metric_idx, metric_name in enumerate(Parameters.metrics):
             data = [tuple(x[metric_idx] for x in results[i][0]) for i in range(len(index))]
-            Memory.store_data_frame(pd.DataFrame(data, columns=columns, index=index), metric_name, "meta_prediction_performance")
+            Memory.store_data_frame(pd.DataFrame(data, columns=columns, index=index), metric_name,
+                                    "meta_prediction_performance")
 
     @staticmethod
     def new_parallel_comparisons(model_name: str, progress_bar):
@@ -352,7 +370,8 @@ class Evaluation:
         meta_models, _, subsets = Parameters.question_5_parameters()
 
         progress_bar = tqdm.tqdm(total=len(self.__meta_models), desc="Comparing feature-selection approaches")
-        results = [self.new_parallel_comparisons(meta_model, progress_bar) for meta_model in self.__meta_models]
+        results = [self.new_parallel_comparisons(meta_model, progress_bar)
+                   for meta_model in self.__meta_models]
 
         progress_bar.close()
 
@@ -360,8 +379,10 @@ class Evaluation:
             self.__comparisons = self.matrix_addition(self.__comparisons, result)
             self.__comparison_times = self.matrix_addition(self.__comparison_times, time)
 
-        self.__comparisons = [[x / len(self.__meta_models) for x in result] for result in self.__comparisons]
-        self.__comparison_times = [[x / len(self.__meta_models) for x in time] for time in self.__comparison_times]
+        self.__comparisons = [[x / len(self.__meta_models) for x in result]
+                              for result in self.__comparisons]
+        self.__comparison_times = [[x / len(self.__meta_models) for x in time]
+                                   for time in self.__comparison_times]
         self.__parameters = Memory.load_model(model_name=self.__meta_models[0])[0][2]
 
         all_results = {}
@@ -384,7 +405,8 @@ class Evaluation:
 
         plotting = {"models": meta_models, "subsets": subsets}
         self.plot_accuracies(all_results, rows, plotting)
-        self.__store_all_comparisons([result for result, _ in results], [time for _, time in results], rows, "all_comparisons")
+        self.__store_all_comparisons([result for result, _ in results], [time for _, time in results],
+                                     rows, "all_comparisons")
 
     @staticmethod
     def plot_accuracies(results, rows, plotting):
@@ -393,10 +415,12 @@ class Evaluation:
             for subset in results[model]:
                 if model in plotting["models"] and subset in plotting["subsets"]:
                     data.append((pd.DataFrame(data=results[model][subset], index=rows,
-                                              columns=results[model][subset].keys()), "featureSelectionAcc x " + model + " x " + subset))
+                                              columns=results[model][subset].keys()),
+                                 "featureSelectionAcc x " + model + " x " + subset))
         visualization.performance(data)
 
-    def __store_all_comparisons(self, results: List[List[List[float]]], times: List[List[List[float]]], rows: List[str], name: str):
+    def __store_all_comparisons(self, results: List[List[List[float]]], times: List[List[List[float]]],
+                                rows: List[str], name: str):
         data = {key: [] for key in ["base_data_set", "meta_model", "meta_features", "feature_selection_approach",
                                     "base_model", "importance_measure", "accuracy", "time"]}
         for i in range(len(self.__parameters)):
@@ -414,10 +438,12 @@ class Evaluation:
                     else:
                         data["time"].append(0)
 
-        Memory.store_data_frame(pd.DataFrame(data=data), "longComps", "feature_selection_performance")
+        Memory.store_data_frame(pd.DataFrame(data=data), "longComps",
+                                "feature_selection_performance")
 
-        data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2]
-                + " \\times " + rows[j] + "}(" + self.__parameters[i][1] + ")$": [x[i][j] for x in results]
+        data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2] + " \\times " +
+                rows[j] + "}(" + self.__parameters[i][1] + ")$": [x[i][j] for x in results]
                 for i in range(len(self.__parameters)) for j in range(len(rows))}
 
-        Memory.store_data_frame(pd.DataFrame(data, index=self.__meta_models), name, "feature_selection_performance")
+        Memory.store_data_frame(pd.DataFrame(data, index=self.__meta_models), name,
+                                "feature_selection_performance")

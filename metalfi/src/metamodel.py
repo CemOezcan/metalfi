@@ -87,8 +87,10 @@ class MetaModel:
         lm_multi_ft = lm + [x for x in multi if x.startswith("multi_cb")]
         uni_multi_ff = uni + [x for x in multi if not x.startswith("multi_cb")]
 
-        self.__feature_sets = [["Auto"], train.columns, fmf, lm, multi, uni, lm_uni, lm_multi, lm_multi_ft, uni_multi_ff]
-        self.__meta_feature_groups = {0: "Auto", 1: "All", 2: "FMF", 3: "LM", 4: "Multi", 5: "Uni", 6: "LMUni", 7: "LMMulti", 8: "LMMultiFT", 9: "UniMultiFF"}
+        self.__feature_sets = [["Auto"], train.columns, fmf, lm, multi, uni, lm_uni, lm_multi,
+                               lm_multi_ft, uni_multi_ff]
+        self.__meta_feature_groups = {0: "Auto", 1: "All", 2: "FMF", 3: "LM", 4: "Multi", 5: "Uni",
+                                      6: "LMUni", 7: "LMMulti", 8: "LMMultiFT", 9: "UniMultiFF"}
 
     def get_name(self):
         return self.__file_name
@@ -113,7 +115,8 @@ class MetaModel:
 
     def fit(self):
         """
-        Fit all meta-models to the train split in `__train_data`. Save trained meta-models at `__meta_models`.
+        Fit all meta-models to the train split in `__train_data`.
+        Save trained meta-models at `__meta_models`.
         """
         X_1 = self.__train_data.drop(Parameters.targets, axis=1)
         X_2 = self.__test_data.drop(Parameters.targets, axis=1)
@@ -201,7 +204,8 @@ class MetaModel:
     def parallel_comparisons(self, args):
         """
         Apply different feature selection approaches to the base-data set `__og_X`, `__og_y`.
-        Estimate the performances of different base-models in combination with all feature selection approaches.
+        Estimate the performances of different base-models in combination with all
+        feature-selection approaches.
         Save the results at `__results` and set `__was_compared` to True.
 
         Parameters
@@ -214,7 +218,8 @@ class MetaModel:
         """
         k = 33
         meta_target_names = [x for x in Parameters.targets if "SHAP" in x]
-        used_models = [(model, features, config) for model, features, config in self.__meta_models if config[1] in meta_target_names]
+        used_models = [(model, features, config) for model, features, config in self.__meta_models
+                       if config[1] in meta_target_names]
         self.__result_configurations = [config for (_, _, config) in used_models]
         X_test, y_test, name = args
 
@@ -257,19 +262,23 @@ class MetaModel:
             mi_time = self.measure_time(partial(mutual_info_classif, random_state=115), X_tr, y_tr)
             bagging_time = self.measure_time(lambda x, y: [x.mean() for x in normalizer.fit_transform(X_m[self.__feature_sets[3]])], X_tr, y_tr)
 
-            for og_model, n in {(self.__get_original_model(target), target[:-5]) for target in meta_target_names}:
-                pipeline_anova = make_pipeline(StandardScaler(),
-                                               SelectPercentile(f_classif, percentile=k),
-                                               og_model)
-                pipeline_mi = make_pipeline(StandardScaler(),
-                                            SelectPercentile(partial(mutual_info_classif, random_state=115), percentile=k),
-                                            og_model)
-                pipeline_pimp = make_pipeline(StandardScaler(),
-                                              SelectPercentile(lambda x, y: np.asarray(mf.get_meta_data()[n + "_PIMP"]), percentile=k),
-                                              og_model)
-                pipeline_bagging = make_pipeline(StandardScaler(),
-                                                 SelectPercentile(lambda x, y: np.asarray([x.mean() for x in normalizer.fit_transform(X_m[self.__feature_sets[3]])]),
-                                                                  percentile=k), og_model)
+            for og_model, n in {(self.__get_original_model(target), target[:-5])
+                                for target in meta_target_names}:
+                pipeline_anova = make_pipeline(
+                    StandardScaler(), SelectPercentile(f_classif, percentile=k), og_model)
+                pipeline_mi = make_pipeline(
+                    StandardScaler(),
+                    SelectPercentile(partial(mutual_info_classif, random_state=115), percentile=k),
+                    og_model)
+                pipeline_pimp = make_pipeline(
+                    StandardScaler(),
+                    SelectPercentile(lambda x, y: np.asarray(mf.get_meta_data()[n + "_PIMP"]), percentile=k),
+                    og_model)
+                pipeline_bagging = make_pipeline(
+                    StandardScaler(),
+                    SelectPercentile(lambda x, y: np.asarray(
+                        [x.mean() for x in normalizer.fit_transform(X_m[self.__feature_sets[3]])]), percentile=k),
+                    og_model)
                 pipeline_baseline = make_pipeline(StandardScaler(), og_model)
 
                 anova_scores[name][n] = pipeline_anova.fit(X_tr, y_tr).score(X_te, y_te)
@@ -280,14 +289,15 @@ class MetaModel:
 
                 anova_times[name][n] = anova_time
                 mi_times[name][n] = mi_time
-                pimp_times[name][n] = self.measure_time(partial(PermutationImportance.data_permutation_importance,
-                                                                og_model), X_tr, y_tr)
+                pimp_times[name][n] = self.measure_time(
+                    partial(PermutationImportance.data_permutation_importance, og_model), X_tr, y_tr)
+
             for model, features, config in used_models:
                 metalfi_prediction_time = self.measure_time(lambda x, y: model.predict(x), X_m[features], None)
-                pipeline_metalfi = make_pipeline(StandardScaler(),
-                                                 SelectPercentile(lambda x, y: model.predict(X_m[features]),
-                                                                  percentile=k),
-                                                 self.__get_original_model(config[1]))
+                pipeline_metalfi = make_pipeline(
+                    StandardScaler(),
+                    SelectPercentile(lambda x, y: model.predict(X_m[features]), percentile=k),
+                    self.__get_original_model(config[1]))
 
                 metalfi = pipeline_metalfi.fit(X_tr, y_tr).score(X_te, y_te)
                 results[-1].append([anova_scores[name][config[1][:-5]],
@@ -334,12 +344,14 @@ class MetaModel:
                     model = meta_model.fit(X_train, y)
                     warnings.filterwarnings("default")
                     feature_set_name = self.__meta_feature_groups.get(j)
-                    self.__meta_models.append((deepcopy(model), selected_features, [model_name, target, feature_set_name]))
+                    self.__meta_models.append((deepcopy(model), selected_features,
+                                               [model_name, target, feature_set_name]))
                     j += 1
 
         with mp.Pool(processes=mp.cpu_count() - 1, maxtasksperchild=1) as pool:
             progress_bar = tqdm.tqdm(total=len(test_data_sets), desc="Comparing feature-selection approaches")
-            results = [pool.map_async(self.parallel_comparisons, (arg,), callback=(lambda x: progress_bar.update()))
+            results = [pool.map_async(self.parallel_comparisons, (arg,),
+                                      callback=(lambda x: progress_bar.update()))
                        for arg in test_data_sets]
 
             results = [x.get()[0] for x in results]
@@ -388,7 +400,8 @@ class MetaModel:
 
         folds = []
         for train_index, test_index in kf.split(X, y):
-            folds.append((DataFrame(X_temp[train_index], columns=X.columns), DataFrame(X_temp[test_index], columns=X.columns),
+            folds.append((DataFrame(X_temp[train_index], columns=X.columns),
+                          DataFrame(X_temp[test_index], columns=X.columns),
                           y_temp[train_index], y_temp[test_index]))
 
         return folds
