@@ -9,7 +9,7 @@ import pandas as pd
 import scipy.stats as ss
 from sklearn.preprocessing import StandardScaler
 
-from metalfi.src.memory import Memory
+from metalfi.src import memory
 from metalfi.src.parameters import Parameters
 
 
@@ -166,7 +166,7 @@ def correlate_targets() -> None:
     d = {'lofo': [__f(lofo), __f_2(lofo)], 'shap': [__f(shap), __f_2(shap)],
          'lime': [__f(lime), __f_2(lime)], 'pimp': [__f(pimp), __f_2(pimp)]}
     data_frame = pd.DataFrame(data=d, index=["mean", "max"], columns=["lofo", "shap", "lime", "pimp"])
-    Memory.store_data_frame(data_frame, "target_corr", "meta_prediction_performance", True)
+    memory.store_data_frame(data_frame, "target_corr", "meta_prediction_performance", True)
 
 
 def create_histograms() -> None:

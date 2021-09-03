@@ -9,7 +9,7 @@ import tqdm
 
 from metalfi.src.metadata.dataset import Dataset
 from metalfi.src.metadata.metadataset import MetaDataset
-from metalfi.src.memory import Memory
+from metalfi.src import memory
 from metalfi.src.evaluation import Evaluation
 from metalfi.src.featureselection import MetaFeatureSelection
 from metalfi.src.metamodel import MetaModel
@@ -41,7 +41,7 @@ class Controller:
         """
         Fetch base-data sets from openMl and scikit-learn
         """
-        self.__train_data = [(Dataset(data_frame, target), name) for data_frame, name, target in Memory.load_open_ml()]
+        self.__train_data = [(Dataset(data_frame, target), name) for data_frame, name, target in memory.load_open_ml()]
         self.__data_names = dict({})
         i = 0
         for _, name in self.__train_data:
@@ -83,7 +83,7 @@ class Controller:
         del t_times["total"]
         d_times.update(t_times)
         meta_data.to_csv(Parameters.meta_dataset_dir + name + "meta.csv", index=False)
-        Memory.update_runtimes(new_runtime_data=d_times, name=name)
+        memory.update_runtimes(new_runtime_data=d_times, name=name)
 
     def __load_meta_data(self) -> None:
         for _, name in self.__train_data:
@@ -154,7 +154,7 @@ class Controller:
         """
         model = MetaModel(iterable)
         model.fit()
-        Memory.store_model(model, model_name=iterable[1])
+        memory.store_model(model, model_name=iterable[1])
 
     @staticmethod
     def estimate(names: List[str]) -> None:
@@ -227,4 +227,4 @@ class Controller:
             data["importance_measure"] = [target[-4:]] * len(index)
             data_frames.append(data.sort_values(["PIMP", "base_model", "importance_measure"]))
 
-        Memory.store_data_frame(pd.concat(data_frames), "all_importances", "meta_feature_importance")
+        memory.store_data_frame(pd.concat(data_frames), "all_importances", "meta_feature_importance")

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import tqdm
 
-from metalfi.src.memory import Memory
+from metalfi.src import memory
 from metalfi.src.parameters import Parameters
 from metalfi.src import visualization
 
@@ -266,7 +266,7 @@ class Evaluation:
             Performance estimates, configurations and meta-targets of said meta-models.
 
         """
-        model, _ = Memory.load_model(model_name=model_name)
+        model, _ = memory.load_model(model_name=model_name)
         stats = model[1]
         config = [c for (a, b, c) in model[0]]
         targets = Parameters.targets
@@ -328,7 +328,7 @@ class Evaluation:
                         else:
                             data_frame.iloc[i, j] = round(data_frame.iloc[i].iloc[j], 3)
 
-                Memory.store_data_frame(data_frame, metric + "x" + importance,
+                memory.store_data_frame(data_frame, metric + "x" + importance,
                                         "meta_prediction_performance", True)
 
     def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]):
@@ -345,7 +345,7 @@ class Evaluation:
                 data["importance_measure"].append(target[-4:])
                 data["r^2"].append(results[i][0][j][0])
 
-        Memory.store_data_frame(pd.DataFrame(data=data), "longPred", "meta_prediction_performance")
+        memory.store_data_frame(pd.DataFrame(data=data), "longPred", "meta_prediction_performance")
 
         columns = ["$" + meta + "_{" + features + "}(" + target + ")$"
                    for meta, target, features in self.__config]
@@ -353,12 +353,12 @@ class Evaluation:
 
         for metric_idx, metric_name in enumerate(Parameters.metrics):
             data = [tuple(x[metric_idx] for x in results[i][0]) for i in range(len(index))]
-            Memory.store_data_frame(pd.DataFrame(data, columns=columns, index=index), metric_name,
+            memory.store_data_frame(pd.DataFrame(data, columns=columns, index=index), metric_name,
                                     "meta_prediction_performance")
 
     @staticmethod
     def new_parallel_comparisons(model_name: str, progress_bar):
-        data = Memory.load_model(model_name=model_name)
+        data = memory.load_model(model_name=model_name)
         results = data[0][3]
         times = data[0][4]
         key = list(results.keys())[0]
@@ -383,7 +383,7 @@ class Evaluation:
                               for result in self.__comparisons]
         self.__comparison_times = [[x / len(self.__meta_models) for x in time]
                                    for time in self.__comparison_times]
-        self.__parameters = Memory.load_model(model_name=self.__meta_models[0])[0][2]
+        self.__parameters = memory.load_model(model_name=self.__meta_models[0])[0][2]
 
         all_results = {}
         for _, model, _ in [x for x in Parameters.meta_models if x[1] in meta_models]:
@@ -438,12 +438,12 @@ class Evaluation:
                     else:
                         data["time"].append(0)
 
-        Memory.store_data_frame(pd.DataFrame(data=data), "longComps",
+        memory.store_data_frame(pd.DataFrame(data=data), "longComps",
                                 "feature_selection_performance")
 
         data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2] + " \\times " +
                 rows[j] + "}(" + self.__parameters[i][1] + ")$": [x[i][j] for x in results]
                 for i in range(len(self.__parameters)) for j in range(len(rows))}
 
-        Memory.store_data_frame(pd.DataFrame(data, index=self.__meta_models), name,
+        memory.store_data_frame(pd.DataFrame(data, index=self.__meta_models), name,
                                 "feature_selection_performance")
