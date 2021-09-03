@@ -170,20 +170,6 @@ class Controller:
         evaluation.predictions()
         evaluation.new_comparisons()
 
-    @staticmethod
-    def questions(names: List[str]) -> None:
-        """
-        Create and save .csv files that contain the estimated meta-model performances.
-        Use file names in `names` to identify these meta-models.
-
-        Parameters
-        ----------
-            names : File names referring to instances of class :py:class:`MetaModel`,
-                    whose meta-model performances are supposed to be summarized and saved as .csv files.
-        """
-        evaluation = Evaluation(names)
-        evaluation.questions()
-
     def compare_all(self) -> None:
         # Deprecated
         self.__load_meta_data()

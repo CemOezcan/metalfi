@@ -114,17 +114,18 @@ After setting up and activating an environment, you are ready to run the code.
 From the top-level of this repo, run
 
 ```bash
-python -m metalfi.src.main
+python -m metalfi.src.run_experiments
 ```
 
-This will start the meta-data calculations, the meta-model training as well as the generation of the experimental results. 
-The results will be saved in subdirectories of `data/`.
-This might take some time, but the pipeline has progress bars.
-Meta-data calculation and meta-model training account for nearly the whole runtime.
+(Use the option `--help` to find out about parameters of the script.)
+This will run the computation-heavy part of the pipeline and might take some time, in particular,
+calculating meta-data and training meta-models (the other steps are quite fast).
+The results, e.g., meta-models and prediction performance, will be saved in subdirectories of `data/`.
 
-If necessary, one can delete (and subsequently recompute) all meta-data sets or all trained meta-models by passing 
-`delete_meta=True` or `delete_models=True` as keyword arguments: 
+To evaluate the results, e.g., create plots, run
 
 ```bash
-python -m metalfi.src.main delete_meta=True delete_models=True
+python -m metalfi.src.run_evaluation
 ```
+
+Note that the main experimental pipeline already creates some plots.
