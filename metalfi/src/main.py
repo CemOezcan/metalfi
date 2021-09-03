@@ -1,6 +1,7 @@
 import warnings
 warnings.filterwarnings("ignore", message="IPython could not be loaded!")
 
+import argparse
 import os
 import sys
 
@@ -16,7 +17,7 @@ class Main:
     """
 
     @staticmethod
-    def main(delete_meta=False, delete_models=False):
+    def main(delete_inputs: bool = False, delete_outputs: bool = False):
         """
         Main method:
             - Calculate meta-datasets (if necessary)
@@ -28,18 +29,18 @@ class Main:
 
         Parameters
         ----------
-            delete_meta : (bool)
-                Whether to delete meta-data.
-            delete_models: (bool)
-                Whether to delete meta-models.
+            delete_inputs : (bool)
+                Whether to delete base datasets and meta-datasets.
+            delete_outputs: (bool)
+                Whether to delete meta-models and results.
         """
-        directories = ["meta_feature_importance", "meta_prediction_performance", "feature_selection_performance"]
-        directories = [Parameters.output_dir + x for x in directories]
-        directories.append(Parameters.meta_model_dir)
-        if delete_meta:
+        if delete_inputs:
             Memory.clear_directories([Parameters.base_dataset_dir, Parameters.meta_dataset_dir,
-                                      Parameters.output_dir + "meta_computation_time"] + directories)
-        if delete_models:
+                                      Parameters.output_dir + "meta_computation_time"])
+        if delete_outputs:
+            directories = ["meta_feature_importance", "meta_prediction_performance", "feature_selection_performance"]
+            directories = [Parameters.output_dir + x for x in directories]
+            directories.append(Parameters.meta_model_dir)
             Memory.clear_directories(directories)
 
         c = Controller()
@@ -55,7 +56,12 @@ class Main:
 
 
 if __name__ == '__main__':
-    args = sys.argv[1:]
-    fst = "True" in [x[12:] for x in args if "delete_meta=" in x]
-    snd = "True" in [x[14:] for x in args if "delete_models=" in x]
-    Main().main(delete_meta=fst, delete_models=snd)
+    parser = argparse.ArgumentParser(description='Runs the experimental pipeline.',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--delete_inputs', type=bool, default=False,
+                        help='Delete all base datasets and meta-dataset from previous runs first.')
+    parser.add_argument('--delete_outputs', type=bool, default=False,
+                        help='Delete all meta-models and results from previous runs first.')
+    print('Experimental pipeline started.')
+    Main().main(**vars(parser.parse_args()))
+    print('Experimental pipeline executed successfully.')
