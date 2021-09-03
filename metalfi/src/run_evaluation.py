@@ -15,16 +15,16 @@ import os
 
 from metalfi.src.evaluation import Evaluation
 from metalfi.src.Parameters import Parameters
-from metalfi.src.visualization import Visualization
+from metalfi.src import visualization
 
 
 def run_evaluation():
     # Evaluate meta-model performance for different research questions:
     Evaluation([x for x in os.listdir(Parameters.meta_model_dir) if x != ".gitignore"]).questions()
 
-    Visualization.create_histograms()
-    Visualization.correlate_targets()
-    Visualization.meta_feature_importance()
+    visualization.create_histograms()
+    visualization.correlate_targets()
+    visualization.meta_feature_importance()
 
 
 if __name__ == '__main__':

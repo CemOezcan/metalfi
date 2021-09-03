@@ -9,7 +9,7 @@ import pandas as pd
 from sklearn.datasets import fetch_openml
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, LabelEncoder
 
-from scr.metalfi.parameters import Parameters
+from metalfi.src.parameters import Parameters
 
 
 class Memory:

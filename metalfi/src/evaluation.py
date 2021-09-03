@@ -9,7 +9,7 @@ import tqdm
 
 from metalfi.src.memory import Memory
 from metalfi.src.parameters import Parameters
-from metalfi.src.visualization import Visualization
+from metalfi.src import visualization
 
 
 class Evaluation:
@@ -153,10 +153,10 @@ class Evaluation:
         q_3 = __question_data(data_3, rows, "_metaModels")
         q_4 = __question_data(data_4, comp_rows, "_featureSelection")
 
-        Visualization.compare_means(q_1_lin + q_1_non, "predictions/")
-        Visualization.compare_means(q_2, "predictions/")
-        Visualization.compare_means(q_3, "predictions/")
-        # Visualization.compare_means(q_4, "selection")
+        visualization.compare_means(q_1_lin + q_1_non, "predictions/")
+        visualization.compare_means(q_2, "predictions/")
+        visualization.compare_means(q_3, "predictions/")
+        # visualization.compare_means(q_4, "selection")
 
     def __q_2(self, data: Dict[str, Dict[str, List[float]]], rows: List[str]) -> List[Tuple[pd.DataFrame, str]]:
         data_frames = []
@@ -394,7 +394,7 @@ class Evaluation:
                 if model in plotting["models"] and subset in plotting["subsets"]:
                     data.append((pd.DataFrame(data=results[model][subset], index=rows,
                                               columns=results[model][subset].keys()), "featureSelectionAcc x " + model + " x " + subset))
-        Visualization.performance(data)
+        visualization.performance(data)
 
     def __store_all_comparisons(self, results: List[List[List[float]]], times: List[List[List[float]]], rows: List[str], name: str):
         data = {key: [] for key in ["base_data_set", "meta_model", "meta_features", "feature_selection_approach",
