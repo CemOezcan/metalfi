@@ -18,7 +18,6 @@ Input data and results data of the experimental pipelines are also available [on
             ├── output                            # Experimental results. The content of this folder is used to generate plots, which are also saved in this directory.
                 ├── meta_feature_importance       # Meta-feature importance.
                 ├── meta_prediction_performance   # Meta-model performance, overall and comparing various experimental dimensions.
-                ├── meta_computation_time         # Computation times of all meta-feature subsets and meta-targets for all base-data sets.
                 ├── feature_selection_performance # Feature-selection performance of MetaLFI and competitors.
         ├── src                                   # Source code.
     ├── .gitignore

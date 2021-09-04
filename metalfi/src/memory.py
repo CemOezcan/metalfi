@@ -170,13 +170,13 @@ def load_model(model_name: str) -> Tuple['MetaModel', str]:
 def update_runtimes(new_runtime_data: Dict[str, float], base_dataset_name: str) -> None:
     with __lock:
         try:
-            runtimes = pd.read_csv(Parameters.output_dir + "meta_computation_time/runtimes.csv")
+            runtimes = pd.read_csv(Parameters.output_dir + "meta_computation_time.csv")
         except (FileNotFoundError, KeyError):
             runtimes = pd.DataFrame()
 
         runtimes = runtimes[runtimes['base_dataset'] != base_dataset_name]  # drop old entry
         new_entry = pd.DataFrame(data={**new_runtime_data, 'base_dataset': base_dataset_name})
-        runtimes.append(new_entry).to_csv(Parameters.output_dir + "meta_computation_time/runtimes.csv")
+        runtimes.append(new_entry).to_csv(Parameters.output_dir + "meta_computation_time.csv")
 
 
 def clear_directories(directories: List[str]) -> None:

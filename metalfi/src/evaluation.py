@@ -332,20 +332,20 @@ class Evaluation:
                                   metric + "x" + importance + ".csv")
 
     def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]) -> None:
-        data = {key: [] for key in ["base_data_set", "meta_model", "meta_features", "base_model",
-                                    "importance_measure", "r^2"]}
+        data = {key: [] for key in ["base_dataset", "meta_model", "meta_feature_group",
+                                    "base_model", "importance_measure", "r^2"]}
         for i in range(len(self.__meta_models)):
-            base_data_set = self.__meta_models[i]
+            base_dataset = self.__meta_models[i]
             for j in range(len(self.__config)):
                 meta, target, features = self.__config[j]
-                data["base_data_set"].append(base_data_set)
+                data["base_dataset"].append(base_dataset)
                 data["meta_model"].append(meta)
-                data["meta_features"].append(features)
+                data["meta_feature_group"].append(features)
                 data["base_model"].append(target[:-5])
                 data["importance_measure"].append(target[-4:])
                 data["r^2"].append(results[i][0][j][0])
 
-        pd.DataFrame(data=data).to_csv(Parameters.output_dir + "meta_prediction_performance/longPred.csv", index=False)
+        pd.DataFrame(data=data).to_csv(Parameters.output_dir + "meta_prediction_performance.csv", index=False)
 
     @staticmethod
     def new_parallel_comparisons(model_name: str, progress_bar):
@@ -411,21 +411,22 @@ class Evaluation:
 
     def __store_all_comparisons(self, results: List[List[List[float]]], times: List[List[List[float]]],
                                 rows: List[str]) -> None:
-        data = {key: [] for key in ["base_data_set", "meta_model", "meta_features", "feature_selection_approach",
-                                    "base_model", "importance_measure", "accuracy", "time"]}
+        data = {key: [] for key in [
+            "base_dataset", "meta_model", "meta_feature_group", "feature_selection_approach",
+            "base_model", "importance_measure", "accuracy", "runtime"]}
         for i in range(len(self.__parameters)):
             for j in range(len(rows)):
                 for k in range(len(self.__meta_models)):
-                    data["base_data_set"].append(self.__meta_models[k])
+                    data["base_dataset"].append(self.__meta_models[k])
                     data["meta_model"].append(self.__parameters[i][0])
-                    data["meta_features"].append(self.__parameters[i][2])
+                    data["meta_feature_group"].append(self.__parameters[i][2])
                     data["feature_selection_approach"].append(rows[j])
                     data["base_model"].append(self.__parameters[i][1][:-5])
                     data["importance_measure"].append(self.__parameters[i][1][-4:])
                     data["accuracy"].append(results[k][i][j])
                     if j != 5:
-                        data["time"].append(times[k][i][j])
+                        data["runtime"].append(times[k][i][j])
                     else:
-                        data["time"].append(0)
+                        data["runtime"].append(0)
 
-        pd.DataFrame(data=data).to_csv(Parameters.output_dir + "feature_selection_performance/longComps.csv", index=False)
+        pd.DataFrame(data=data).to_csv(Parameters.output_dir + "feature_selection_performance.csv", index=False)

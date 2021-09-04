@@ -222,9 +222,9 @@ class Controller:
 
             this_target["PIMP"] = imp
             data = pd.DataFrame(data=this_target, index=index, columns=["PIMP"])
-            data.index.name = "meta-features"
+            data.index.name = "meta_feature"
             data["base_model"] = [target[:-5]] * len(index)
             data["importance_measure"] = [target[-4:]] * len(index)
             data_frames.append(data.sort_values(["PIMP", "base_model", "importance_measure"]))
 
-        pd.concat(data_frames).to_csv(Parameters.output_dir + "meta_feature_importance/all_importances.csv")
+        pd.concat(data_frames).to_csv(Parameters.output_dir + "meta_feature_importance.csv")
