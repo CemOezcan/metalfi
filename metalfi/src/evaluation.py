@@ -1,4 +1,3 @@
-from decimal import Decimal
 import os
 import re
 from typing import List, Dict, Tuple
@@ -288,50 +287,6 @@ class Evaluation:
         self.__tests = [[x / len(self.__meta_models) for x in stat] for stat in self.__tests]
         self.__config = results[0][1]
 
-        targets = results[0][2]
-        algorithms = [x[:-5] for x in targets]
-        rows = []
-
-        all_results = {}
-        for i, metric_name in enumerate(Parameters.metrics):
-            metric = {measure: {a: [] for a in algorithms} for measure in Parameters.fi_measures()}
-            index = 0
-            for a, b, c in self.__config:
-                row = "$" + a + "_{" + c + "}$"
-                if row not in rows:
-                    rows.append(row)
-
-                metric[b[-4:]][b[:-5]].append(self.__tests[index][i])
-                index -= -1
-
-            all_results[metric_name] = metric
-
-        self.create_tables(all_results, rows)
-        self.__store_all_results(results)
-
-    @staticmethod
-    def create_tables(results: Dict, rows):
-        for metric in results:
-            for importance in results[metric]:
-                data_frame = pd.DataFrame(data=results[metric][importance], index=rows,
-                                          columns=results[metric][importance].keys()).round(3)
-                for i in range(len(data_frame.index)):
-                    for j in range(len(data_frame.columns)):
-                        string = str(data_frame.iloc[i].iloc[j])
-                        if abs(data_frame.iloc[i].iloc[j]) > 10:
-                            d = '%.2e' % Decimal(string)
-                            data_frame.iloc[i, j] = d
-                        elif "e" in string:
-                            match = re.split(r'e', string)
-                            match[0] = str(round(float(match[0]), 2))
-                            data_frame.iloc[i, j] = float(match[0] + "e" + match[1])
-                        else:
-                            data_frame.iloc[i, j] = round(data_frame.iloc[i].iloc[j], 3)
-
-                data_frame.to_csv(Parameters.output_dir + "meta_prediction_performance/" +
-                                  metric + "x" + importance + ".csv")
-
-    def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]) -> None:
         data = {key: [] for key in ["base_dataset", "meta_model", "meta_feature_group",
                                     "base_model", "importance_measure", "r^2"]}
         for i in range(len(self.__meta_models)):
