@@ -328,8 +328,8 @@ class Evaluation:
                         else:
                             data_frame.iloc[i, j] = round(data_frame.iloc[i].iloc[j], 3)
 
-                memory.store_data_frame(data_frame, metric + "x" + importance,
-                                        "meta_prediction_performance", True)
+                data_frame.to_csv(Parameters.output_dir + "meta_prediction_performance/" +
+                                  metric + "x" + importance + ".csv")
 
     def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]) -> None:
         data = {key: [] for key in ["base_data_set", "meta_model", "meta_features", "base_model",
@@ -345,7 +345,7 @@ class Evaluation:
                 data["importance_measure"].append(target[-4:])
                 data["r^2"].append(results[i][0][j][0])
 
-        memory.store_data_frame(pd.DataFrame(data=data), "longPred", "meta_prediction_performance")
+        pd.DataFrame(data=data).to_csv(Parameters.output_dir + "meta_prediction_performance/longPred.csv", index=False)
 
     @staticmethod
     def new_parallel_comparisons(model_name: str, progress_bar):
@@ -428,5 +428,4 @@ class Evaluation:
                     else:
                         data["time"].append(0)
 
-        memory.store_data_frame(pd.DataFrame(data=data), "longComps",
-                                "feature_selection_performance")
+        pd.DataFrame(data=data).to_csv(Parameters.output_dir + "feature_selection_performance/longComps.csv", index=False)

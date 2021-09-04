@@ -167,36 +167,16 @@ def load_model(model_name: str) -> Tuple['MetaModel', str]:
     return (data, model_name)
 
 
-def store_data_frame(data: pd.DataFrame, file_name: str, directory_name: str,
-                     renew: bool = True) -> None:
-    """
-    Store a :py:obj:`DataFrame` object as .csv file in a given sub directory of the output directory.
-
-    Parameters
-    ----------
-        data : Contains the contents of the .csv file.
-        name : Name of the file.
-        directory : Subdirectory of metalfi/data
-        renew : Whether to renew the file, or not, should it already exist.
-    """
-    path = Parameters.output_dir + directory_name + "/" + file_name + ".csv"
-    if renew or not path.is_file():
-        if data.index.name is None:
-            data.index.name = "Index"
-        data.to_csv(path, header=True)
-
-
-def update_runtimes(new_runtime_data: Dict[str, float], name: str) -> None:
+def update_runtimes(new_runtime_data: Dict[str, float], base_dataset_name: str) -> None:
     with __lock:
         try:
-            runtimes = pd.read_csv(Parameters.output_dir + "meta_computation_time/runtimes.csv").set_index("Index")
+            runtimes = pd.read_csv(Parameters.output_dir + "meta_computation_time/runtimes.csv")
         except (FileNotFoundError, KeyError):
-            store_data_frame(pd.DataFrame(), "runtimes", "meta_computation_time")
             runtimes = pd.DataFrame()
 
-        runtimes.drop([name], inplace=True, errors="ignore")
-        store_data_frame(data=runtimes.append(pd.DataFrame(data=new_runtime_data, index=[name])),
-                         file_name="runtimes", directory_name="meta_computation_ime")
+        runtimes = runtimes[runtimes['base_dataset'] != base_dataset_name]  # drop old entry
+        new_entry = pd.DataFrame(data={**new_runtime_data, 'base_dataset': base_dataset_name})
+        runtimes.append(new_entry).to_csv(Parameters.output_dir + "meta_computation_time/runtimes.csv")
 
 
 def clear_directories(directories: List[str]) -> None:

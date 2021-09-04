@@ -83,7 +83,7 @@ class Controller:
         del t_times["total"]
         d_times.update(t_times)
         meta_data.to_csv(Parameters.meta_dataset_dir + name + "meta.csv", index=False)
-        memory.update_runtimes(new_runtime_data=d_times, name=name)
+        memory.update_runtimes(new_runtime_data=d_times, base_dataset_name=name)
 
     def __load_meta_data(self) -> None:
         for _, name in self.__train_data:
@@ -227,4 +227,4 @@ class Controller:
             data["importance_measure"] = [target[-4:]] * len(index)
             data_frames.append(data.sort_values(["PIMP", "base_model", "importance_measure"]))
 
-        memory.store_data_frame(pd.concat(data_frames), "all_importances", "meta_feature_importance")
+        pd.concat(data_frames).to_csv(Parameters.output_dir + "meta_feature_importance/all_importances.csv")
