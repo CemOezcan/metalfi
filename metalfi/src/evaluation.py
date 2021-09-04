@@ -331,7 +331,7 @@ class Evaluation:
                 memory.store_data_frame(data_frame, metric + "x" + importance,
                                         "meta_prediction_performance", True)
 
-    def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]):
+    def __store_all_results(self, results: List[Tuple[List[List[float]], List[List[str]], List[str]]]) -> None:
         data = {key: [] for key in ["base_data_set", "meta_model", "meta_features", "base_model",
                                     "importance_measure", "r^2"]}
         for i in range(len(self.__meta_models)):
@@ -346,15 +346,6 @@ class Evaluation:
                 data["r^2"].append(results[i][0][j][0])
 
         memory.store_data_frame(pd.DataFrame(data=data), "longPred", "meta_prediction_performance")
-
-        columns = ["$" + meta + "_{" + features + "}(" + target + ")$"
-                   for meta, target, features in self.__config]
-        index = self.__meta_models
-
-        for metric_idx, metric_name in enumerate(Parameters.metrics):
-            data = [tuple(x[metric_idx] for x in results[i][0]) for i in range(len(index))]
-            memory.store_data_frame(pd.DataFrame(data, columns=columns, index=index), metric_name,
-                                    "meta_prediction_performance")
 
     @staticmethod
     def new_parallel_comparisons(model_name: str, progress_bar):
