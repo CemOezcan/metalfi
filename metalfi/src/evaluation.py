@@ -405,8 +405,7 @@ class Evaluation:
 
         plotting = {"models": meta_models, "subsets": subsets}
         self.plot_accuracies(all_results, rows, plotting)
-        self.__store_all_comparisons([result for result, _ in results], [time for _, time in results],
-                                     rows, "all_comparisons")
+        self.__store_all_comparisons([result for result, _ in results], [time for _, time in results], rows)
 
     @staticmethod
     def plot_accuracies(results, rows, plotting):
@@ -420,7 +419,7 @@ class Evaluation:
         visualization.performance(data)
 
     def __store_all_comparisons(self, results: List[List[List[float]]], times: List[List[List[float]]],
-                                rows: List[str], name: str):
+                                rows: List[str]) -> None:
         data = {key: [] for key in ["base_data_set", "meta_model", "meta_features", "feature_selection_approach",
                                     "base_model", "importance_measure", "accuracy", "time"]}
         for i in range(len(self.__parameters)):
@@ -439,11 +438,4 @@ class Evaluation:
                         data["time"].append(0)
 
         memory.store_data_frame(pd.DataFrame(data=data), "longComps",
-                                "feature_selection_performance")
-
-        data = {"$" + self.__parameters[i][0] + "_{" + self.__parameters[i][2] + " \\times " +
-                rows[j] + "}(" + self.__parameters[i][1] + ")$": [x[i][j] for x in results]
-                for i in range(len(self.__parameters)) for j in range(len(rows))}
-
-        memory.store_data_frame(pd.DataFrame(data, index=self.__meta_models), name,
                                 "feature_selection_performance")
