@@ -1,11 +1,6 @@
 # Meta-Learning Feature Importance
 
-This repository contains the code to reproduce the experiments of the paper
-
-> Bach, Jakob, and Cem Özcan. "Meta-Learning Feature Importance"
-
-This document describes the repo structure and the steps to reproduce the experiments.
-Input data and results data of the experimental pipelines are also available [online](https://bwdatadiss.kit.edu/dataset/xxx).
+Deploying meta learning to estimate feature importance in classification tasks
 
 ## Repo Structure
 
