@@ -14,7 +14,7 @@ Usage: python -m metalfi.src.run_evaluation --help
 import os
 
 from metalfi.src.evaluation import Evaluation
-from metalfi.src.Parameters import Parameters
+from metalfi.src.parameters import Parameters
 from metalfi.src import visualization
 
 

@@ -13,7 +13,7 @@ import argparse
 import os
 
 from metalfi.src.controller import Controller
-from metalfi.src.memory import Memory
+import metalfi.src.memory as memory
 from metalfi.src.parameters import Parameters
 
 
@@ -21,13 +21,13 @@ from metalfi.src.parameters import Parameters
 # "delete_outputs": Whether to delete meta-models and results.
 def run_experiments(delete_inputs: bool = False, delete_outputs: bool = False):
     if delete_inputs:
-        Memory.clear_directories([Parameters.base_dataset_dir, Parameters.meta_dataset_dir,
+        memory.clear_directories([Parameters.base_dataset_dir, Parameters.meta_dataset_dir,
                                   Parameters.output_dir + "meta_computation_time"])
     if delete_outputs:
         directories = ["meta_feature_importance", "meta_prediction_performance", "feature_selection_performance"]
         directories = [Parameters.output_dir + x for x in directories]
         directories.append(Parameters.meta_model_dir)
-        Memory.clear_directories(directories)
+        memory.clear_directories(directories)
 
     c = Controller()  # download base datasets, creates meta-datasets
     c.train_meta_models()
